@@ -153,13 +153,14 @@ expected direction under the current rubric.
 
 ## 5. Baselines
 
-The current pairwise ranking baselines are deliberately simple:
+The current pairwise ranking baselines are deliberately simple. On the 126
+pair scripted dataset:
 
-- chance;
-- strategy-profile prior;
-- metrics-only composite;
-- lexical-only heuristic;
-- full-scorer sanity check.
+- chance: 0.500;
+- strategy-profile prior: 0.988, 95% bootstrap CI [0.972, 1.000];
+- metrics-only composite: 1.000;
+- lexical-only heuristic: 1.000;
+- full-scorer sanity check: 1.000.
 
 In the current scripted data, the task is easy. Metrics-only and lexical-only
 baselines recover the pair labels almost perfectly. This is expected because the
@@ -170,13 +171,27 @@ the task.
 
 ## 6. Planned Activation Experiments
 
-The immediate GPU experiment:
+The first GPU activation experiment was run with `Qwen/Qwen2.5-0.5B-Instruct`,
+using final-layer hidden states mean-pooled over tokens. The resulting activation
+matrix has 252 prompt rows and 896 dimensions. A contrastive positive-vs-negative
+direction gives:
 
-1. Extract hidden-state activations for all 252 activation prompts.
-2. Train a contrastive direction from positive vs negative examples.
-3. Evaluate pairwise ranking accuracy on held-out pairs.
-4. Compare against lexical and metrics-only baselines.
-5. Repeat by layer and model size.
+- in-sample pairwise accuracy: 1.000 on 126 pairs;
+- leave-one-pair-out pairwise accuracy: 1.000 on 126 pairs;
+- leave-one-pair-out mean positive-minus-negative projection margin: +26.4385.
+
+This is not yet strong evidence because the source trajectories remain scripted
+and lexically separable. It does show that the open-model activation lane is
+working end to end: local JSONL prompts → Modal GPU hidden states → local NPZ →
+contrastive vector → pairwise evaluation.
+
+The immediate next GPU experiment:
+
+1. Generate or sample less lexical, LLM-authored trajectories.
+2. Train on scripted trajectories and test on LLM-authored trajectories.
+3. Repeat by layer and model size.
+4. Add trait-family directions in the style of persona-vector work.
+5. Compare against lexical and metrics-only baselines.
 
 The next nontrivial experiment:
 
@@ -212,10 +227,10 @@ behavior. It is a scaffold for those tests.
 
 ## 9. Next Experiments
 
-1. Run GPU activation extraction on the 252 prompt records.
-2. Train and evaluate the first activation contrastive vector.
-3. Add LLM-generated trajectory generation.
-4. Add adversarial pseudo-cohesion examples.
+1. Add LLM-generated trajectory generation.
+2. Add adversarial pseudo-cohesion examples.
+3. Run cross-scenario and generated-text transfer splits.
+4. Repeat activation capture at several layers and model sizes.
 5. Add persona-vector-style trait decomposition:
    - repair;
    - reciprocity;
@@ -238,4 +253,3 @@ behavior. It is a scaffold for those tests.
 - Ostrom, E. (1990). *Governing the Commons*.
 - Rilling, J. K., et al. (2002). "A neural basis for social cooperation." *Neuron*.
 - Tajfel, H., & Turner, J. C. (1979/1986). Social identity theory of intergroup behavior.
-
