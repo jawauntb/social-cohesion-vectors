@@ -54,8 +54,13 @@ distinguished from conformity and from majority pressure.
 
 Fourth, mechanistic interpretability and persona-vector work suggest that
 high-level behavioral traits can sometimes be represented as directions or sparse
-features in model activation space. This motivates open-model activation capture
-and contrastive direction training.
+features in model activation space. This motivates open-model activation capture,
+contrastive direction training, and a trait-family view rather than a single
+monolithic "cohesion" direction. The relevant Anthropic persona-vector angle is
+especially concrete for this project: trait vectors can be used to monitor model
+state before output is emitted, can be composed or steered in activation space,
+and need guardrails so "cohesion" does not collapse into compliance,
+sycophancy, or dissent suppression.
 
 ## 3. Methods
 
@@ -169,7 +174,7 @@ is useful as a warning: the first real benchmark must use held-out
 LLM-generated trajectories or human labels so that surface markers cannot solve
 the task.
 
-## 6. Planned Activation Experiments
+## 6. Activation And Persona-Vector Roadmap
 
 The first GPU activation experiment was run with `Qwen/Qwen2.5-0.5B-Instruct`,
 using final-layer hidden states mean-pooled over tokens. The resulting activation
@@ -185,22 +190,94 @@ and lexically separable. It does show that the open-model activation lane is
 working end to end: local JSONL prompts → Modal GPU hidden states → local NPZ →
 contrastive vector → pairwise evaluation.
 
-The immediate next GPU experiment:
+The roadmap below separates completed artifacts from pending experiments. All
+items marked pending require new runs before any result should be reported.
 
-1. Generate or sample less lexical, LLM-authored trajectories.
-2. Train on scripted trajectories and test on LLM-authored trajectories.
-3. Repeat by layer and model size.
-4. Add trait-family directions in the style of persona-vector work.
-5. Compare against lexical and metrics-only baselines.
+### 6.1 Generated Trajectories
 
-The next nontrivial experiment:
+Status: pending.
 
-1. Generate new trajectories with an open instruction model.
-2. Score them with the rubric.
-3. Train directions on scripted trajectories.
-4. Test transfer to generated trajectories.
-5. Look for failure modes where generic positivity, sycophancy, or compliance
-   are mistaken for cohesion.
+The next benchmark should replace or augment scripted trajectories with
+open-model generated trajectories. Each generated run should preserve the
+scenario, strategy pressure, and intervention condition, but should not reuse the
+scripted lexical templates. The goal is to test whether the scorer and activation
+directions identify cooperative repair, reciprocity, truthfulness, and autonomy
+safety when the wording is less obvious.
+
+Expected artifact: a generated trajectory JSONL file, a generated-run scoring
+summary, generated pairwise examples, generated activation prompts, and a report
+comparing lexical, metrics-only, scorer, and activation-vector performance.
+
+### 6.2 Pseudo-Cohesion Hard Negatives
+
+Status: pending report artifact.
+
+The benchmark needs adversarial examples that sound cooperative while violating
+the target construct. The first hard-negative families are:
+
+- polite coercion framed as team unity;
+- sycophantic agreement that hides evidence;
+- compliance maximization framed as harmony;
+- dissent suppression framed as repair;
+- false accountability that protects status rather than repairing harm.
+
+These examples should be treated as negative examples even when they contain
+positive social language. They are the main guardrail against learning a vector
+for agreeableness, obedience, or generic warmth instead of agency-preserving
+cohesion.
+
+Expected artifact: `data/reports/pseudo_cohesion_experiment.md` and JSON
+companion, with pseudo examples flagged when the scorer or lexical baseline
+assigns high cohesion despite truthfulness, autonomy, or dissent risks.
+
+### 6.3 Transfer Splits
+
+Status: pending.
+
+The first non-circular split should train on scripted pairwise examples and test
+on generated pairwise examples. Additional splits should hold out scenario
+families, intervention types, and hard-negative categories. A useful direction
+should retain positive-minus-negative projection margins on held-out generated
+text and should not be solved by the strategy-profile prior or lexical-only
+baseline.
+
+Expected artifact: transfer reports with at least scripted-to-generated,
+generated-to-scripted, cross-scenario, and hard-negative evaluations. Any 1.000
+accuracy result on the scripted split should remain labeled as a sanity check
+until transfer performance is reported.
+
+### 6.4 Layer And Model Sweeps
+
+Status: pending beyond the final-layer Qwen run.
+
+The next activation pass should sweep layers in the same model, then repeat on a
+larger open instruction model if compute allows. The sweep should report whether
+the direction is stable across layers, whether projection margins peak at
+particular depths, and whether the apparent vector is merely tracking surface
+lexical cues.
+
+Expected artifact: `data/reports/layer_sweep/summary.md` plus per-layer JSON and
+markdown reports. The success criterion is not the highest in-sample score; it
+is transfer stability after lexical and metadata baselines are controlled.
+
+### 6.5 Persona-Vector Decomposition
+
+Status: pending.
+
+The single cohesion direction should be decomposed into a family of trait
+directions inspired by persona-vector work. Candidate positive directions are
+repair, reciprocity, truthfulness, autonomy safety, fairness, and constructive
+dissent. Candidate negative or guardrail directions are coercion/domination,
+sycophancy, compliance-seeking, dehumanization, truth hiding, and punitive
+escalation.
+
+The intended use is twofold. First, monitoring: compute projections before the
+model emits final output and flag generations where negative guardrail
+directions rise alongside nominally pro-cohesion language. Second, steering and
+composition: test whether small combinations such as `repair + truthfulness +
+autonomy_safety - sycophancy - compliance` improve outputs without suppressing
+legitimate refusal, disagreement, or self-protection. All steering claims remain
+pending until controlled generation tests are run.
 
 ## 7. Ethics And Safety
 
@@ -227,20 +304,31 @@ behavior. It is a scaffold for those tests.
 
 ## 9. Next Experiments
 
-1. Add LLM-generated trajectory generation.
-2. Add adversarial pseudo-cohesion examples.
-3. Run cross-scenario and generated-text transfer splits.
-4. Repeat activation capture at several layers and model sizes.
-5. Add persona-vector-style trait decomposition:
+1. Generate held-out open-model trajectories with reduced template leakage.
+   Status: pending.
+2. Run the pseudo-cohesion hard-negative report and use failures to revise the
+   scorer and dataset. Status: pending report artifact.
+3. Build transfer splits: scripted-to-generated, generated-to-scripted,
+   cross-scenario, intervention-held-out, and hard-negative-held-out. Status:
+   pending.
+4. Sweep activation layers in `Qwen/Qwen2.5-0.5B-Instruct`, then repeat on a
+   larger model if compute allows. Status: pending.
+5. Decompose cohesion into persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;
    - autonomy safety;
+   - fairness;
+   - constructive dissent;
    - sycophancy/compliance;
    - coercion/domination;
    - dehumanization;
+   - truth hiding;
    - punitive escalation.
-6. Prepare a Prolific pairwise validation pilot.
+6. Test monitoring before output and steering/composition only after transfer
+   splits show non-circular signal. Status: pending.
+7. Prepare a Prolific pairwise validation pilot only after generated-text and
+   hard-negative validation. Status: pending.
 
 ## References
 

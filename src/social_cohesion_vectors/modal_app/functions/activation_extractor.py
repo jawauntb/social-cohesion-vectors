@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -189,6 +190,35 @@ def smoke_extract(
     )
 
 
+@app.function(
+    image=open_llm_image(),
+    secrets=modal_secrets,
+    gpu=get_config().modal.default_gpu,
+    timeout=1800,
+)
+def extract_prompt_records_npz(
+    records: list[dict[str, Any]],
+    model_id: str = DEFAULT_MODEL_ID,
+    layer: int = DEFAULT_LAYER,
+    batch_size: int = 8,
+    max_length: int = 512,
+) -> bytes:
+    """Extract activations for local prompt records and return compressed NPZ bytes."""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output_path = Path(tmpdir) / "activation_records.npz"
+        extract_activations(
+            prompt_path=None,
+            records=records,
+            output_path=output_path,
+            model_id=model_id,
+            layer=layer,
+            batch_size=batch_size,
+            max_length=max_length,
+        )
+        return output_path.read_bytes()
+
+
 def _load_tokenizer_and_model(
     *,
     transformers: Any,
@@ -299,6 +329,7 @@ def _smoke_records() -> list[dict[str, Any]]:
 __all__ = [
     "DEFAULT_PROMPT_PATH",
     "extract_activations",
+    "extract_prompt_records_npz",
     "read_prompt_records",
     "smoke_extract",
     "write_activation_npz",

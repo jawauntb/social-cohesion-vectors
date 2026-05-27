@@ -58,3 +58,4 @@ outputs/
 
 # Modal
 .modal/
+.worktrees/

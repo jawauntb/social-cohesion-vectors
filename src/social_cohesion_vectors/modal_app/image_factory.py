@@ -10,6 +10,8 @@ def open_llm_image() -> modal.Image:
 
     return modal.Image.debian_slim(python_version="3.12").pip_install(
         "numpy>=1.26,<3.0",
+        "pydantic[email]==2.12.5",
+        "python-dotenv==1.1.0",
         "torch>=2.5,<2.8",
         "transformers>=4.46,<5.0",
         "accelerate>=1.0,<2.0",
