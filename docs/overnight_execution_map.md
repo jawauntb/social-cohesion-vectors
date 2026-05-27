@@ -53,6 +53,9 @@ These work without new humans or new neural recordings.
 - GPT-2 SAE smoke: residual activations reach 0.967 leave-one-pair-out accuracy
   on the expanded pseudo set, while SAE features reach 0.533, giving a sharper
   target for feature-level inspection.
+- GPT-2 SAE token inspection: 3056 remains a genuine-skew candidate;
+  24555/11737/703 remain pseudo-skew candidates; 28005/20249 are demoted by
+  token-level evidence.
 
 ## Low-Cost Human Next
 

@@ -312,6 +312,31 @@ This writes:
 - `data/reports/gpt2_sae_pseudo_probe.json`
 - `data/reports/gpt2_sae_pseudo_probe.md`
 
+Run token/example-level feature inspection:
+
+```bash
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --features 3056 24555 28005 20249 11999 11737 703
+```
+
+This writes:
+
+- `data/reports/gpt2_sae_token_feature_inspection.json`
+- `data/reports/gpt2_sae_token_feature_inspection.md`
+
+Current token-level readout:
+
+- 3056 remains the best genuine-skew candidate, especially on privacy, exit,
+  reality-validation, voluntary-contribution, and autonomy contrasts.
+- 24555 is the broadest pseudo-skew candidate, but top activations are pronoun
+  and relation-token heavy rather than a clean "coercion" feature.
+- 11737 is a narrower pseudo-side candidate with visible `you`/`comply` activity
+  in the autonomy/coercion contrast.
+- 703 is pseudo-skewed but appears function-word heavy.
+- 28005 should be demoted because token-level activity is effectively a
+  `mutual-aid` hyphen artifact.
+- 20249 should be demoted because it is inactive at token level on this set.
+
 Practical scan procedure:
 
 1. Select a candidate model/layer from `data/reports/layer_sweep/summary.md` or
@@ -395,8 +420,8 @@ and real neural data; none of the Modal/SAE results establish them.
 
 ## Tomorrow's Priority Order
 
-1. Inspect top activating examples and token positions for features 3056, 24555,
-   28005, 20249, and 11999.
+1. Generate or author another pseudo-cohesion batch and re-run token-level SAE
+   inspection for 3056, 24555, 11737, and 703.
 2. Add hard-negative-held-out transfer reports for the expanded pseudo set.
 3. Reproduce the scripted scaffold and confirm the current 1.000 results are
    still just sanity checks.

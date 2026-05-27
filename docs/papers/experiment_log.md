@@ -314,6 +314,33 @@ with a +28.6866 mean margin. Its single failure is the `resource_request`
 contrast, where social-debt pressure and genuine reciprocal request currently
 receive the same rubric score.
 
+Token/example-level SAE inspection is now wired:
+
+```bash
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --features 3056 24555 28005 20249 11999 11737 703
+```
+
+Report: `data/reports/gpt2_sae_token_feature_inspection.md`
+
+Token-level findings:
+
+| Feature | Token-level direction | Notes |
+| ---: | --- | --- |
+| 3056 | genuine higher | Best remaining genuine-side candidate; largest genuine-minus-pseudo pair deltas are `privacy_after_incident`, `support_exit_rights`, and `reality_validation`, but top tokens are mixed and not yet semantically clean. |
+| 24555 | pseudo higher | Best broad pseudo-side candidate; top pseudo tokens appear in `outgroup_conflict`, `reputation_repair`, `belonging_norms`, `voluntary_contribution`, `trust_rebuild`, and `autonomy_after_conflict`. |
+| 11737 | pseudo higher | More specific pseudo-side candidate; top tokens include `you` and `comply` in `autonomy_after_conflict`, plus `proof` in `trust_rebuild`. |
+| 703 | pseudo higher | Pseudo-side but appears function-word heavy; strongest examples include `participation_boundary` and `resource_request`. |
+| 11999 | pseudo higher | Broad but generic; top activations include repeated `Your`/`the` tokens and need more evidence before interpretation. |
+| 28005 | artifact/demote | Token-level activity is almost entirely a single hyphen token in `mutual_aid_allocation`; do not treat as a semantic pseudo-cohesion feature. |
+| 20249 | inactive/demote | No nonzero token-level activations on the expanded prompt set despite appearing in mean-then-encode aggregate rankings. |
+
+Interpretation: token-level inspection reinforces the main caveat. Some
+candidate features have useful aggregate skew, but most are not yet clean
+semantic handles. The next interpretability step should inspect top activating
+examples across a larger generated pseudo-cohesion set and compare token-level
+SAE features against residual-space directions.
+
 ### Persona-Vector Decomposition
 
 Status: partial.

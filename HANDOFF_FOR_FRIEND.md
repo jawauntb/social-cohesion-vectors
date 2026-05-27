@@ -131,6 +131,20 @@ Feature 3056 remains higher on genuine cohesion; 24555, 28005, 20249, and 11999
 skew higher on pseudo-cohesion. These are inspection targets, not final feature
 names.
 
+Token/example-level SAE inspection is now available:
+
+```bash
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --features 3056 24555 28005 20249 11999 11737 703
+```
+
+The first token-level readout demotes 28005 and 20249: 28005 is basically a
+single `mutual-aid` hyphen artifact, and 20249 is inactive at token level.
+Feature 3056 is still the best genuine-skew candidate. Features 24555, 11737,
+and 703 remain pseudo-skew candidates, but they are not clean enough to name yet.
+11737 is the most semantically suggestive pseudo candidate because it activates
+on `you`/`comply` in the autonomy/coercion contrast.
+
 Transfer reports now run over held-out scenario ids and held-out scenario
 families. On the current scripted data, lexical-only and metrics-only baselines
 still score 1.000, so generated and hard-negative transfer remain the important
@@ -158,7 +172,7 @@ the task harder.
 ## Next High-Value Experiments
 
 1. Generate held-out LLM-authored trajectories with fewer obvious lexical cues.
-2. Inspect GPT-2 SAE candidate features at the token/example level.
+2. Re-run token-level SAE inspection on generated pseudo-cohesion examples.
 3. Train on scripted data and test on scored generated/hard-negative data.
 4. Sweep activation layers and model sizes.
 5. Split the target into persona-vector-style trait families:
