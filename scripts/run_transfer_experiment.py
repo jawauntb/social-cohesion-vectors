@@ -32,6 +32,15 @@ def parse_args() -> argparse.Namespace:
         default=config.paths.training / "pairwise_probe_dataset.jsonl",
     )
     parser.add_argument(
+        "--generated-pairs",
+        type=Path,
+        default=None,
+        help=(
+            "Optional generated benchmark pairs. When provided, also reports "
+            "scripted-to-generated and generated-to-scripted transfer."
+        ),
+    )
+    parser.add_argument(
         "--scenarios",
         type=Path,
         default=config.paths.scenarios / "seed_scenarios.json",
@@ -71,6 +80,7 @@ def main() -> int:
         scored_runs_path=args.scored_runs,
         generated_scored_runs_path=args.generated_scored_runs,
         pairs_path=args.pairs,
+        generated_pairs_path=args.generated_pairs,
         scenarios_path=args.scenarios,
         activation_npz_path=activation_npz,
     )
@@ -101,6 +111,7 @@ def print_summary(
     print(
         "transfer experiment: "
         f"pairs={inputs.get('n_pairs', 0)} "
+        f"generated_pairs={inputs.get('n_generated_pairs', 0)} "
         f"scenarios={inputs.get('n_scenarios', 0)} "
         f"kinds={inputs.get('n_scenario_kinds', 0)}"
     )

@@ -59,6 +59,7 @@ def run_transfer_from_files(
     scored_runs_path: str | Path,
     pairs_path: str | Path,
     generated_scored_runs_path: str | Path | None = None,
+    generated_pairs_path: str | Path | None = None,
     scenarios_path: str | Path | None = None,
     activation_npz_path: str | Path | None = None,
 ) -> dict[str, Any]:
@@ -67,11 +68,13 @@ def run_transfer_from_files(
     scored_runs = load_scored_runs_jsonl(scored_runs_path)
     generated_runs = load_optional_scored_runs(generated_scored_runs_path)
     pairs = load_pairwise_examples_jsonl(pairs_path)
+    generated_pairs = load_optional_pairwise_examples(generated_pairs_path)
     scenario_kinds = load_scenario_kind_map(scenarios_path)
     return run_transfer_experiment(
         scored_runs=scored_runs,
         generated_scored_runs=generated_runs,
         pairs=pairs,
+        generated_pairs=generated_pairs,
         scenario_kinds=scenario_kinds,
         activation_npz_path=activation_npz_path,
         input_paths={
@@ -82,6 +85,9 @@ def run_transfer_from_files(
                 else None
             ),
             "pairs": str(pairs_path),
+            "generated_pairs": (
+                str(generated_pairs_path) if generated_pairs_path is not None else None
+            ),
             "scenarios": str(scenarios_path) if scenarios_path is not None else None,
             "activation_npz": (
                 str(activation_npz_path) if activation_npz_path is not None else None
@@ -95,6 +101,7 @@ def run_transfer_experiment(
     scored_runs: Sequence[ScoredRun],
     pairs: Sequence[PairwiseExample],
     generated_scored_runs: Sequence[ScoredRun] = (),
+    generated_pairs: Sequence[PairwiseExample] = (),
     scenario_kinds: Mapping[str, str] | None = None,
     activation_npz_path: str | Path | None = None,
     input_paths: Mapping[str, str | None] | None = None,
@@ -102,16 +109,25 @@ def run_transfer_experiment(
     """Run text/rubric transfer folds and optional activation-vector folds."""
 
     all_runs = [*scored_runs, *generated_scored_runs]
+    all_pairs = [*pairs, *generated_pairs]
     run_index = index_runs(all_runs)
-    inferred_kinds = infer_scenario_kinds(all_runs, pairs, scenario_kinds or {})
+    inferred_kinds = infer_scenario_kinds(all_runs, all_pairs, scenario_kinds or {})
     text_results = evaluate_text_transfer(
         pairs=pairs,
         run_index=run_index,
         scenario_kinds=inferred_kinds,
     )
+    pair_set_results = evaluate_pair_set_transfer(
+        train_pairs=pairs,
+        test_pairs=generated_pairs,
+        run_index=run_index,
+    )
     activation_results = evaluate_activation_transfer_from_npz(
         activation_npz_path,
-        pairs=pairs,
+        pairs=all_pairs,
+        pair_set_transfers=(
+            _pair_set_transfer_specs(pairs, generated_pairs) if generated_pairs else ()
+        ),
     )
     return {
         "inputs": {
@@ -121,16 +137,20 @@ def run_transfer_experiment(
             "n_total_runs": len(all_runs),
             "n_indexed_runs": len(run_index),
             "n_pairs": len(pairs),
-            "n_scenarios": len({pair.scenario_id for pair in pairs}),
+            "n_generated_pairs": len(generated_pairs),
+            "n_total_pairs": len(all_pairs),
+            "n_scenarios": len({pair.scenario_id for pair in all_pairs}),
             "n_scenario_kinds": len(set(inferred_kinds.values())),
         },
         "text_transfer": {
             "by_scenario_kind": text_results["scenario_kind"],
             "by_scenario_id": text_results["scenario_id"],
+            "by_pair_set": pair_set_results,
             "summary": summarize_fold_results(
                 [
                     *text_results["scenario_kind"],
                     *text_results["scenario_id"],
+                    *pair_set_results,
                 ]
             ),
         },
@@ -145,6 +165,15 @@ def load_optional_scored_runs(path: str | Path | None) -> list[ScoredRun]:
     if not scored_path.exists():
         return []
     return load_scored_runs_jsonl(scored_path)
+
+
+def load_optional_pairwise_examples(path: str | Path | None) -> list[PairwiseExample]:
+    if path is None:
+        return []
+    pairs_path = Path(path)
+    if not pairs_path.exists():
+        return []
+    return load_pairwise_examples_jsonl(pairs_path)
 
 
 def load_scenario_kind_map(path: str | Path | None) -> dict[str, str]:
@@ -203,6 +232,20 @@ def evaluate_text_transfer(
     }
 
 
+def evaluate_pair_set_transfer(
+    *,
+    train_pairs: Sequence[PairwiseExample],
+    test_pairs: Sequence[PairwiseExample],
+    run_index: Mapping[str, ScoredRun],
+) -> list[dict[str, Any]]:
+    """Train baselines on one pair set and evaluate on another pair set."""
+
+    return _evaluate_text_folds(
+        folds=_pair_set_transfer_specs(train_pairs, test_pairs),
+        run_index=run_index,
+    )
+
+
 def evaluate_pair_scores(
     pairs: Sequence[PairwiseExample],
     *,
@@ -235,6 +278,7 @@ def evaluate_activation_transfer_from_npz(
     path: str | Path | None,
     *,
     pairs: Sequence[PairwiseExample],
+    pair_set_transfers: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any] | None:
     if path is None:
         return None
@@ -263,6 +307,10 @@ def evaluate_activation_transfer_from_npz(
             payload,
             folds=scenario_folds,
             split="scenario_id",
+        ),
+        "pair_set_transfer": _evaluate_activation_pair_set_transfers(
+            payload,
+            folds=pair_set_transfers,
         ),
     }
 
@@ -332,6 +380,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         f"- Scored runs: {inputs.get('n_scored_runs', 0)}",
         f"- Generated scored runs: {inputs.get('n_generated_scored_runs', 0)}",
         f"- Pairwise examples: {inputs.get('n_pairs', 0)}",
+        f"- Generated pairwise examples: {inputs.get('n_generated_pairs', 0)}",
         f"- Scenario ids: {inputs.get('n_scenarios', 0)}",
         f"- Scenario kinds: {inputs.get('n_scenario_kinds', 0)}",
         "",
@@ -343,6 +392,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     lines.extend(_summary_rows(text.get("summary")))
     lines.extend(_fold_table("Held-out scenario kinds", text.get("by_scenario_kind")))
     lines.extend(_fold_table("Held-out scenario ids", text.get("by_scenario_id")))
+    lines.extend(_fold_table("Pair-set transfer", text.get("by_pair_set")))
     lines.extend(_activation_lines(activation))
     return "\n".join(lines) + "\n"
 
@@ -507,6 +557,28 @@ def _fold(
     }
 
 
+def _pair_set_transfer_specs(
+    train_pairs: Sequence[PairwiseExample],
+    test_pairs: Sequence[PairwiseExample],
+) -> list[dict[str, Any]]:
+    if not train_pairs or not test_pairs:
+        return []
+    return [
+        {
+            "split": "scripted_to_generated",
+            "held_out": "generated_pairs",
+            "train_pairs": list(train_pairs),
+            "test_pairs": list(test_pairs),
+        },
+        {
+            "split": "generated_to_scripted",
+            "held_out": "scripted_pairs",
+            "train_pairs": list(test_pairs),
+            "test_pairs": list(train_pairs),
+        },
+    ]
+
+
 def _evaluate_activation_folds(
     payload: ActivationPayload,
     *,
@@ -525,6 +597,36 @@ def _evaluate_activation_folds(
                 payload,
                 split=split,
                 held_out=held_out,
+                train_pair_ids=train_ids,
+                test_pair_ids=test_ids,
+            )
+        )
+    return results
+
+
+def _evaluate_activation_pair_set_transfers(
+    payload: ActivationPayload,
+    *,
+    folds: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    complete_pairs = set(_complete_activation_pairs(payload.pair_ids, payload.labels))
+    for fold in folds:
+        train_ids = {
+            pair.pair_id
+            for pair in fold["train_pairs"]
+            if pair.pair_id in complete_pairs
+        }
+        test_ids = {
+            pair.pair_id for pair in fold["test_pairs"] if pair.pair_id in complete_pairs
+        }
+        if not train_ids or not test_ids:
+            continue
+        results.append(
+            _activation_fold_result(
+                payload,
+                split=str(fold["split"]),
+                held_out=str(fold["held_out"]),
                 train_pair_ids=train_ids,
                 test_pair_ids=test_ids,
             )
@@ -795,11 +897,15 @@ def _activation_lines(value: object) -> list[str]:
     ]
     lines.extend(_activation_fold_rows("Leave-one-pair-out", activation))
     lines.extend(_activation_fold_rows("Leave-one-scenario-out", activation))
+    lines.extend(_activation_fold_rows("Pair-set transfer", activation))
     return lines
 
 
 def _activation_fold_rows(title: str, activation: Mapping[str, Any]) -> list[str]:
-    key = "leave_one_pair_out" if "pair" in title else "leave_one_scenario_out"
+    if "Pair-set" in title:
+        key = "pair_set_transfer"
+    else:
+        key = "leave_one_pair_out" if "pair" in title else "leave_one_scenario_out"
     rows = [
         f"### {title}",
         "",

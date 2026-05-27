@@ -7,6 +7,7 @@ import numpy as np
 from social_cohesion_vectors.experiments.transfer import (
     find_activation_npz,
     run_transfer_experiment,
+    run_transfer_from_files,
     save_transfer_reports,
 )
 from social_cohesion_vectors.schemas import PairwiseExample, RoundEvent, ScoredRun
@@ -92,6 +93,71 @@ def test_activation_transfer_uses_pair_file_for_leave_one_scenario_out(
         row["test"]["accuracy"] == 1.0
         for row in activation["leave_one_scenario_out"]
     )
+
+
+def test_pair_set_transfer_trains_on_one_pair_set_and_tests_another() -> None:
+    scripted_runs = [
+        _run("scripted-pos", "scripted", "cooperative", 0.9),
+        _run("scripted-neg", "scripted", "adversarial", 0.1),
+    ]
+    generated_runs = [
+        _run("generated-pos", "generated", "adversarial", 0.1),
+        _run("generated-neg", "generated", "cooperative", 0.9),
+    ]
+    scripted_pairs = [_pair(scripted_runs[0], scripted_runs[1])]
+    generated_pairs = [_pair(generated_runs[0], generated_runs[1])]
+
+    report = run_transfer_experiment(
+        scored_runs=scripted_runs,
+        generated_scored_runs=generated_runs,
+        pairs=scripted_pairs,
+        generated_pairs=generated_pairs,
+        scenario_kinds={
+            "scripted": "dialogue_repair",
+            "generated": "dialogue_repair",
+        },
+    )
+
+    pair_set = report["text_transfer"]["by_pair_set"]
+    assert len(pair_set) == 6
+    assert {row["split"] for row in pair_set} == {
+        "scripted_to_generated",
+        "generated_to_scripted",
+    }
+    metrics_rows = [row for row in pair_set if row["baseline"] == "metrics_only"]
+    assert all(row["train"]["accuracy"] == 1.0 for row in metrics_rows)
+    assert all(row["test"]["accuracy"] == 0.0 for row in metrics_rows)
+    assert report["inputs"]["n_generated_pairs"] == 1
+    assert report["inputs"]["n_total_pairs"] == 2
+
+
+def test_run_transfer_from_files_loads_generated_pairs(tmp_path: Path) -> None:
+    scripted_runs = [
+        _run("s-pos", "scripted", "cooperative", 0.9),
+        _run("s-neg", "scripted", "adversarial", 0.1),
+    ]
+    generated_runs = [
+        _run("g-pos", "generated", "cooperative", 0.8),
+        _run("g-neg", "generated", "adversarial", 0.2),
+    ]
+    scored_path = tmp_path / "scored.jsonl"
+    generated_scored_path = tmp_path / "generated_scored.jsonl"
+    pairs_path = tmp_path / "pairs.jsonl"
+    generated_pairs_path = tmp_path / "generated_pairs.jsonl"
+    _write_jsonl(scored_path, scripted_runs)
+    _write_jsonl(generated_scored_path, generated_runs)
+    _write_jsonl(pairs_path, [_pair(scripted_runs[0], scripted_runs[1])])
+    _write_jsonl(generated_pairs_path, [_pair(generated_runs[0], generated_runs[1])])
+
+    report = run_transfer_from_files(
+        scored_runs_path=scored_path,
+        generated_scored_runs_path=generated_scored_path,
+        pairs_path=pairs_path,
+        generated_pairs_path=generated_pairs_path,
+    )
+
+    assert report["inputs"]["paths"]["generated_pairs"] == str(generated_pairs_path)
+    assert report["text_transfer"]["by_pair_set"]
 
 
 def test_save_reports_and_find_activation_npz(tmp_path: Path) -> None:
@@ -182,4 +248,11 @@ def _pair(positive: ScoredRun, negative: ScoredRun) -> PairwiseExample:
         negative_text=negative.transcript,
         positive_score=positive.cohesion_score,
         negative_score=negative.cohesion_score,
+    )
+
+
+def _write_jsonl(path: Path, records: list[ScoredRun] | list[PairwiseExample]) -> None:
+    path.write_text(
+        "".join(record.model_dump_json() + "\n" for record in records),
+        encoding="utf-8",
     )
