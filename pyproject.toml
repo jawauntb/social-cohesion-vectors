@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "social-cohesion-vectors"
+version = "0.0.1"
+description = "Simulation, scoring, and open-model activation scaffolding for social cohesion vector research."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Jawaun Brown" }]
+dependencies = [
+    "pydantic[email]==2.12.5",
+    "python-dotenv==1.1.0",
+    "numpy>=1.26,<3.0",
+    "rich>=14.0,<15.0",
+    "modal==1.1.4",
+]
+
+[project.optional-dependencies]
+ml = [
+    "torch>=2.5,<2.8",
+    "transformers>=4.46,<5.0",
+    "accelerate>=1.0,<2.0",
+    "safetensors>=0.4,<1.0",
+]
+sae = [
+    "sae-lens>=5.0,<6.0",
+]
+tracking = [
+    "wandb>=0.18,<1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==8.3.3",
+    "pyright==1.1.404",
+    "ruff==0.8.2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/social_cohesion_vectors"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "BLE001", "C901", "PLR0912", "PLR0915"]
+ignore = ["E501", "UP007", "UP017", "UP035", "UP038"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-branches = 12
+max-statements = 100
+
+[tool.ruff.lint.isort]
+known-first-party = ["social_cohesion_vectors"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pyright]
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonVersion = "3.12"
+include = ["src", "tests", "scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib -ra"
