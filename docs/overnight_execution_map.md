@@ -36,6 +36,21 @@ These work without new humans or new neural recordings.
    - Score them with the rubric and activation-derived direction.
    - Filter with truthfulness/autonomy guardrails before any human study.
 
+## Completed First Sprint
+
+- Scripted scenario scaffold: 25 scenarios, 450 simulated runs, 126 pairwise
+  examples, 252 activation prompts.
+- Generated offline benchmark: 125 generated trajectories, 50 pairwise examples,
+  100 activation prompts.
+- Modal/open-model activation lane: Qwen 0.5B, 1.5B, 3B, and GPT-2 smoke runs.
+- Transfer checks: scripted/generated pair-set transfer is wired.
+- Pseudo-cohesion hard negatives: 4 pseudo cases, 4 genuine contrasts, and
+  exportable activation prompts.
+- GPT-2 failure analysis: generated misses concentrate on
+  `pseudo_cohesion_compliance` negatives.
+- GPT-2 SAE smoke: first candidate features identified for genuine cohesion vs
+  pseudo-cohesion.
+
 ## Low-Cost Human Next
 
 These need Prolific or comparable validation but not new neural recordings.
@@ -77,6 +92,8 @@ These need Prolific or comparable validation but not new neural recordings.
   vs adversarial transcripts, fix the benchmark before using human time.
 - If vectors separate scripted transcripts but fail LLM-generated held-out
   scenarios, improve scenario diversity and reduce lexical shortcuts.
+- If weak or SAE-compatible models fail specifically on pseudo-cohesion, expand
+  that dataset and inspect sparse features before naming a "cohesion" direction.
 - If vectors transfer across scenarios/models, run Prolific.
 - If Prolific shows human preference or behavioral movement, then the
   brain-aligned bridge becomes worth spending compute on.
