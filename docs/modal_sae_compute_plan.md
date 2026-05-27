@@ -243,6 +243,8 @@ Current smoke result:
 | `Qwen/Qwen2.5-0.5B-Instruct` | generated offline | -4 | 896 | 1.000 | +4.135 |
 | `Qwen/Qwen2.5-1.5B-Instruct` | generated offline | -1 | 1536 | 1.000 | +13.455 |
 | `Qwen/Qwen2.5-1.5B-Instruct` | generated offline | -4 | 1536 | 1.000 | +14.759 |
+| `Qwen/Qwen2.5-3B-Instruct` | generated offline | -4 | 2048 | 1.000 | +21.948 |
+| `gpt2` | generated offline | -1 | 768 | 0.860 | +29.744 |
 
 ## 5. SAE Feature Scan With `sae-lens`
 
@@ -260,6 +262,22 @@ First check whether `sae-lens` has a pretrained SAE matching the chosen
 open-weight model, layer, and hook site. If there is no matched SAE, do not force
 the analysis; either pick a supported model/layer for the interpretability pass
 or save this for a later custom-SAE training step.
+
+Current local status:
+
+- `sae-lens==5.11.0` imports successfully.
+- The pretrained SAE directory is available and lists 63 releases.
+- No Qwen SAE release is listed, so Qwen runs above are contrastive-vector
+  comparisons only.
+- Supported SAE candidates visible locally include Gemma, GPT-2, and Llama
+  release families. A Gemma pass is the most natural next SAE-aligned open-model
+  experiment if Hugging Face access is available.
+- `google/gemma-2-2b-it` is gated for the current Hugging Face credentials, so
+  the first SAE-compatible fallback is `gpt2`.
+- GPT-2 final-layer activations do not solve the generated benchmark: 0.860
+  leave-one-pair-out accuracy, with all 7 failures involving
+  `pseudo_cohesion_compliance` negative examples. That makes pseudo-cohesion the
+  best immediate feature-inspection target.
 
 Practical scan procedure:
 
