@@ -32,6 +32,11 @@ residual activations both reach 0.967 leave-one-pair-out accuracy, but GPT-2 SAE
 features reach only 0.533, suggesting the sparse feature basis needs more
 careful feature-level inspection before any feature is named.
 
+Token-level SAE inspection is now available for the GPT-2 candidates. The first
+readout keeps 3056 as a genuine-skew candidate, keeps 24555/11737/703 as
+pseudo-skew candidates, and demotes 28005/20249 because their token-level
+evidence is an artifact or inactive.
+
 ## What Waits For Later
 
 - Claims about real human cooperation effects need Prolific or in-person pilots.

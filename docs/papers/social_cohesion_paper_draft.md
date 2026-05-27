@@ -253,6 +253,14 @@ leave-one-pair-out accuracy with a +28.6866 mean margin. Its single failure is
 the resource-request contrast, where the pseudo social-debt pressure example and
 the genuine reciprocal-request example currently receive the same rubric score.
 
+Token-level SAE inspection further constrains the interpretation. Feature 3056
+remains the best genuine-skew candidate, while 24555, 11737, and 703 remain
+pseudo-skew candidates. Feature 11737 is the most semantically suggestive
+pseudo-side feature because it activates on `you`/`comply` in the
+autonomy/coercion contrast. Features 28005 and 20249 should be demoted: 28005 is
+mostly a single `mutual-aid` hyphen artifact, and 20249 is inactive when
+activations are encoded token by token.
+
 Next artifacts: generated pseudo-cohesion examples, token-level SAE feature
 inspection, and hard-negative-held-out transfer reports.
 

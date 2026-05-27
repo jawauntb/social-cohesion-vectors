@@ -38,6 +38,11 @@ Concrete early signals:
   0.967 leave-one-pair-out accuracy, while SAE feature activations get 0.533.
   Feature 3056 still skews genuine; features 24555, 28005, 20249, and 11999
   skew pseudo.
+- I added token-level SAE inspection. The first readout demotes 28005/20249
+  because one is basically a hyphen artifact and the other is inactive at token
+  level. 3056 remains the best genuine-skew candidate; 24555/11737/703 remain
+  pseudo-skew candidates, with 11737 showing the most interpretable
+  `you`/`comply` signal.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is token/example-level

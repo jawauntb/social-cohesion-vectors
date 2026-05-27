@@ -177,6 +177,12 @@ but SAE feature activations get only 0.533. Feature 3056 remains higher on
 genuine cohesion, while features 24555, 28005, 20249, and 11999 skew higher on
 pseudo-cohesion. These are inspection targets, not final feature names.
 
+The token-level inspection pass sharpens that caveat. Feature 3056 is still the
+best genuine-skew candidate. Features 24555, 11737, and 703 remain pseudo-skew
+candidates, though not clean enough to name. Feature 28005 is mostly a
+`mutual-aid` hyphen artifact, and feature 20249 is inactive at token level, so
+both should be demoted.
+
 Important caveat: this is not yet a deep scientific result. The scripted
 benchmark is too easy. Lexical and metrics-only baselines solve it, which means
 the activation result is currently a pipeline sanity check, not evidence of a
@@ -201,7 +207,7 @@ High-value next steps:
 3. Train on scripted examples and test on generated examples.
 4. Sweep model layers and model sizes.
 5. Break the target into multiple persona-vector-style axes.
-6. Inspect GPT-2 SAE candidate features at the token/example level.
+6. Re-run GPT-2 SAE token inspection on generated pseudo-cohesion examples.
 7. Add hard-negative-held-out transfer reports for the expanded pseudo set.
 8. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
