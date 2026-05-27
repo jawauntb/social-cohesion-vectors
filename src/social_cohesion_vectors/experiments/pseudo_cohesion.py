@@ -9,7 +9,13 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Literal, cast
 
-from social_cohesion_vectors.schemas import ScoredRun, SimulationRun
+from social_cohesion_vectors.datasets import activation_prompts_from_pairs, write_jsonl
+from social_cohesion_vectors.schemas import (
+    ActivationPrompt,
+    PairwiseExample,
+    ScoredRun,
+    SimulationRun,
+)
 from social_cohesion_vectors.scoring import combine_cohesion_score, score_transcript
 
 ExampleLabel = Literal["pseudo_cohesion", "genuine_cohesion"]
@@ -370,6 +376,72 @@ def paired_comparisons(
             }
         )
     return comparisons
+
+
+def pairwise_examples_from_pseudo_cohesion(
+    examples: Sequence[PseudoCohesionExample] | None = None,
+) -> list[PairwiseExample]:
+    """Create genuine-vs-pseudo pairwise examples for activation experiments."""
+
+    evaluated = [evaluate_example(example) for example in examples or default_examples()]
+    by_contrast: dict[str, dict[ExampleLabel, EvaluatedExample]] = {}
+    for example in evaluated:
+        by_contrast.setdefault(example.contrast_id, {})[example.label] = example
+
+    pairs: list[PairwiseExample] = []
+    for contrast_id in sorted(by_contrast):
+        group = by_contrast[contrast_id]
+        positive = group.get("genuine_cohesion")
+        negative = group.get("pseudo_cohesion")
+        if positive is None or negative is None:
+            continue
+        pairs.append(
+            PairwiseExample(
+                pair_id=f"pseudo-cohesion::{contrast_id}",
+                scenario_id=contrast_id,
+                positive_run_id=positive.example_id,
+                negative_run_id=negative.example_id,
+                positive_text=positive.text,
+                negative_text=negative.text,
+                positive_score=positive.scorer_score,
+                negative_score=negative.scorer_score,
+                metadata={
+                    "positive_category": positive.category,
+                    "negative_category": negative.category,
+                    "positive_label": positive.label,
+                    "negative_label": negative.label,
+                    "score_margin": round(
+                        positive.scorer_score - negative.scorer_score,
+                        6,
+                    ),
+                },
+            )
+        )
+    return pairs
+
+
+def activation_prompts_from_pseudo_cohesion(
+    examples: Sequence[PseudoCohesionExample] | None = None,
+) -> list[ActivationPrompt]:
+    """Create activation prompts from pseudo-cohesion pairwise examples."""
+
+    return activation_prompts_from_pairs(pairwise_examples_from_pseudo_cohesion(examples))
+
+
+def export_pseudo_cohesion_activation_inputs(
+    *,
+    pairs_output: str | Path,
+    prompts_output: str | Path,
+    examples: Sequence[PseudoCohesionExample] | None = None,
+) -> dict[str, int]:
+    """Write pseudo-cohesion pairwise examples and activation prompts."""
+
+    pairs = pairwise_examples_from_pseudo_cohesion(examples)
+    prompts = activation_prompts_from_pairs(pairs)
+    return {
+        "pairwise_examples": write_jsonl(pairs, pairs_output),
+        "activation_prompts": write_jsonl(prompts, prompts_output),
+    }
 
 
 def render_markdown(report: Mapping[str, Any]) -> str:

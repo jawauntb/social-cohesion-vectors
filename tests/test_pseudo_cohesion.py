@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import json
 
+from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.pseudo_cohesion import (
     PseudoCohesionExample,
+    activation_prompts_from_pseudo_cohesion,
     evaluate_example,
+    export_pseudo_cohesion_activation_inputs,
+    pairwise_examples_from_pseudo_cohesion,
     render_markdown,
     run_experiment,
     write_reports,
 )
-from social_cohesion_vectors.schemas import ScoredRun
+from social_cohesion_vectors.schemas import ActivationPrompt, PairwiseExample, ScoredRun
 
 
 def test_obvious_coercive_pseudo_cohesion_is_flagged_as_risky() -> None:
@@ -92,6 +96,48 @@ def test_write_reports_outputs_json_and_markdown(tmp_path) -> None:
     assert payload["experiment"] == "pseudo_cohesion_hard_negatives"
     assert "Pseudo-Cohesion Hard-Negative Experiment" in markdown
     assert "Lexical-only baseline was not importable" in markdown
+
+
+def test_pairwise_and_activation_prompt_exports(tmp_path) -> None:
+    examples = [
+        PseudoCohesionExample(
+            example_id="pseudo_pressure",
+            label="pseudo_cohesion",
+            category="coercive",
+            contrast_id="consent",
+            text="The team needs you to comply now; refusing would hurt unity.",
+            expected_signal="Uses unity language to pressure compliance.",
+        ),
+        PseudoCohesionExample(
+            example_id="genuine_choice",
+            label="genuine_cohesion",
+            category="autonomy",
+            contrast_id="consent",
+            text="You can decide freely; here is the evidence and no pressure.",
+            expected_signal="Preserves evidence and choice.",
+        ),
+    ]
+
+    pairs = pairwise_examples_from_pseudo_cohesion(examples)
+    prompts = activation_prompts_from_pseudo_cohesion(examples)
+
+    assert len(pairs) == 1
+    assert pairs[0].positive_run_id == "genuine_choice"
+    assert pairs[0].negative_run_id == "pseudo_pressure"
+    assert PairwiseExample.model_validate(pairs[0].model_dump())
+    assert len(prompts) == 2
+    assert {prompt.label for prompt in prompts} == {"positive", "negative"}
+    assert all(ActivationPrompt.model_validate(prompt.model_dump()) for prompt in prompts)
+
+    counts = export_pseudo_cohesion_activation_inputs(
+        pairs_output=tmp_path / "pairs.jsonl",
+        prompts_output=tmp_path / "prompts.jsonl",
+        examples=examples,
+    )
+
+    assert counts == {"pairwise_examples": 1, "activation_prompts": 2}
+    assert len(read_jsonl(tmp_path / "pairs.jsonl")) == 1
+    assert len(read_jsonl(tmp_path / "prompts.jsonl")) == 2
 
 
 def _fake_lexical_score(run: ScoredRun) -> float:

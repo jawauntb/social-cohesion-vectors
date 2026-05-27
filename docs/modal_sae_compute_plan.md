@@ -245,6 +245,8 @@ Current smoke result:
 | `Qwen/Qwen2.5-1.5B-Instruct` | generated offline | -4 | 1536 | 1.000 | +14.759 |
 | `Qwen/Qwen2.5-3B-Instruct` | generated offline | -4 | 2048 | 1.000 | +21.948 |
 | `gpt2` | generated offline | -1 | 768 | 0.860 | +29.744 |
+| `Qwen/Qwen2.5-3B-Instruct` | pseudo-cohesion | -4 | 2048 | 1.000 | +21.958 |
+| `gpt2` | pseudo-cohesion | -1 | 768 | 0.750 | +9.166 |
 
 ## 5. SAE Feature Scan With `sae-lens`
 
@@ -278,6 +280,9 @@ Current local status:
   leave-one-pair-out accuracy, with all 7 failures involving
   `pseudo_cohesion_compliance` negative examples. That makes pseudo-cohesion the
   best immediate feature-inspection target.
+- On the four hand-authored pseudo-cohesion contrasts, GPT-2 misses the
+  `pseudo_compliance_maximizing` vs `genuine_participation_boundary` pair, while
+  Qwen 3B separates all four contrasts. Start SAE inspection there.
 
 Practical scan procedure:
 

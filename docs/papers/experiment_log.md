@@ -85,6 +85,8 @@ Status: complete for scripted and first generated/trait sanity splits.
 | Generated Qwen 1.5B leave-one-pair-out, layer -4 | 50 | 1.000 | +14.7591 |
 | Generated Qwen 3B leave-one-pair-out, layer -4 | 50 | 1.000 | +21.9484 |
 | Generated GPT-2 leave-one-pair-out, layer -1 | 50 | 0.860 | +29.7445 |
+| Pseudo-cohesion Qwen 3B leave-one-pair-out, layer -4 | 4 | 1.000 | +21.9582 |
+| Pseudo-cohesion GPT-2 leave-one-pair-out, layer -1 | 4 | 0.750 | +9.1664 |
 | Trait-axis leave-one-pair-out, layer -1 | 10 | 1.000 | pending margin review |
 
 Interpretation: the activation lane works end to end, but this result is not
@@ -96,6 +98,11 @@ generated benchmark. It misses 7 of 50 leave-one-pair-out generated pairs. All 7
 misses have `pseudo_cohesion_compliance` as the negative example, suggesting the
 weak/SAE-compatible reference model is specifically vulnerable to compliance and
 unity language that sounds socially aligned.
+
+The tiny pseudo-cohesion activation set makes this sharper: Qwen 3B separates all
+4 genuine-vs-pseudo contrasts, while GPT-2 misses `pseudo_compliance_maximizing`
+against `genuine_participation_boundary`. This is currently the clearest failure
+case for SAE-style feature inspection.
 
 ## Pending Experiments
 
@@ -154,6 +161,11 @@ The first run uses 8 hand-authored examples: 4 pseudo-cohesion cases and 4
 genuine contrasts. Hard-negative families include polite coercion, sycophantic
 truth hiding, compliance framed as harmony, and dissent suppression framed as
 repair.
+
+The hard-negative examples are now exportable as pairwise activation prompts:
+
+- `data/training/pseudo_cohesion_pairwise_probe_dataset.jsonl`
+- `data/training/pseudo_cohesion_activation_prompts.jsonl`
 
 | Metric | Result |
 | --- | ---: |
