@@ -195,7 +195,7 @@ items marked pending require new runs before any result should be reported.
 
 ### 6.1 Generated Trajectories
 
-Status: pending.
+Status: partial.
 
 The next benchmark should replace or augment scripted trajectories with
 open-model generated trajectories. Each generated run should preserve the
@@ -204,13 +204,21 @@ scripted lexical templates. The goal is to test whether the scorer and activatio
 directions identify cooperative repair, reciprocity, truthfulness, and autonomy
 safety when the wording is less obvious.
 
-Expected artifact: a generated trajectory JSONL file, a generated-run scoring
-summary, generated pairwise examples, generated activation prompts, and a report
-comparing lexical, metrics-only, scorer, and activation-vector performance.
+The current local artifact includes 125 generated trajectories from the offline
+fallback generator, covering 25 scenarios and five trajectory styles. These have
+now been converted into 125 scored generated runs, 50 generated pairwise
+examples, and 100 generated activation prompts. On this first generated
+benchmark, the strategy-prior, metrics-only, and lexical-only baselines each
+reach approximately 0.980 pairwise accuracy, while the full scorer reaches
+1.000. API-generated trajectories from an external model remain pending.
+
+Next artifacts: external-model generated trajectories, harder generated
+pseudo-cohesion examples, and a report where lexical, metrics-only, and
+metadata-prior baselines no longer nearly solve the benchmark.
 
 ### 6.2 Pseudo-Cohesion Hard Negatives
 
-Status: pending report artifact.
+Status: complete for the first hand-authored probe.
 
 The benchmark needs adversarial examples that sound cooperative while violating
 the target construct. The first hard-negative families are:
@@ -226,50 +234,58 @@ positive social language. They are the main guardrail against learning a vector
 for agreeableness, obedience, or generic warmth instead of agency-preserving
 cohesion.
 
-Expected artifact: `data/reports/pseudo_cohesion_experiment.md` and JSON
-companion, with pseudo examples flagged when the scorer or lexical baseline
-assigns high cohesion despite truthfulness, autonomy, or dissent risks.
+The first hard-negative run uses eight hand-authored examples: four
+pseudo-cohesion cases and four genuine contrasts. The current scorer assigns high
+scores to two pseudo-cohesion examples, and the lexical-only baseline assigns
+high scores to two pseudo-cohesion examples. These are expected failure cases for
+the next scorer and dataset iteration, not evidence that the pseudo cases are
+actually cohesive.
+
+Next artifacts: larger pseudo-cohesion families, generated pseudo-cohesion
+examples, and hard-negative-held-out transfer reports.
 
 ### 6.3 Transfer Splits
 
-Status: pending.
+Status: partial.
 
-The first non-circular split should train on scripted pairwise examples and test
-on generated pairwise examples. Additional splits should hold out scenario
-families, intervention types, and hard-negative categories. A useful direction
-should retain positive-minus-negative projection margins on held-out generated
-text and should not be solved by the strategy-profile prior or lexical-only
-baseline.
+The current transfer report includes scripted held-out scenario-id,
+scenario-kind, and explicit scripted/generated pair-set folds. These are still
+largely solved by lexical-only, metrics-only, and strategy-prior baselines, so
+they remain sanity checks rather than evidence of robust generalization.
+Scripted-to-generated transfer currently gives 0.960 for lexical-only and
+metrics-only baselines and 0.980 for the strategy prior. Generated-to-scripted
+transfer remains 1.000 for lexical-only and metrics-only baselines.
 
-Expected artifact: transfer reports with at least scripted-to-generated,
-generated-to-scripted, cross-scenario, and hard-negative evaluations. Any 1.000
-accuracy result on the scripted split should remain labeled as a sanity check
-until transfer performance is reported.
+Next artifacts: intervention-held-out, hard-negative-held-out, and
+external-generated transfer evaluations. Any 1.000 accuracy result on scripted
+or offline-generated splits should remain labeled as a sanity check until
+harder generated or pseudo-cohesion transfer performance is reported.
 
 ### 6.4 Layer And Model Sweeps
 
 Status: pending beyond the final-layer Qwen run.
 
-The next activation pass should sweep layers in the same model, then repeat on a
-larger open instruction model if compute allows. The sweep should report whether
-the direction is stable across layers, whether projection margins peak at
-particular depths, and whether the apparent vector is merely tracking surface
-lexical cues.
-
-Expected artifact: `data/reports/layer_sweep/summary.md` plus per-layer JSON and
-markdown reports. The success criterion is not the highest in-sample score; it
-is transfer stability after lexical and metadata baselines are controlled.
+The next activation pass should repeat on a larger open instruction model if
+compute allows. The first generated Qwen 0.5B sweep now covers layers `-1`,
+`-2`, `-4`, and `-8`. Leave-one-pair-out accuracy remains 1.000 on all four
+layers, while mean projection margin falls from approximately +26.36 at the
+final layer to +2.34 at layer `-8`. The success criterion is not the highest
+in-sample score; it is transfer stability after lexical and metadata baselines
+are controlled.
 
 ### 6.5 Persona-Vector Decomposition
 
 Status: pending.
 
 The single cohesion direction should be decomposed into a family of trait
-directions inspired by persona-vector work. Candidate positive directions are
+directions inspired by persona-vector work. The first scaffold now exports 20
+activation prompts across 5 seed axes: repair vs harm denial, reciprocity vs
+extraction, truthfulness vs deception, autonomy support vs coercion, and
+principled respect vs sycophancy. Candidate future positive directions include
 repair, reciprocity, truthfulness, autonomy safety, fairness, and constructive
-dissent. Candidate negative or guardrail directions are coercion/domination,
-sycophancy, compliance-seeking, dehumanization, truth hiding, and punitive
-escalation.
+dissent. Candidate negative or guardrail directions include
+coercion/domination, sycophancy, compliance-seeking, dehumanization, truth
+hiding, and punitive escalation.
 
 The intended use is twofold. First, monitoring: compute projections before the
 model emits final output and flag generations where negative guardrail
@@ -304,16 +320,16 @@ behavior. It is a scaffold for those tests.
 
 ## 9. Next Experiments
 
-1. Generate held-out open-model trajectories with reduced template leakage.
-   Status: pending.
-2. Run the pseudo-cohesion hard-negative report and use failures to revise the
-   scorer and dataset. Status: pending report artifact.
+1. Generate external-model trajectories with reduced template leakage and score
+   them through the generated benchmark. Status: pending.
+2. Extend the pseudo-cohesion hard-negative suite beyond the first hand-authored
+   probe and use current scorer failures to revise the dataset. Status: partial.
 3. Build transfer splits: scripted-to-generated, generated-to-scripted,
-   cross-scenario, intervention-held-out, and hard-negative-held-out. Status:
-   pending.
-4. Sweep activation layers in `Qwen/Qwen2.5-0.5B-Instruct`, then repeat on a
-   larger model if compute allows. Status: pending.
-5. Decompose cohesion into persona-vector-style trait families:
+   intervention-held-out, and hard-negative-held-out. Status: partial for
+   scripted scenario-held-out only.
+4. Repeat the generated activation sweep on a larger model if compute allows.
+   Status: pending.
+5. Expand the persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;

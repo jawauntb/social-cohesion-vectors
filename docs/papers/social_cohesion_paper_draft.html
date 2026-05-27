@@ -117,11 +117,12 @@ code { background: #f4f4f5; border-radius: 4px; padding: 0.1em 0.25em; }
 <p>This is not yet strong evidence because the source trajectories remain scripted and lexically separable. It does show that the open-model activation lane is working end to end: local JSONL prompts → Modal GPU hidden states → local NPZ → contrastive vector → pairwise evaluation.</p>
 <p>The roadmap below separates completed artifacts from pending experiments. All items marked pending require new runs before any result should be reported.</p>
 <h3>6.1 Generated Trajectories</h3>
-<p>Status: pending.</p>
+<p>Status: partial.</p>
 <p>The next benchmark should replace or augment scripted trajectories with open-model generated trajectories. Each generated run should preserve the scenario, strategy pressure, and intervention condition, but should not reuse the scripted lexical templates. The goal is to test whether the scorer and activation directions identify cooperative repair, reciprocity, truthfulness, and autonomy safety when the wording is less obvious.</p>
-<p>Expected artifact: a generated trajectory JSONL file, a generated-run scoring summary, generated pairwise examples, generated activation prompts, and a report comparing lexical, metrics-only, scorer, and activation-vector performance.</p>
+<p>The current local artifact includes 125 generated trajectories from the offline fallback generator, covering 25 scenarios and five trajectory styles. These have now been converted into 125 scored generated runs, 50 generated pairwise examples, and 100 generated activation prompts. On this first generated benchmark, the strategy-prior, metrics-only, and lexical-only baselines each reach approximately 0.980 pairwise accuracy, while the full scorer reaches 1.000. API-generated trajectories from an external model remain pending.</p>
+<p>Next artifacts: external-model generated trajectories, harder generated pseudo-cohesion examples, and a report where lexical, metrics-only, and metadata-prior baselines no longer nearly solve the benchmark.</p>
 <h3>6.2 Pseudo-Cohesion Hard Negatives</h3>
-<p>Status: pending report artifact.</p>
+<p>Status: complete for the first hand-authored probe.</p>
 <p>The benchmark needs adversarial examples that sound cooperative while violating the target construct. The first hard-negative families are:</p>
 <ul>
 <li>polite coercion framed as team unity;</li>
@@ -131,18 +132,18 @@ code { background: #f4f4f5; border-radius: 4px; padding: 0.1em 0.25em; }
 <li>false accountability that protects status rather than repairing harm.</li>
 </ul>
 <p>These examples should be treated as negative examples even when they contain positive social language. They are the main guardrail against learning a vector for agreeableness, obedience, or generic warmth instead of agency-preserving cohesion.</p>
-<p>Expected artifact: <code>data/reports/pseudo_cohesion_experiment.md</code> and JSON companion, with pseudo examples flagged when the scorer or lexical baseline assigns high cohesion despite truthfulness, autonomy, or dissent risks.</p>
+<p>The first hard-negative run uses eight hand-authored examples: four pseudo-cohesion cases and four genuine contrasts. The current scorer assigns high scores to two pseudo-cohesion examples, and the lexical-only baseline assigns high scores to two pseudo-cohesion examples. These are expected failure cases for the next scorer and dataset iteration, not evidence that the pseudo cases are actually cohesive.</p>
+<p>Next artifacts: larger pseudo-cohesion families, generated pseudo-cohesion examples, and hard-negative-held-out transfer reports.</p>
 <h3>6.3 Transfer Splits</h3>
-<p>Status: pending.</p>
-<p>The first non-circular split should train on scripted pairwise examples and test on generated pairwise examples. Additional splits should hold out scenario families, intervention types, and hard-negative categories. A useful direction should retain positive-minus-negative projection margins on held-out generated text and should not be solved by the strategy-profile prior or lexical-only baseline.</p>
-<p>Expected artifact: transfer reports with at least scripted-to-generated, generated-to-scripted, cross-scenario, and hard-negative evaluations. Any 1.000 accuracy result on the scripted split should remain labeled as a sanity check until transfer performance is reported.</p>
+<p>Status: partial.</p>
+<p>The current transfer report includes scripted held-out scenario-id, scenario-kind, and explicit scripted/generated pair-set folds. These are still largely solved by lexical-only, metrics-only, and strategy-prior baselines, so they remain sanity checks rather than evidence of robust generalization. Scripted-to-generated transfer currently gives 0.960 for lexical-only and metrics-only baselines and 0.980 for the strategy prior. Generated-to-scripted transfer remains 1.000 for lexical-only and metrics-only baselines.</p>
+<p>Next artifacts: intervention-held-out, hard-negative-held-out, and external-generated transfer evaluations. Any 1.000 accuracy result on scripted or offline-generated splits should remain labeled as a sanity check until harder generated or pseudo-cohesion transfer performance is reported.</p>
 <h3>6.4 Layer And Model Sweeps</h3>
 <p>Status: pending beyond the final-layer Qwen run.</p>
-<p>The next activation pass should sweep layers in the same model, then repeat on a larger open instruction model if compute allows. The sweep should report whether the direction is stable across layers, whether projection margins peak at particular depths, and whether the apparent vector is merely tracking surface lexical cues.</p>
-<p>Expected artifact: <code>data/reports/layer_sweep/summary.md</code> plus per-layer JSON and markdown reports. The success criterion is not the highest in-sample score; it is transfer stability after lexical and metadata baselines are controlled.</p>
+<p>The next activation pass should repeat on a larger open instruction model if compute allows. The first generated Qwen 0.5B sweep now covers layers <code>-1</code>, <code>-2</code>, <code>-4</code>, and <code>-8</code>. Leave-one-pair-out accuracy remains 1.000 on all four layers, while mean projection margin falls from approximately +26.36 at the final layer to +2.34 at layer <code>-8</code>. The success criterion is not the highest in-sample score; it is transfer stability after lexical and metadata baselines are controlled.</p>
 <h3>6.5 Persona-Vector Decomposition</h3>
 <p>Status: pending.</p>
-<p>The single cohesion direction should be decomposed into a family of trait directions inspired by persona-vector work. Candidate positive directions are repair, reciprocity, truthfulness, autonomy safety, fairness, and constructive dissent. Candidate negative or guardrail directions are coercion/domination, sycophancy, compliance-seeking, dehumanization, truth hiding, and punitive escalation.</p>
+<p>The single cohesion direction should be decomposed into a family of trait directions inspired by persona-vector work. The first scaffold now exports 20 activation prompts across 5 seed axes: repair vs harm denial, reciprocity vs extraction, truthfulness vs deception, autonomy support vs coercion, and principled respect vs sycophancy. Candidate future positive directions include repair, reciprocity, truthfulness, autonomy safety, fairness, and constructive dissent. Candidate negative or guardrail directions include coercion/domination, sycophancy, compliance-seeking, dehumanization, truth hiding, and punitive escalation.</p>
 <p>The intended use is twofold. First, monitoring: compute projections before the model emits final output and flag generations where negative guardrail directions rise alongside nominally pro-cohesion language. Second, steering and composition: test whether small combinations such as <code>repair + truthfulness + autonomy_safety - sycophancy - compliance</code> improve outputs without suppressing legitimate refusal, disagreement, or self-protection. All steering claims remain pending until controlled generation tests are run.</p>
 <h2>7. Ethics And Safety</h2>
 <p>The target is not agreement maximization. The system must explicitly preserve:</p>
@@ -159,23 +160,23 @@ code { background: #f4f4f5; border-radius: 4px; padding: 0.1em 0.25em; }
 <p>The current results are synthetic and circular: pair labels are generated from the same rubric used by the full-scorer baseline. Scripted trajectories include surface lexical cues that make the task too easy. The benchmark does not yet show that activation directions generalize, steer outputs, or predict human behavior. It is a scaffold for those tests.</p>
 <h2>9. Next Experiments</h2>
 <ol>
-<li>Generate held-out open-model trajectories with reduced template leakage.</li>
+<li>Generate external-model trajectories with reduced template leakage and score</li>
 </ol>
-<p>Status: pending.</p>
+<p>them through the generated benchmark. Status: pending.</p>
 <ol>
-<li>Run the pseudo-cohesion hard-negative report and use failures to revise the</li>
+<li>Extend the pseudo-cohesion hard-negative suite beyond the first hand-authored</li>
 </ol>
-<p>scorer and dataset. Status: pending report artifact.</p>
+<p>probe and use current scorer failures to revise the dataset. Status: partial.</p>
 <ol>
 <li>Build transfer splits: scripted-to-generated, generated-to-scripted,</li>
 </ol>
-<p>cross-scenario, intervention-held-out, and hard-negative-held-out. Status: pending.</p>
+<p>intervention-held-out, and hard-negative-held-out. Status: partial for scripted scenario-held-out only.</p>
 <ol>
-<li>Sweep activation layers in <code>Qwen/Qwen2.5-0.5B-Instruct</code>, then repeat on a</li>
+<li>Repeat the generated activation sweep on a larger model if compute allows.</li>
 </ol>
-<p>larger model if compute allows. Status: pending.</p>
+<p>Status: pending.</p>
 <ol>
-<li>Decompose cohesion into persona-vector-style trait families:</li>
+<li>Expand the persona-vector-style trait families:</li>
 </ol>
 <p>- repair; - reciprocity; - truthfulness; - autonomy safety; - fairness; - constructive dissent; - sycophancy/compliance; - coercion/domination; - dehumanization; - truth hiding; - punitive escalation.</p>
 <ol>

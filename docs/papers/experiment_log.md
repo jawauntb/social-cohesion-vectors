@@ -55,44 +55,74 @@ scientific claims.
 
 ### Modal Activation Extraction
 
-Status: complete for one model/layer.
+Status: complete for scripted, generated, and trait-axis prompt sets on one
+model/layer family.
 
 - Model: `Qwen/Qwen2.5-0.5B-Instruct`
-- Layer: final hidden state (`-1`)
-- Activation shape: 252 x 896
-- Report: `data/reports/activation_vector_experiment.md`
+- Scripted final-layer activation shape: 252 x 896
+- Generated final-layer activation shape: 100 x 896
+- Generated swept layers: `-1`, `-2`, `-4`, `-8`
+- Trait-axis final-layer activation shape: 20 x 896
 
 ### Contrastive Activation Direction
 
-Status: complete for the scripted sanity split.
+Status: complete for scripted and first generated/trait sanity splits.
 
 | Evaluation | Pairs | Accuracy | Mean positive-minus-negative margin |
 | --- | ---: | ---: | ---: |
-| In-sample | 126 | 1.000 | +26.6716 |
-| Leave-one-pair-out | 126 | 1.000 | +26.4385 |
+| Scripted in-sample, layer -1 | 126 | 1.000 | +26.6716 |
+| Scripted leave-one-pair-out, layer -1 | 126 | 1.000 | +26.4385 |
+| Generated leave-one-pair-out, layer -1 | 50 | 1.000 | +26.3631 |
+| Generated leave-one-pair-out, layer -2 | 50 | 1.000 | +5.9122 |
+| Generated leave-one-pair-out, layer -4 | 50 | 1.000 | +4.1346 |
+| Generated leave-one-pair-out, layer -8 | 50 | 1.000 | +2.3388 |
+| Trait-axis leave-one-pair-out, layer -1 | 10 | 1.000 | pending margin review |
 
 Interpretation: the activation lane works end to end, but this result is not
-yet evidence of a robust cohesion vector because lexical-only and metrics-only
-baselines also solve the scripted task.
+yet evidence of a robust cohesion vector because lexical-only, metrics-only, and
+strategy-prior baselines still almost solve the generated offline task.
 
 ## Pending Experiments
 
 ### Generated Trajectories
 
-Status: partial.
+Status: complete for first offline generated benchmark pass.
 
 The generated-trajectory lane now includes prompt records, a deterministic
 offline fallback, and optional Anthropic API generation. A local offline run
 produced 125 generated trajectories across 25 scenarios and 5 trajectory styles.
-The generated trajectories have not yet been converted into a scored generated
-benchmark, pairwise dataset, or activation prompt set.
+The generated trajectories have now been scored and converted into a generated
+pairwise dataset and activation prompt set.
 
-Expected artifacts:
+Artifacts:
 
+- `data/processed/generated_trajectories.jsonl`
 - `data/processed/generated_scored_runs.jsonl`
 - `data/training/generated_pairwise_probe_dataset.jsonl`
 - `data/training/generated_activation_prompts.jsonl`
-- `data/reports/generated_trajectory_summary.md`
+- `data/reports/generated_baseline_experiments.md`
+- `data/reports/generated_transfer_experiment.md`
+- `data/reports/generated_activation_vector_experiment.md`
+
+Generated score means by trajectory style:
+
+| Style | Runs | Mean score | Min | Max |
+| --- | ---: | ---: | ---: | ---: |
+| adversarial_escalation | 25 | 0.386 | 0.192 | 0.486 |
+| cooperative_repair | 25 | 0.851 | 0.750 | 0.956 |
+| pseudo_cohesion_compliance | 25 | 0.674 | 0.581 | 0.760 |
+| self_protective_boundary | 25 | 0.740 | 0.634 | 0.828 |
+| truth_first_repair | 25 | 0.853 | 0.778 | 0.915 |
+
+Generated baseline results:
+
+| Baseline | Pairwise accuracy |
+| --- | ---: |
+| chance | 0.500 |
+| strategy prior | 0.980 |
+| metrics-only | 0.980 |
+| lexical-only | 0.980 |
+| full scorer | 1.000 |
 
 Success criteria: generated examples should reduce template leakage, preserve
 scenario labels, and produce a pairwise task that lexical-only and metadata-only
@@ -135,7 +165,7 @@ case is a useful failure case for improving scorer components and datasets.
 
 ### Transfer Splits
 
-Status: partial.
+Status: partial, with explicit scripted/generated pair-set transfer now wired.
 
 Report: `data/reports/transfer_experiment.md`
 
@@ -154,6 +184,17 @@ the current scripted data, the task remains too easy:
 The activation-vector transfer report also runs with 126 leave-one-pair-out
 folds and 25 leave-one-scenario-out folds when the local activation NPZ is
 present.
+
+Explicit pair-set transfer results:
+
+| Direction | Baseline | Test pairs | Accuracy |
+| --- | --- | ---: | ---: |
+| scripted to generated | strategy prior | 50 | 0.980 |
+| scripted to generated | metrics-only | 50 | 0.960 |
+| scripted to generated | lexical-only | 50 | 0.960 |
+| generated to scripted | strategy prior | 126 | 0.988 |
+| generated to scripted | metrics-only | 126 | 1.000 |
+| generated to scripted | lexical-only | 126 | 1.000 |
 
 Expected artifacts:
 
@@ -183,7 +224,22 @@ only on scripted in-sample accuracy.
 
 ### Persona-Vector Decomposition
 
-Status: pending.
+Status: partial.
+
+The trait-axis prompt scaffold now exports 20 activation prompts across 5
+hand-authored axes and 10 contrasts:
+
+- repair vs harm denial
+- reciprocity vs extraction
+- truthfulness vs deception
+- autonomy support vs coercion
+- principled respect vs sycophancy
+
+The first Qwen final-layer trait-axis activation direction is a tiny sanity
+check only: 10 pairs, 1.000 leave-one-pair-out accuracy. The next step is not to
+claim a trait ontology; it is to expand contrasts, add pseudo-cohesion examples,
+and inspect SAE/open-model features only where generated/hard-negative transfer
+survives.
 
 Trait family:
 
