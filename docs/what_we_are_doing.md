@@ -120,6 +120,10 @@ It includes:
     facilitator-script, and policy-update contexts, then run token-level SAE
     inspection and leave-one-pair-out feature transfer on the larger batch.
 
+13. A clean pseudo-cohesion SAE stress batch.
+    The repo can also create in-text rewrite variants without genre wrappers,
+    normalize hyphenated words, and rerun the same SAE feature-transfer report.
+
 ## Current Results
 
 The first local run produced:
@@ -199,6 +203,16 @@ social-cohesion vector. The expanded run also shows why cleaner generated
 variants matter: some pseudo-side features become sensitive to wrappers or
 punctuation.
 
+The clean in-text rewrite batch keeps the same 120-pair / 240-prompt size but
+removes the wrapper text. The inspected GPT-2 SAE feature ensemble improves to
+0.892 leave-one-pair-out accuracy with mean activations. A clean-only run
+without the original seed prompts gets 0.889 over 90 pairs, and feature 28005
+goes fully inactive, confirming it was a hyphen artifact. This makes the current
+feature ensemble more credible as a stress-test signal, while still falling
+short of interpretable feature naming: 11999 transfers best on the clean batch
+but looks generic, 703 remains function-word heavy, and 3056 remains
+genuine-skewed but weak alone.
+
 Important caveat: this is not yet a deep scientific result. The scripted
 benchmark is too easy. Lexical and metrics-only baselines solve it, which means
 the activation result is currently a pipeline sanity check, not evidence of a
@@ -223,9 +237,8 @@ High-value next steps:
 3. Train on scripted examples and test on generated examples.
 4. Sweep model layers and model sizes.
 5. Break the target into multiple persona-vector-style axes.
-6. Re-run GPT-2 SAE token inspection on cleaner generated pseudo-cohesion
-   variants.
-7. Compare expanded hand-wrapped transfer against generated hard-negative
+6. Re-run GPT-2 SAE token inspection on LLM-authored pseudo-cohesion variants.
+7. Compare clean deterministic transfer against generated hard-negative
    transfer.
 8. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.

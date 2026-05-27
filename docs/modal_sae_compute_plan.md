@@ -305,6 +305,11 @@ Current local status:
   accuracy using mean activations. The best single mean-activation feature is
   703 at 0.792; 3056 remains genuinely skewed but only gets 0.600 alone. 28005
   and 20249 remain demoted.
+- A clean in-text rewrite export avoids the wrapper prefixes/suffixes and
+  normalizes hyphenated words. On the clean 120-pair batch, the same feature
+  ensemble reaches 0.892 leave-one-pair-out accuracy using mean activations. On
+  clean-only variants without seed prompts, it reaches 0.889 over 90 pairs and
+  28005 becomes fully inactive, confirming the hyphen artifact.
 
 Run the current GPT-2 SAE pseudo-cohesion probe:
 
@@ -351,6 +356,31 @@ Current results:
 | 703 only | mean activation | 120 | 0.792 | +0.5836 |
 | 11737 only | max activation | 120 | 0.725 | +0.3563 |
 | 3056 only | mean activation | 120 | 0.600 | +0.2039 |
+
+Run the clean in-text rewrite inspection:
+
+```bash
+uv run python scripts/export_pseudo_cohesion_expanded_prompts.py \
+  --variant-set clean \
+  --pairs-output data/training/pseudo_cohesion_clean_pairwise_probe_dataset.jsonl \
+  --prompts-output data/training/pseudo_cohesion_clean_activation_prompts.jsonl
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --prompts data/training/pseudo_cohesion_clean_activation_prompts.jsonl \
+  --features 3056 24555 28005 20249 11999 11737 703 \
+  --json-output data/reports/gpt2_sae_token_feature_inspection_clean.json \
+  --markdown-output data/reports/gpt2_sae_token_feature_inspection_clean.md
+```
+
+Current clean results:
+
+| Feature set | Batch | Aggregation | Pairs | Accuracy | Mean margin |
+| --- | --- | --- | ---: | ---: | ---: |
+| inspected ensemble | clean + seed | mean activation | 120 | 0.892 | +2.6021 |
+| inspected ensemble | clean + seed | max activation | 120 | 0.725 | +2.3176 |
+| inspected ensemble | clean only | mean activation | 90 | 0.889 | +2.6186 |
+| 11999 only | clean + seed | mean activation | 120 | 0.800 | +0.6953 |
+| 703 only | clean + seed | mean activation | 120 | 0.775 | +0.6373 |
+| 3056 only | clean + seed | mean activation | 120 | 0.617 | +0.3137 |
 
 Current token-level readout:
 
@@ -448,11 +478,10 @@ and real neural data; none of the Modal/SAE results establish them.
 
 ## Tomorrow's Priority Order
 
-1. Generate cleaner pseudo-cohesion variants that do not introduce wrapper or
-   punctuation artifacts, then re-run token-level SAE inspection for 3056,
-   24555, 11737, and 703.
-2. Use the expanded feature-transfer result as a baseline and test whether it
-   survives generated variants rather than hand-wrapped variants.
+1. Generate LLM-authored pseudo-cohesion variants that avoid both wrapper
+   artifacts and deterministic-rewrite shortcuts.
+2. Use the clean feature-transfer result as a baseline and test whether it
+   survives generated variants rather than hand-authored rewrites.
 3. Reproduce the scripted scaffold and confirm the current 1.000 results are
    still just sanity checks.
 4. Generate trajectories, build generated pairs, export generated activation

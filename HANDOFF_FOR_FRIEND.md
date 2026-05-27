@@ -166,6 +166,28 @@ generic, 24555 gets 0.667, 11737 gets 0.608 by mean activation and 0.725 by max
 activation, and 3056 gets 0.600 despite remaining the best genuine-skew token
 candidate. 28005 and 20249 are effectively unusable here.
 
+I added a cleaner expansion mode after seeing wrapper/punctuation artifacts:
+
+```bash
+uv run python scripts/export_pseudo_cohesion_expanded_prompts.py \
+  --variant-set clean \
+  --pairs-output data/training/pseudo_cohesion_clean_pairwise_probe_dataset.jsonl \
+  --prompts-output data/training/pseudo_cohesion_clean_activation_prompts.jsonl
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --prompts data/training/pseudo_cohesion_clean_activation_prompts.jsonl \
+  --json-output data/reports/gpt2_sae_token_feature_inspection_clean.json \
+  --markdown-output data/reports/gpt2_sae_token_feature_inspection_clean.md
+```
+
+The clean mode keeps the same 120-pair size but uses in-text term rewrites
+instead of genre wrappers. The selected SAE ensemble improves to 0.892
+leave-one-pair-out accuracy with +2.6021 mean margin. Clean-only variants
+without the seed prompts get 0.889 accuracy across 90 pairs, and feature 28005
+goes fully inactive, confirming the hyphen artifact diagnosis. Single-feature
+mean-activation readout on the clean batch: 11999 gets 0.800 but remains generic
+and `Your`-token heavy; 703 gets 0.775; 24555 gets 0.692; 11737 gets 0.667; and
+3056 gets 0.617 while staying the clearest genuine-skew token feature.
+
 Transfer reports now run over held-out scenario ids and held-out scenario
 families. On the current scripted data, lexical-only and metrics-only baselines
 still score 1.000, so generated and hard-negative transfer remain the important
@@ -193,8 +215,8 @@ the task harder.
 ## Next High-Value Experiments
 
 1. Generate held-out LLM-authored trajectories with fewer obvious lexical cues.
-2. Generate more pseudo-cohesion variants that reduce wrapper/punctuation
-   artifacts.
+2. Generate LLM-authored pseudo-cohesion variants that avoid deterministic
+   rewrite shortcuts.
 3. Re-run token-level SAE inspection on generated pseudo-cohesion examples.
 4. Train on scripted data and test on scored generated/hard-negative data.
 5. Sweep activation layers and model sizes.

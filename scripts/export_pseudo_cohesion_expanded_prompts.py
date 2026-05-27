@@ -14,12 +14,13 @@ from social_cohesion_vectors.experiments.pseudo_cohesion_expansion import (
     expanded_examples,
     select_variants,
     variant_names,
+    variant_set_names,
 )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    variants = select_variants(args.variants)
+    variants = select_variants(args.variants, variant_set=args.variant_set)
     examples = expanded_examples(variants=variants, include_seed=not args.no_seed)
     counts = export_pseudo_cohesion_activation_inputs(
         pairs_output=args.pairs_output,
@@ -28,6 +29,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     print(
         "exported expanded pseudo-cohesion activation inputs: "
+        f"variant_set={args.variant_set} "
         f"variants={','.join(variant.name for variant in variants)} "
         f"include_seed={not args.no_seed} "
         f"pairs={counts['pairwise_examples']} "
@@ -56,7 +58,13 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         nargs="+",
         default=None,
         choices=variant_names(),
-        help="Expansion variants to include. Defaults to all variants.",
+        help="Specific expansion variants to include. Overrides --variant-set.",
+    )
+    parser.add_argument(
+        "--variant-set",
+        choices=variant_set_names(),
+        default="wrapped",
+        help="Default variant family to export when --variants is omitted.",
     )
     parser.add_argument(
         "--no-seed",

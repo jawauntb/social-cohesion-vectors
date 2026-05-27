@@ -49,10 +49,15 @@ Concrete early signals:
   ensemble. The best single feature is 703 at 0.792; 3056 still skews genuine
   but only gets 0.600 alone, so it is more like a useful sub-feature than "the"
   cohesion feature.
+- Then I added a cleaner variant batch with no genre wrapper text: 120 pairs /
+  240 prompts using in-text term rewrites and hyphen normalization. The same
+  inspected SAE feature ensemble improves to 0.892 leave-one-pair-out accuracy.
+  A clean-only run without the seed prompts gets 0.889, and 28005 goes fully
+  inactive, which confirms the hyphen-artifact read.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is token/example-level
-SAE inspection, better generated hard negatives, and reducing lexical or wrapper
+SAE inspection, LLM-authored hard negatives, and reducing deterministic rewrite
 shortcuts.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
