@@ -15,6 +15,8 @@ social cohesion vectors before touching expensive human or neural experiments.
 - Generate harder offline LLM-style trajectories, run transfer checks, and probe
   pseudo-cohesion hard negatives.
 - Run a matched GPT-2 SAE smoke test for sparse-feature inspection.
+- Expand pseudo-cohesion prompts into neutral genre variants and run
+  token/example-level SAE feature-transfer checks.
 
 ## Current Status Snapshot
 
@@ -36,6 +38,15 @@ Token-level SAE inspection is now available for the GPT-2 candidates. The first
 readout keeps 3056 as a genuine-skew candidate, keeps 24555/11737/703 as
 pseudo-skew candidates, and demotes 28005/20249 because their token-level
 evidence is an artifact or inactive.
+
+The expanded pseudo-cohesion inspection lane now builds seed-plus-variant
+activation prompts: 120 matched pairs / 240 prompts from the 30 hand-authored
+contrasts plus meeting-note, facilitator-script, and policy-update framings. On
+that expanded set, a signed ensemble over the inspected GPT-2 SAE features gets
+0.825 leave-one-pair-out accuracy using mean activations. The best single
+mean-activation feature is 703 at 0.792. Feature 3056 still skews genuine but is
+only 0.600 alone, so it should be treated as a sub-feature rather than the
+cohesion direction. 28005 and 20249 remain demoted.
 
 ## What Waits For Later
 
@@ -61,6 +72,11 @@ OpenAI, Anthropic, Gemini, and W&B keys reused from the audience-vector project.
 uv run python scripts/run_scenario_simulations.py
 uv run python scripts/build_probe_dataset.py
 uv run python scripts/export_activation_prompts.py
+uv run python scripts/export_pseudo_cohesion_expanded_prompts.py
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --prompts data/training/pseudo_cohesion_expanded_activation_prompts.jsonl \
+  --json-output data/reports/gpt2_sae_token_feature_inspection_expanded.json \
+  --markdown-output data/reports/gpt2_sae_token_feature_inspection_expanded.md
 ```
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.

@@ -173,6 +173,24 @@ The positive aspiration is constructive: to build tools that help people repair 
 6. **Human pilot**: Prolific study validating whether model-selected interventions improve human cooperation judgments.
 7. **Brain-aligned bridge**: comparison between LLM-derived strategies and TRIBE-like predicted neural-response embeddings.
 
+## Current Compute Progress
+
+The repo now has the first compute-only scaffold running end to end: 25 seed
+scenarios, scripted and generated trajectory lanes, Modal activation extraction,
+contrastive-vector evaluation, pseudo-cohesion hard negatives, and a matched
+GPT-2 SAE inspection path. The strongest current finding is not a final vector;
+it is a failure surface. Pseudo-cohesion examples that sound warm but remove
+truth, autonomy, privacy, dissent, or exit rights expose where lexical and
+rubric shortcuts break.
+
+The latest expansion creates 120 matched pseudo-vs-genuine pairs / 240 prompts
+by adding neutral meeting-note, facilitator-script, and policy-update variants
+to 30 hand-authored contrasts. On that set, a signed ensemble of inspected
+GPT-2 SAE features reaches 0.825 leave-one-pair-out accuracy using mean
+activations. Feature 3056 still skews genuine, but it is weak alone; feature 703
+is the strongest single mean-activation feature; 28005 and 20249 should be
+treated as artifacts or inactive.
+
 ## Research Questions
 
 - Can social cohesion be represented as a stable direction or sparse feature set in LLM activation space?
@@ -206,4 +224,3 @@ If this works, move to multimodal content and brain-aligned modeling. If it fail
 ## Framing for a Friend or Advisor
 
 This project is an attempt to connect three fields that rarely meet cleanly: moral philosophy/game theory, mechanistic interpretability, and social neuroscience. The first milestone is not to “solve” social cohesion, but to learn whether cooperative social orientation has measurable, steerable structure in LLMs. If it does, the next question is whether that structure predicts anything about human behavior or neural response. If the answer is yes, the project could become a foundation for AI systems that generate content and dialogue strategies optimized not for attention, outrage, or conversion, but for trust, reconciliation, and the common good.
-

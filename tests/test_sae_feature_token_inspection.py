@@ -111,3 +111,88 @@ def test_top_rows_and_token_context_are_stable() -> None:
     assert SCRIPT.token_context(["a", "shared", "plan", "now"], 2, window=1) == (
         "shared [plan] now"
     )
+
+
+def test_feature_transfer_uses_train_fold_feature_direction() -> None:
+    rows = [
+        _feature_row("p1", "positive", {1: 2.0, 2: 0.0}),
+        _feature_row("p1", "negative", {1: 0.0, 2: 2.0}),
+        _feature_row("p2", "positive", {1: 3.0, 2: 0.0}),
+        _feature_row("p2", "negative", {1: 0.0, 2: 3.0}),
+        _feature_row("p3", "positive", {1: 2.5, 2: 0.0}),
+        _feature_row("p3", "negative", {1: 0.0, 2: 2.5}),
+    ]
+
+    result = SCRIPT.evaluate_signed_feature_loo(
+        rows=rows,
+        features=[1, 2],
+        activation_metric="mean_activation",
+    )
+
+    assert result["pairs"] == 3
+    assert result["accuracy"] == 1.0
+    assert result["failures"] == []
+    assert result["mean_margin"] > 0.0
+
+
+def test_feature_transfer_report_combines_feature_rows_by_sample() -> None:
+    report = SCRIPT.evaluate_feature_transfer(
+        example_rows_by_feature={
+            1: [
+                {
+                    "sample_id": "p1:positive",
+                    "pair_id": "p1",
+                    "label": "positive",
+                    "mean_activation": 1.0,
+                    "max_activation": 2.0,
+                },
+                {
+                    "sample_id": "p1:negative",
+                    "pair_id": "p1",
+                    "label": "negative",
+                    "mean_activation": 0.0,
+                    "max_activation": 0.5,
+                },
+            ],
+            2: [
+                {
+                    "sample_id": "p1:positive",
+                    "pair_id": "p1",
+                    "label": "positive",
+                    "mean_activation": 0.0,
+                    "max_activation": 0.5,
+                },
+                {
+                    "sample_id": "p1:negative",
+                    "pair_id": "p1",
+                    "label": "negative",
+                    "mean_activation": 1.0,
+                    "max_activation": 2.0,
+                },
+            ],
+        },
+        features=[1, 2],
+    )
+
+    assert report["n_examples"] == 2
+    assert report["n_pairs"] == 1
+    assert [metric["activation_metric"] for metric in report["metrics"]] == [
+        "mean_activation",
+        "max_activation",
+    ]
+
+
+def _feature_row(
+    pair_id: str,
+    label: str,
+    values: dict[int, float],
+) -> dict[str, object]:
+    return {
+        "sample_id": f"{pair_id}:{label}",
+        "pair_id": pair_id,
+        "label": label,
+        "features": {
+            feature: {"mean_activation": value, "max_activation": value}
+            for feature, value in values.items()
+        },
+    }

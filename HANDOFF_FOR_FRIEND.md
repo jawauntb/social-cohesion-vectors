@@ -22,6 +22,8 @@ The current local pipeline can:
 10. Run pseudo-cohesion hard-negative checks.
 11. Run transfer splits and activation layer-sweep orchestration.
 12. Run a first matched GPT-2 SAE probe on pseudo-cohesion prompts.
+13. Expand pseudo-cohesion prompts into neutral genre variants and run
+    token-level SAE feature-transfer checks.
 
 ## Setup
 
@@ -145,6 +147,25 @@ and 703 remain pseudo-skew candidates, but they are not clean enough to name yet
 11737 is the most semantically suggestive pseudo candidate because it activates
 on `you`/`comply` in the autonomy/coercion contrast.
 
+The next expanded inspection pass is also wired:
+
+```bash
+uv run python scripts/export_pseudo_cohesion_expanded_prompts.py
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --prompts data/training/pseudo_cohesion_expanded_activation_prompts.jsonl \
+  --json-output data/reports/gpt2_sae_token_feature_inspection_expanded.json \
+  --markdown-output data/reports/gpt2_sae_token_feature_inspection_expanded.md
+```
+
+That export creates 120 matched pairs / 240 prompts by taking the 30 seed
+contrasts and adding meeting-note, facilitator-script, and policy-update genre
+variants. On this expanded batch, the inspected GPT-2 SAE features get 0.825
+leave-one-pair-out accuracy as a signed mean-activation ensemble. Single-feature
+readout is noisier: 703 is strongest at 0.792, 11999 gets 0.733 but looks
+generic, 24555 gets 0.667, 11737 gets 0.608 by mean activation and 0.725 by max
+activation, and 3056 gets 0.600 despite remaining the best genuine-skew token
+candidate. 28005 and 20249 are effectively unusable here.
+
 Transfer reports now run over held-out scenario ids and held-out scenario
 families. On the current scripted data, lexical-only and metrics-only baselines
 still score 1.000, so generated and hard-negative transfer remain the important
@@ -172,10 +193,12 @@ the task harder.
 ## Next High-Value Experiments
 
 1. Generate held-out LLM-authored trajectories with fewer obvious lexical cues.
-2. Re-run token-level SAE inspection on generated pseudo-cohesion examples.
-3. Train on scripted data and test on scored generated/hard-negative data.
-4. Sweep activation layers and model sizes.
-5. Split the target into persona-vector-style trait families:
+2. Generate more pseudo-cohesion variants that reduce wrapper/punctuation
+   artifacts.
+3. Re-run token-level SAE inspection on generated pseudo-cohesion examples.
+4. Train on scripted data and test on scored generated/hard-negative data.
+5. Sweep activation layers and model sizes.
+6. Split the target into persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;
@@ -184,7 +207,7 @@ the task harder.
    - dehumanization;
    - sycophancy/compliance;
    - punitive escalation.
-6. Only after non-circular generated-text validation, prepare a Prolific pilot.
+7. Only after non-circular generated-text validation, prepare a Prolific pilot.
 
 ## Reading
 
