@@ -283,6 +283,24 @@ Current local status:
 - On the four hand-authored pseudo-cohesion contrasts, GPT-2 misses the
   `pseudo_compliance_maximizing` vs `genuine_participation_boundary` pair, while
   Qwen 3B separates all four contrasts. Start SAE inspection there.
+- The first matched SAE smoke has now run on `gpt2-small` with
+  `gpt2-small-resid-post-v5-32k` at `blocks.11.hook_resid_post`. It found top
+  candidate differentiators on the 8 pseudo-cohesion prompts, including feature
+  3056 higher on genuine cohesion, feature 24555 higher on pseudo-cohesion, and
+  feature 28005 higher on genuine cohesion. Treat these as candidates for
+  inspection, not named features yet.
+
+Run the current GPT-2 SAE pseudo-cohesion probe:
+
+```bash
+uv run python scripts/export_pseudo_cohesion_prompts.py
+uv run python scripts/run_gpt2_sae_pseudo_probe.py --top-k 25
+```
+
+This writes:
+
+- `data/reports/gpt2_sae_pseudo_probe.json`
+- `data/reports/gpt2_sae_pseudo_probe.md`
 
 Practical scan procedure:
 
@@ -367,11 +385,13 @@ and real neural data; none of the Modal/SAE results establish them.
 
 ## Tomorrow's Priority Order
 
-1. Reproduce the scripted scaffold and confirm the current 1.000 results are
+1. Expand pseudo-cohesion prompts beyond the current 4-vs-4 hand-authored set.
+2. Re-run the GPT-2 SAE probe and inspect top activating examples for features
+   3056, 24555, 28005, and 703.
+3. Reproduce the scripted scaffold and confirm the current 1.000 results are
    still just sanity checks.
-2. Generate trajectories, build generated pairs, export generated activation
+4. Generate trajectories, build generated pairs, export generated activation
    prompts, and extract generated activations.
-3. Run Qwen layer sweeps on scripted and generated prompts.
-4. Repeat the best generated prompt run on one larger open model.
-5. Expand pseudo-cohesion hard negatives and use failures to sharpen the data.
-6. Only then spend time on `sae-lens` feature naming or a Prolific pilot.
+5. Run Qwen layer sweeps on scripted and generated prompts.
+6. Repeat the best generated prompt run on one larger open model.
+7. Use pseudo-cohesion failures to sharpen scorer/data before any Prolific pilot.

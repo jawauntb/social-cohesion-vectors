@@ -252,16 +252,37 @@ only on scripted in-sample accuracy.
 
 ### SAE Readiness
 
-Status: environment ready, model match pending.
+Status: first GPT-2 pseudo-cohesion smoke complete.
 
 `sae-lens==5.11.0`, `transformer-lens`, and `torch==2.7.1` are installed in the
 local `uv` environment. The pretrained SAE directory is importable and currently
 lists 63 releases. There are no Qwen releases in that directory, so the Qwen
 activation sweeps above are contrastive-vector runs only. SAE inspection should
-either use a supported model family such as Gemma/GPT-2/Llama where a matching
-SAE exists, or wait for custom SAE training on the Qwen activation distribution.
-The first Gemma 2B Modal attempt was blocked by Hugging Face gated-model access,
-so GPT-2 is the immediate SAE-compatible fallback.
+use matched SAE/model/hook pairs rather than pooled Qwen activation files. The
+first Gemma 2B Modal attempt was blocked by Hugging Face gated-model access, so
+GPT-2 is the immediate SAE-compatible fallback.
+
+The first matched SAE smoke uses `gpt2-small` with
+`gpt2-small-resid-post-v5-32k` at `blocks.11.hook_resid_post` on the 8
+pseudo-cohesion activation prompts. It re-runs the prompts through
+TransformerLens, encodes mean residual activations with the SAE, and ranks
+features by positive-minus-negative mean activation.
+
+Report: `data/reports/gpt2_sae_pseudo_probe.md`
+
+Top sparse-feature contrasts:
+
+| Feature | Direction | Pos mean | Neg mean | Abs diff |
+| ---: | --- | ---: | ---: | ---: |
+| 3056 | higher on genuine cohesion | 3.9040 | 2.9541 | 0.9500 |
+| 24555 | higher on pseudo-cohesion | 0.9535 | 1.5878 | 0.6343 |
+| 28005 | higher on genuine cohesion | 0.6302 | 0.1342 | 0.4960 |
+| 703 | higher on pseudo-cohesion | 0.0654 | 0.2673 | 0.2018 |
+| 11999 | higher on genuine cohesion | 1.2709 | 1.1407 | 0.1302 |
+
+Interpretation: this is only a tiny 4-vs-4 probe, but it proves the SAE path is
+working on a matched open model and gives concrete candidate features to inspect
+with more generated pseudo-cohesion examples.
 
 ### Persona-Vector Decomposition
 

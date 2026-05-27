@@ -21,6 +21,7 @@ The current local pipeline can:
 9. Generate harder LLM-style trajectories with a deterministic offline fallback.
 10. Run pseudo-cohesion hard-negative checks.
 11. Run transfer splits and activation layer-sweep orchestration.
+12. Run a first matched GPT-2 SAE probe on pseudo-cohesion prompts.
 
 ## Setup
 
@@ -95,6 +96,25 @@ The lexical-only baseline also failed on 2 pseudo cases:
 
 - `pseudo_coercive_alignment`
 - `pseudo_dissent_suppression`
+
+GPT-2 is currently the useful weak-model failure case. On generated prompts it
+missed 7 of 50 leave-one-pair-out pairs, and all 7 failures involved
+`pseudo_cohesion_compliance` as the negative example. On the 4 hand-authored
+pseudo-cohesion contrasts, GPT-2 missed
+`pseudo_compliance_maximizing` vs `genuine_participation_boundary`, while Qwen
+3B separated all four contrasts.
+
+A first SAE smoke now runs on a matched model/layer:
+
+```bash
+uv run python scripts/export_pseudo_cohesion_prompts.py
+uv run python scripts/run_gpt2_sae_pseudo_probe.py --top-k 25
+```
+
+It uses `gpt2-small`, `gpt2-small-resid-post-v5-32k`, and
+`blocks.11.hook_resid_post`. The first 8-prompt run surfaced candidate features
+3056 and 28005 as higher on genuine cohesion, and 24555 and 703 as higher on
+pseudo-cohesion. These are inspection targets, not final feature names.
 
 Transfer reports now run over held-out scenario ids and held-out scenario
 families. On the current scripted data, lexical-only and metrics-only baselines
