@@ -24,11 +24,13 @@ results are sanity checks rather than scientific evidence.
 
 The more useful early signal is the pseudo-cohesion lane. GPT-2 gets 0.860 on
 generated leave-one-pair-out examples, and all 7 misses involve
-`pseudo_cohesion_compliance` as the negative example. On the 4 hand-authored
-pseudo-cohesion contrasts, Qwen 3B separates all four while GPT-2 misses the
-`pseudo_compliance_maximizing` case. A first GPT-2 SAE smoke surfaces candidate
-features 3056 and 28005 as higher on genuine cohesion, and 24555 and 703 as
-higher on pseudo-cohesion.
+`pseudo_cohesion_compliance` as the negative example. The hand-authored
+pseudo-cohesion suite is now 30 matched contrasts / 60 examples. The current
+scorer gives high cohesion scores to 8 pseudo examples, while the lexical-only
+baseline gives high scores to 18. On the expanded set, Qwen 0.5B and GPT-2
+residual activations both reach 0.967 leave-one-pair-out accuracy, but GPT-2 SAE
+features reach only 0.533, suggesting the sparse feature basis needs more
+careful feature-level inspection before any feature is named.
 
 ## What Waits For Later
 

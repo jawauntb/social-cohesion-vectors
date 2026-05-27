@@ -44,12 +44,15 @@ These work without new humans or new neural recordings.
   100 activation prompts.
 - Modal/open-model activation lane: Qwen 0.5B, 1.5B, 3B, and GPT-2 smoke runs.
 - Transfer checks: scripted/generated pair-set transfer is wired.
-- Pseudo-cohesion hard negatives: 4 pseudo cases, 4 genuine contrasts, and
-  exportable activation prompts.
+- Pseudo-cohesion hard negatives: expanded to 30 pseudo cases, 30 matched
+  genuine contrasts, and exportable activation prompts.
 - GPT-2 failure analysis: generated misses concentrate on
   `pseudo_cohesion_compliance` negatives.
-- GPT-2 SAE smoke: first candidate features identified for genuine cohesion vs
-  pseudo-cohesion.
+- Expanded Qwen 0.5B Modal pass: 0.967 leave-one-pair-out accuracy on the 30
+  pseudo-cohesion pairs, with one failure on `resource_request`.
+- GPT-2 SAE smoke: residual activations reach 0.967 leave-one-pair-out accuracy
+  on the expanded pseudo set, while SAE features reach 0.533, giving a sharper
+  target for feature-level inspection.
 
 ## Low-Cost Human Next
 

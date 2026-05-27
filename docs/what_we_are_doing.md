@@ -105,8 +105,10 @@ It includes:
    generated pairwise examples, and compare scripted-to-generated transfer.
 
 10. A pseudo-cohesion hard-negative lane.
-    This explicitly tests cases that sound warm or group-oriented but are really
-    coercive, sycophantic, dissent-suppressing, or compliance-maximizing.
+    This explicitly tests 30 matched contrasts that sound warm or group-oriented
+    but are really coercive, sycophantic, dissent-suppressing,
+    compliance-maximizing, privacy-eroding, dehumanizing, or accountability
+    laundering.
 
 11. A first matched GPT-2 SAE probe.
     Because Qwen does not currently have a convenient matching pretrained SAE in
@@ -154,15 +156,26 @@ The most interesting current failure case is GPT-2:
 - generated leave-one-pair-out accuracy: 0.860;
 - 7 generated misses, all involving `pseudo_cohesion_compliance` as the negative
   example;
-- pseudo-cohesion leave-one-pair-out accuracy: 0.750;
+- first 4-pair pseudo-cohesion leave-one-pair-out accuracy: 0.750;
 - missed contrast: `pseudo_compliance_maximizing` vs
   `genuine_participation_boundary`.
 
-The first matched SAE smoke uses `gpt2-small`,
-`gpt2-small-resid-post-v5-32k`, and `blocks.11.hook_resid_post`. On the tiny
-8-prompt pseudo-cohesion set, candidate sparse features 3056 and 28005 are
-higher on genuine cohesion, while 24555 and 703 are higher on pseudo-cohesion.
-These are inspection targets, not final feature names.
+The expanded pseudo-cohesion benchmark now has 30 matched contrasts / 60
+examples. The current scorer gives high cohesion scores to 8 pseudo examples,
+and the lexical-only baseline gives high scores to 18, which is exactly the kind
+of failure surface this benchmark is meant to expose.
+
+The expanded Modal/Qwen pass gets 0.967 leave-one-pair-out accuracy with a
++28.6866 mean margin. Its one failure is the `resource_request` contrast, where
+the pseudo social-debt pressure example and the genuine reciprocal request
+currently receive the same rubric score.
+
+The first matched SAE lane uses `gpt2-small`,
+`gpt2-small-resid-post-v5-32k`, and `blocks.11.hook_resid_post`. On the expanded
+60-prompt set, GPT-2 residual activations get 0.967 leave-one-pair-out accuracy,
+but SAE feature activations get only 0.533. Feature 3056 remains higher on
+genuine cohesion, while features 24555, 28005, 20249, and 11999 skew higher on
+pseudo-cohesion. These are inspection targets, not final feature names.
 
 Important caveat: this is not yet a deep scientific result. The scripted
 benchmark is too easy. Lexical and metrics-only baselines solve it, which means
@@ -188,8 +201,9 @@ High-value next steps:
 3. Train on scripted examples and test on generated examples.
 4. Sweep model layers and model sizes.
 5. Break the target into multiple persona-vector-style axes.
-6. Inspect GPT-2 SAE candidate features on a larger pseudo-cohesion set.
-7. Run a small Prolific validation only after the compute benchmarks stop being
+6. Inspect GPT-2 SAE candidate features at the token/example level.
+7. Add hard-negative-held-out transfer reports for the expanded pseudo set.
+8. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting
