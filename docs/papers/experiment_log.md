@@ -65,6 +65,9 @@ model/layer family.
 - Trait-axis final-layer activation shape: 20 x 896
 - Larger generated sweep smoke: `Qwen/Qwen2.5-1.5B-Instruct` layers `-1`
   and `-4`, activation shape 100 x 1536
+- Larger generated sweep smoke: `Qwen/Qwen2.5-3B-Instruct` layer `-4`,
+  activation shape 100 x 2048
+- SAE-compatible fallback smoke: `gpt2` final layer, activation shape 100 x 768
 
 ### Contrastive Activation Direction
 
@@ -80,11 +83,19 @@ Status: complete for scripted and first generated/trait sanity splits.
 | Generated leave-one-pair-out, layer -8 | 50 | 1.000 | +2.3388 |
 | Generated Qwen 1.5B leave-one-pair-out, layer -1 | 50 | 1.000 | +13.4552 |
 | Generated Qwen 1.5B leave-one-pair-out, layer -4 | 50 | 1.000 | +14.7591 |
+| Generated Qwen 3B leave-one-pair-out, layer -4 | 50 | 1.000 | +21.9484 |
+| Generated GPT-2 leave-one-pair-out, layer -1 | 50 | 0.860 | +29.7445 |
 | Trait-axis leave-one-pair-out, layer -1 | 10 | 1.000 | pending margin review |
 
 Interpretation: the activation lane works end to end, but this result is not
 yet evidence of a robust cohesion vector because lexical-only, metrics-only, and
 strategy-prior baselines still almost solve the generated offline task.
+
+The GPT-2 fallback is the first model-family result that does not solve the
+generated benchmark. It misses 7 of 50 leave-one-pair-out generated pairs. All 7
+misses have `pseudo_cohesion_compliance` as the negative example, suggesting the
+weak/SAE-compatible reference model is specifically vulnerable to compliance and
+unity language that sounds socially aligned.
 
 ## Pending Experiments
 
@@ -215,7 +226,7 @@ baselines are controlled.
 
 ### Layer Sweeps
 
-Status: pending beyond the first final-layer run.
+Status: partial across Qwen 0.5B, 1.5B, and 3B generated offline prompts.
 
 Expected artifacts:
 
@@ -226,6 +237,19 @@ Expected artifacts:
 
 Success criteria: report stability across layers and do not select a layer based
 only on scripted in-sample accuracy.
+
+### SAE Readiness
+
+Status: environment ready, model match pending.
+
+`sae-lens==5.11.0`, `transformer-lens`, and `torch==2.7.1` are installed in the
+local `uv` environment. The pretrained SAE directory is importable and currently
+lists 63 releases. There are no Qwen releases in that directory, so the Qwen
+activation sweeps above are contrastive-vector runs only. SAE inspection should
+either use a supported model family such as Gemma/GPT-2/Llama where a matching
+SAE exists, or wait for custom SAE training on the Qwen activation distribution.
+The first Gemma 2B Modal attempt was blocked by Hugging Face gated-model access,
+so GPT-2 is the immediate SAE-compatible fallback.
 
 ### Persona-Vector Decomposition
 
