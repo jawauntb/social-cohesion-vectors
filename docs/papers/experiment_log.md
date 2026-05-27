@@ -87,6 +87,9 @@ Status: complete for scripted and first generated/trait sanity splits.
 | Generated GPT-2 leave-one-pair-out, layer -1 | 50 | 0.860 | +29.7445 |
 | Pseudo-cohesion Qwen 3B leave-one-pair-out, layer -4 | 4 | 1.000 | +21.9582 |
 | Pseudo-cohesion GPT-2 leave-one-pair-out, layer -1 | 4 | 0.750 | +9.1664 |
+| Expanded pseudo-cohesion Qwen 0.5B leave-one-pair-out, layer -1 | 30 | 0.967 | +28.6866 |
+| Expanded pseudo-cohesion GPT-2 residual leave-one-pair-out, layer 11 | 30 | 0.967 | +9.7512 |
+| Expanded pseudo-cohesion GPT-2 SAE-feature leave-one-pair-out, layer 11 | 30 | 0.533 | -0.0029 |
 | Trait-axis leave-one-pair-out, layer -1 | 10 | 1.000 | pending margin review |
 
 Interpretation: the activation lane works end to end, but this result is not
@@ -153,14 +156,15 @@ baselines cannot solve perfectly.
 
 ### Pseudo-Cohesion Hard Negatives
 
-Status: complete for first hand-authored probe.
+Status: complete for expanded hand-authored probe.
 
 Report: `data/reports/pseudo_cohesion_experiment.md`
 
-The first run uses 8 hand-authored examples: 4 pseudo-cohesion cases and 4
-genuine contrasts. Hard-negative families include polite coercion, sycophantic
-truth hiding, compliance framed as harmony, and dissent suppression framed as
-repair.
+The current run uses 60 hand-authored examples: 30 pseudo-cohesion cases and 30
+matched genuine contrasts. Hard-negative families include polite coercion,
+sycophantic truth hiding, compliance framed as harmony, dissent suppression
+framed as repair, privacy erosion framed as safety, dehumanization framed as
+solidarity, and opaque control framed as stability.
 
 The hard-negative examples are now exportable as pairwise activation prompts:
 
@@ -169,23 +173,32 @@ The hard-negative examples are now exportable as pairwise activation prompts:
 
 | Metric | Result |
 | --- | ---: |
-| Total examples | 8 |
-| Pseudo examples | 4 |
-| Genuine contrasts | 4 |
-| Current scorer high-score failures | 2 |
-| Lexical-only high-score failures | 2 |
-| Mean pseudo scorer score | 0.608 |
-| Mean genuine scorer score | 0.652 |
+| Total examples | 60 |
+| Matched contrasts | 30 |
+| Pseudo examples | 30 |
+| Genuine contrasts | 30 |
+| Current scorer high-score failures | 8 |
+| Lexical-only high-score failures | 18 |
+| Mean pseudo scorer score | 0.592 |
+| Mean genuine scorer score | 0.613 |
 
 Current scorer failure cases:
 
 - `pseudo_compliance_maximizing`
 - `pseudo_dissent_suppression`
+- `pseudo_punitive_accountability`
+- `pseudo_authority_flattery`
+- `pseudo_private_shaming`
+- `pseudo_conflict_avoidance_truth_delay`
+- `pseudo_reputation_manipulation`
+- `pseudo_resource_hoarding_as_stability`
 
 Lexical-only failure cases:
 
 - `pseudo_coercive_alignment`
 - `pseudo_dissent_suppression`
+- 16 additional pseudo examples, mostly cases where warmth, trust, safety,
+  unity, or loyalty language masks a missing autonomy/truth/fairness condition
 
 Success criteria: pseudo-cohesion examples should not receive high cohesion
 scores merely because they sound warm or group-oriented. Any high-scoring pseudo
@@ -252,7 +265,7 @@ only on scripted in-sample accuracy.
 
 ### SAE Readiness
 
-Status: first GPT-2 pseudo-cohesion smoke complete.
+Status: expanded GPT-2 pseudo-cohesion smoke complete.
 
 `sae-lens==5.11.0`, `transformer-lens`, and `torch==2.7.1` are installed in the
 local `uv` environment. The pretrained SAE directory is importable and currently
@@ -262,27 +275,44 @@ use matched SAE/model/hook pairs rather than pooled Qwen activation files. The
 first Gemma 2B Modal attempt was blocked by Hugging Face gated-model access, so
 GPT-2 is the immediate SAE-compatible fallback.
 
-The first matched SAE smoke uses `gpt2-small` with
-`gpt2-small-resid-post-v5-32k` at `blocks.11.hook_resid_post` on the 8
+The matched SAE smoke uses `gpt2-small` with
+`gpt2-small-resid-post-v5-32k` at `blocks.11.hook_resid_post` on the expanded 60
 pseudo-cohesion activation prompts. It re-runs the prompts through
-TransformerLens, encodes mean residual activations with the SAE, and ranks
-features by positive-minus-negative mean activation.
+TransformerLens, evaluates leave-one-pair-out directions on both mean residual
+activations and SAE feature activations, and ranks features by
+positive-minus-negative mean activation.
 
 Report: `data/reports/gpt2_sae_pseudo_probe.md`
 
-Top sparse-feature contrasts:
+Expanded-set GPT-2 results:
+
+| Representation | Pairs | LOO accuracy | Mean margin | Failures |
+| --- | ---: | ---: | ---: | ---: |
+| Residual stream | 30 | 0.967 | +9.7512 | 1 |
+| SAE features | 30 | 0.533 | -0.0029 | 14 |
+
+Top sparse-feature contrasts on the expanded set:
 
 | Feature | Direction | Pos mean | Neg mean | Abs diff |
 | ---: | --- | ---: | ---: | ---: |
-| 3056 | higher on genuine cohesion | 3.9040 | 2.9541 | 0.9500 |
-| 24555 | higher on pseudo-cohesion | 0.9535 | 1.5878 | 0.6343 |
-| 28005 | higher on genuine cohesion | 0.6302 | 0.1342 | 0.4960 |
-| 703 | higher on pseudo-cohesion | 0.0654 | 0.2673 | 0.2018 |
-| 11999 | higher on genuine cohesion | 1.2709 | 1.1407 | 0.1302 |
+| 3056 | higher on genuine cohesion | 4.4645 | 4.2972 | 0.1673 |
+| 24555 | higher on pseudo-cohesion | 0.3952 | 0.4829 | 0.0877 |
+| 11737 | higher on genuine cohesion | 0.4630 | 0.3789 | 0.0841 |
+| 28005 | higher on pseudo-cohesion | 1.6032 | 1.6829 | 0.0796 |
+| 20249 | higher on pseudo-cohesion | 0.3308 | 0.4054 | 0.0746 |
+| 11999 | higher on pseudo-cohesion | 2.1740 | 2.2485 | 0.0745 |
 
-Interpretation: this is only a tiny 4-vs-4 probe, but it proves the SAE path is
-working on a matched open model and gives concrete candidate features to inspect
-with more generated pseudo-cohesion examples.
+Interpretation: the residual stream separates the expanded hand-authored
+contrasts surprisingly well, but the SAE feature representation does not yet
+preserve the contrast as a simple direction. Feature 3056 remains a genuine-side
+candidate from the tiny probe; 24555 remains a pseudo-side candidate; 28005
+flips to pseudo-side on the expanded set, so it should not be named without
+token/example inspection.
+
+The expanded Qwen 0.5B Modal pass also reaches 0.967 leave-one-pair-out accuracy
+with a +28.6866 mean margin. Its single failure is the `resource_request`
+contrast, where social-debt pressure and genuine reciprocal request currently
+receive the same rubric score.
 
 ### Persona-Vector Decomposition
 

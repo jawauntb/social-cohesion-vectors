@@ -27,18 +27,22 @@ Concrete early signals:
   layers/model sizes, but simple baselines are still strong.
 - GPT-2 gets only 0.860 on generated leave-one-pair-out pairs, and all 7 misses
   involve pseudo-cohesion/compliance as the negative example.
-- On the small hand-authored pseudo-cohesion set, Qwen 3B gets 4/4 while GPT-2
-  gets 3/4 and misses a compliance-maximizing case.
-- I ran a first matched GPT-2 SAE probe using
-  `gpt2-small-resid-post-v5-32k` at `blocks.11.hook_resid_post`. Tiny n, but it
-  surfaces candidate sparse features: 3056 and 28005 higher on genuine cohesion;
-  24555 and 703 higher on pseudo-cohesion.
+- I expanded the pseudo-cohesion suite to 30 matched contrasts / 60 examples.
+  The current scorer gives high cohesion scores to 8 pseudo examples, and the
+  lexical-only baseline gives high scores to 18.
+- I ran the expanded prompt set through Qwen 0.5B on Modal. It gets 0.967
+  leave-one-pair-out accuracy with one failure on the social-debt/resource
+  request contrast.
+- I ran a matched GPT-2 SAE probe using `gpt2-small-resid-post-v5-32k` at
+  `blocks.11.hook_resid_post`. On the expanded set, residual activations get
+  0.967 leave-one-pair-out accuracy, while SAE feature activations get 0.533.
+  Feature 3056 still skews genuine; features 24555, 28005, 20249, and 11999
+  skew pseudo.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
-Before Prolific or any brain-aligned story, the next step is to expand the
-pseudo-cohesion hard negatives, reduce lexical shortcuts, and see whether the
-directions/features survive generated and held-out tests.
+Before Prolific or any brain-aligned story, the next step is token/example-level
+SAE inspection, hard-negative-held-out transfer, and reducing lexical shortcuts.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
-up quickly. The highest-value next move is expanding the pseudo-cohesion dataset
-and inspecting the GPT-2 SAE candidate features on more examples.
+up quickly. The highest-value next move is inspecting the GPT-2 SAE candidate
+features on specific examples and adding hard-negative-held-out transfer.

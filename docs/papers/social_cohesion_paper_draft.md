@@ -218,7 +218,7 @@ metadata-prior baselines no longer nearly solve the benchmark.
 
 ### 6.2 Pseudo-Cohesion Hard Negatives
 
-Status: complete for the first hand-authored probe.
+Status: complete for the expanded hand-authored probe.
 
 The benchmark needs adversarial examples that sound cooperative while violating
 the target construct. The first hard-negative families are:
@@ -234,15 +234,27 @@ positive social language. They are the main guardrail against learning a vector
 for agreeableness, obedience, or generic warmth instead of agency-preserving
 cohesion.
 
-The first hard-negative run uses eight hand-authored examples: four
-pseudo-cohesion cases and four genuine contrasts. The current scorer assigns high
-scores to two pseudo-cohesion examples, and the lexical-only baseline assigns
-high scores to two pseudo-cohesion examples. These are expected failure cases for
-the next scorer and dataset iteration, not evidence that the pseudo cases are
-actually cohesive.
+The expanded hard-negative run uses 60 hand-authored examples: 30
+pseudo-cohesion cases and 30 matched genuine contrasts. The current scorer
+assigns high scores to 8 pseudo-cohesion examples, and the lexical-only baseline
+assigns high scores to 18 pseudo-cohesion examples. These are expected failure
+cases for the next scorer and dataset iteration, not evidence that the pseudo
+cases are actually cohesive.
 
-Next artifacts: larger pseudo-cohesion families, generated pseudo-cohesion
-examples, and hard-negative-held-out transfer reports.
+The first matched GPT-2 SAE pass on the expanded prompt set gives a useful
+caveat. Mean residual activations separate the 30 pairs with 0.967
+leave-one-pair-out accuracy, but SAE feature activations reach only 0.533. The
+aggregate feature ranking still surfaces candidate sparse features, including
+3056 on the genuine side and 24555/28005/20249/11999 on the pseudo side, but
+these require token- and example-level inspection before any feature naming.
+
+A Qwen 0.5B Modal pass on the same expanded prompts also reaches 0.967
+leave-one-pair-out accuracy with a +28.6866 mean margin. Its single failure is
+the resource-request contrast, where the pseudo social-debt pressure example and
+the genuine reciprocal-request example currently receive the same rubric score.
+
+Next artifacts: generated pseudo-cohesion examples, token-level SAE feature
+inspection, and hard-negative-held-out transfer reports.
 
 ### 6.3 Transfer Splits
 

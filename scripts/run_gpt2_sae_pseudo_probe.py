@@ -52,6 +52,7 @@ def run_probe(
     records = read_jsonl(prompts_path)
     texts = [str(record["text"]) for record in records]
     labels = [str(record["label"]) for record in records]
+    pair_ids = [str(record["pair_id"]) for record in records]
 
     model = HookedTransformer.from_pretrained(model_id, device="cpu")
     sae, cfg, _ = SAE.from_pretrained(release, sae_id, device="cpu")
@@ -65,7 +66,7 @@ def run_probe(
     positive = features[positive_mask]
     negative = features[negative_mask]
     difference = positive.mean(dim=0) - negative.mean(dim=0)
-    values, indices = torch.topk(difference.abs(), k=top_k)
+    values, indices = torch.topk(difference.abs(), k=min(top_k, features.shape[-1]))
 
     return {
         "experiment": "gpt2_sae_pseudo_cohesion_probe",
@@ -77,6 +78,18 @@ def run_probe(
         "n_prompts": len(records),
         "n_positive": int(positive_mask.sum().item()),
         "n_negative": int(negative_mask.sum().item()),
+        "leave_one_pair_out": {
+            "residual": evaluate_leave_one_pair_out(
+                activations,
+                labels=labels,
+                pair_ids=pair_ids,
+            ),
+            "sae_features": evaluate_leave_one_pair_out(
+                features,
+                labels=labels,
+                pair_ids=pair_ids,
+            ),
+        },
         "top_features": [
             {
                 "feature": int(index),
@@ -87,9 +100,88 @@ def run_probe(
                 ),
                 "positive_mean": round(float(positive[:, index].mean()), 6),
                 "negative_mean": round(float(negative[:, index].mean()), 6),
+                "positive_activation_rate": round(
+                    float((positive[:, index] > 0).float().mean()),
+                    6,
+                ),
+                "negative_activation_rate": round(
+                    float((negative[:, index] > 0).float().mean()),
+                    6,
+                ),
             }
             for value, index in zip(values, indices, strict=True)
         ],
+    }
+
+
+def evaluate_leave_one_pair_out(
+    activations: torch.Tensor,
+    *,
+    labels: Sequence[str],
+    pair_ids: Sequence[str],
+) -> dict[str, Any]:
+    """Evaluate a positive-minus-negative direction by held-out pair."""
+
+    rows: list[dict[str, Any]] = []
+    for pair_id in sorted(set(pair_ids)):
+        test_indices = [index for index, value in enumerate(pair_ids) if value == pair_id]
+        if len(test_indices) != 2:
+            continue
+        train_indices = [
+            index for index, value in enumerate(pair_ids) if value != pair_id
+        ]
+        train_labels = [labels[index] for index in train_indices]
+        positive_train_indices = [
+            index
+            for index, label in zip(train_indices, train_labels, strict=True)
+            if label == "positive"
+        ]
+        negative_train_indices = [
+            index
+            for index, label in zip(train_indices, train_labels, strict=True)
+            if label == "negative"
+        ]
+        if not positive_train_indices or not negative_train_indices:
+            continue
+
+        direction = (
+            activations[positive_train_indices].mean(dim=0)
+            - activations[negative_train_indices].mean(dim=0)
+        )
+        norm = float(direction.norm().item())
+        if norm == 0.0:
+            continue
+        direction = direction / norm
+        scores = {
+            labels[index]: float((activations[index] @ direction).item())
+            for index in test_indices
+        }
+        if "positive" not in scores or "negative" not in scores:
+            continue
+        margin = scores["positive"] - scores["negative"]
+        rows.append(
+            {
+                "pair_id": pair_id,
+                "margin": round(margin, 6),
+                "correct": margin > 0.0,
+                "positive_projection": round(scores["positive"], 6),
+                "negative_projection": round(scores["negative"], 6),
+            }
+        )
+
+    failures = [row for row in rows if not row["correct"]]
+    return {
+        "pairs": len(rows),
+        "accuracy": round((len(rows) - len(failures)) / len(rows), 6)
+        if rows
+        else 0.0,
+        "mean_margin": round(
+            sum(float(row["margin"]) for row in rows) / len(rows),
+            6,
+        )
+        if rows
+        else 0.0,
+        "failures": failures,
     }
 
 
@@ -123,11 +215,40 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         f"- Positive prompts: {report['n_positive']}",
         f"- Negative prompts: {report['n_negative']}",
         "",
-        "## Top Differentiating Features",
+        "## Leave-One-Pair-Out",
         "",
-        "| Feature | Pos - neg | Pos mean | Neg mean | Abs diff |",
-        "| ---: | ---: | ---: | ---: | ---: |",
+        "| Representation | Pairs | Accuracy | Mean margin | Failures |",
+        "| --- | ---: | ---: | ---: | ---: |",
     ]
+    loo = _mapping(report.get("leave_one_pair_out"))
+    for key, label in [
+        ("residual", "Residual stream"),
+        ("sae_features", "SAE features"),
+    ]:
+        result = _mapping(loo.get(key))
+        failures = result.get("failures", [])
+        failure_count = len(failures) if isinstance(failures, list) else 0
+        lines.append(
+            "| "
+            f"{label} | "
+            f"{int(result.get('pairs', 0))} | "
+            f"{float(result.get('accuracy', 0.0)):.3f} | "
+            f"{float(result.get('mean_margin', 0.0)):+.4f} | "
+            f"{failure_count} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Top Differentiating Features",
+            "",
+            (
+                "| Feature | Pos - neg | Pos mean | Neg mean | "
+                "Pos rate | Neg rate | Abs diff |"
+            ),
+            "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
     for row in report["top_features"]:
         item = _mapping(row)
         lines.append(
@@ -136,6 +257,8 @@ def render_markdown(report: Mapping[str, Any]) -> str:
             f"{float(item['difference_positive_minus_negative']):+.4f} | "
             f"{float(item['positive_mean']):.4f} | "
             f"{float(item['negative_mean']):.4f} | "
+            f"{float(item['positive_activation_rate']):.3f} | "
+            f"{float(item['negative_activation_rate']):.3f} | "
             f"{float(item['absolute_difference']):.4f} |"
         )
     lines.append("")

@@ -246,7 +246,10 @@ Current smoke result:
 | `Qwen/Qwen2.5-3B-Instruct` | generated offline | -4 | 2048 | 1.000 | +21.948 |
 | `gpt2` | generated offline | -1 | 768 | 0.860 | +29.744 |
 | `Qwen/Qwen2.5-3B-Instruct` | pseudo-cohesion | -4 | 2048 | 1.000 | +21.958 |
-| `gpt2` | pseudo-cohesion | -1 | 768 | 0.750 | +9.166 |
+| `Qwen/Qwen2.5-0.5B-Instruct` | pseudo-cohesion expanded | -1 | 896 | 0.967 | +28.687 |
+| `gpt2` | pseudo-cohesion 4-pair smoke | -1 | 768 | 0.750 | +9.166 |
+| `gpt2-small` | pseudo-cohesion expanded residual | 11 resid post | 768 | 0.967 | +9.751 |
+| `gpt2-small` | pseudo-cohesion expanded SAE features | 11 SAE | 32768 | 0.533 | -0.003 |
 
 ## 5. SAE Feature Scan With `sae-lens`
 
@@ -280,15 +283,22 @@ Current local status:
   leave-one-pair-out accuracy, with all 7 failures involving
   `pseudo_cohesion_compliance` negative examples. That makes pseudo-cohesion the
   best immediate feature-inspection target.
-- On the four hand-authored pseudo-cohesion contrasts, GPT-2 misses the
+- On the four initial hand-authored pseudo-cohesion contrasts, GPT-2 misses the
   `pseudo_compliance_maximizing` vs `genuine_participation_boundary` pair, while
   Qwen 3B separates all four contrasts. Start SAE inspection there.
-- The first matched SAE smoke has now run on `gpt2-small` with
-  `gpt2-small-resid-post-v5-32k` at `blocks.11.hook_resid_post`. It found top
-  candidate differentiators on the 8 pseudo-cohesion prompts, including feature
-  3056 higher on genuine cohesion, feature 24555 higher on pseudo-cohesion, and
-  feature 28005 higher on genuine cohesion. Treat these as candidates for
-  inspection, not named features yet.
+- The pseudo-cohesion suite has now been expanded to 30 matched contrasts / 60
+  prompts. On that expanded set, GPT-2 residual activations reach 0.967
+  leave-one-pair-out accuracy, but the SAE feature representation reaches only
+  0.533. That makes token/example-level feature inspection the next step rather
+  than naming a "cohesion" feature from aggregate means.
+- Candidate differentiators on the expanded set include feature 3056 higher on
+  genuine cohesion, and features 24555, 28005, 20249, and 11999 higher on
+  pseudo-cohesion. Treat these as candidates for inspection, not named features
+  yet.
+- The expanded Qwen 0.5B Modal pass reaches 0.967 leave-one-pair-out accuracy
+  with one failure on `resource_request`, where the rubric currently gives the
+  pseudo social-debt-obligation example and genuine reciprocal request the same
+  score.
 
 Run the current GPT-2 SAE pseudo-cohesion probe:
 
@@ -385,9 +395,9 @@ and real neural data; none of the Modal/SAE results establish them.
 
 ## Tomorrow's Priority Order
 
-1. Expand pseudo-cohesion prompts beyond the current 4-vs-4 hand-authored set.
-2. Re-run the GPT-2 SAE probe and inspect top activating examples for features
-   3056, 24555, 28005, and 703.
+1. Inspect top activating examples and token positions for features 3056, 24555,
+   28005, 20249, and 11999.
+2. Add hard-negative-held-out transfer reports for the expanded pseudo set.
 3. Reproduce the scripted scaffold and confirm the current 1.000 results are
    still just sanity checks.
 4. Generate trajectories, build generated pairs, export generated activation

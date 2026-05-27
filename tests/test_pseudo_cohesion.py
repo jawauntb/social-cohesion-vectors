@@ -6,6 +6,7 @@ from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.pseudo_cohesion import (
     PseudoCohesionExample,
     activation_prompts_from_pseudo_cohesion,
+    default_examples,
     evaluate_example,
     export_pseudo_cohesion_activation_inputs,
     pairwise_examples_from_pseudo_cohesion,
@@ -35,6 +36,27 @@ def test_obvious_coercive_pseudo_cohesion_is_flagged_as_risky() -> None:
     assert evaluated.is_risky is True
     assert "autonomy_safety" in evaluated.risky_components
     assert evaluated.score_components["autonomy_safety"] < 0.48
+
+
+def test_default_examples_are_expanded_matched_contrasts() -> None:
+    examples = default_examples()
+    pairs = pairwise_examples_from_pseudo_cohesion(examples)
+    prompts = activation_prompts_from_pseudo_cohesion(examples)
+    contrast_labels: dict[str, set[str]] = {}
+    for example in examples:
+        contrast_labels.setdefault(example.contrast_id, set()).add(example.label)
+
+    assert len(examples) == 60
+    assert len(pairs) == 30
+    assert len(prompts) == 60
+    assert all(
+        labels == {"pseudo_cohesion", "genuine_cohesion"}
+        for labels in contrast_labels.values()
+    )
+    assert {example.label for example in examples} == {
+        "pseudo_cohesion",
+        "genuine_cohesion",
+    }
 
 
 def test_report_shaping_tracks_pairs_and_failure_cases() -> None:
@@ -71,8 +93,11 @@ def test_report_shaping_tracks_pairs_and_failure_cases() -> None:
     markdown = render_markdown(report)
 
     assert report["summary"]["total_examples"] == 2
+    assert report["summary"]["contrast_count"] == 1
     assert report["summary"]["lexical_baseline_available"] is True
     assert report["summary"]["lexical_failure_count"] == 1
+    assert report["category_counts"]["pseudo"] == {"truth_hiding": 1}
+    assert report["category_counts"]["lexical_failures"] == {"truth_hiding": 1}
     assert len(report["paired_comparisons"]) == 1
     assert report["failure_cases"]["lexical_only"][0]["example_id"] == (
         "pseudo_high_lexical"

@@ -85,17 +85,29 @@ metrics-only baselines also solve the scripted task.
 
 ## Additional Local Results
 
-Pseudo-cohesion hard negatives are now wired. The first run used 8 hand-authored
-examples: 4 pseudo-cohesion cases and 4 genuine contrasts. The current scorer
-assigned high cohesion to 2 pseudo cases:
+Pseudo-cohesion hard negatives are now wired and expanded. The current suite has
+60 hand-authored examples: 30 pseudo-cohesion cases and 30 matched genuine
+contrasts. The current scorer assigns high cohesion to 8 pseudo cases:
 
 - `pseudo_compliance_maximizing`
 - `pseudo_dissent_suppression`
+- `pseudo_punitive_accountability`
+- `pseudo_authority_flattery`
+- `pseudo_private_shaming`
+- `pseudo_conflict_avoidance_truth_delay`
+- `pseudo_reputation_manipulation`
+- `pseudo_resource_hoarding_as_stability`
 
-The lexical-only baseline also failed on 2 pseudo cases:
+The lexical-only baseline assigns high cohesion to 18 pseudo cases, so lexical
+warmth is still a major confound. Examples include:
 
 - `pseudo_coercive_alignment`
 - `pseudo_dissent_suppression`
+- `pseudo_safety_surveillance`
+- `pseudo_dehumanizing_solidarity`
+- `pseudo_harmony_over_fairness`
+- `pseudo_loyal_silence`
+- `pseudo_default_trust_capture`
 
 GPT-2 is currently the useful weak-model failure case. On generated prompts it
 missed 7 of 50 leave-one-pair-out pairs, and all 7 failures involved
@@ -104,7 +116,7 @@ pseudo-cohesion contrasts, GPT-2 missed
 `pseudo_compliance_maximizing` vs `genuine_participation_boundary`, while Qwen
 3B separated all four contrasts.
 
-A first SAE smoke now runs on a matched model/layer:
+A matched SAE smoke now runs on a matched model/layer:
 
 ```bash
 uv run python scripts/export_pseudo_cohesion_prompts.py
@@ -112,14 +124,22 @@ uv run python scripts/run_gpt2_sae_pseudo_probe.py --top-k 25
 ```
 
 It uses `gpt2-small`, `gpt2-small-resid-post-v5-32k`, and
-`blocks.11.hook_resid_post`. The first 8-prompt run surfaced candidate features
-3056 and 28005 as higher on genuine cohesion, and 24555 and 703 as higher on
-pseudo-cohesion. These are inspection targets, not final feature names.
+`blocks.11.hook_resid_post`. On the expanded 60-prompt set, GPT-2 residual
+activations reach 0.967 leave-one-pair-out accuracy with one failure
+(`fair_allocation`), while SAE feature activations reach 0.533 with 14 failures.
+Feature 3056 remains higher on genuine cohesion; 24555, 28005, 20249, and 11999
+skew higher on pseudo-cohesion. These are inspection targets, not final feature
+names.
 
 Transfer reports now run over held-out scenario ids and held-out scenario
 families. On the current scripted data, lexical-only and metrics-only baselines
 still score 1.000, so generated and hard-negative transfer remain the important
 next targets.
+
+The expanded pseudo-cohesion Modal pass with `Qwen/Qwen2.5-0.5B-Instruct`
+reaches 0.967 leave-one-pair-out accuracy and +28.6866 mean margin. Its one
+failure is `resource_request`, where the pseudo social-debt pressure example and
+genuine reciprocal request currently receive the same rubric score.
 
 ## Current Interpretation
 
@@ -138,8 +158,7 @@ the task harder.
 ## Next High-Value Experiments
 
 1. Generate held-out LLM-authored trajectories with fewer obvious lexical cues.
-2. Expand pseudo-cohesion hard negatives and use current failures to revise the
-   scorer/dataset.
+2. Inspect GPT-2 SAE candidate features at the token/example level.
 3. Train on scripted data and test on scored generated/hard-negative data.
 4. Sweep activation layers and model sizes.
 5. Split the target into persona-vector-style trait families:
