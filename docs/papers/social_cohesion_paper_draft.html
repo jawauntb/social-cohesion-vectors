@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning Candidate Social Cohesion Vectors From Simulated Social Dilemmas</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.58; max-width: 860px; margin: 48px auto; padding: 0 24px; color: #171717; }
+h1, h2, h3 { line-height: 1.18; margin-top: 1.6em; }
+h1 { font-size: 2.2rem; margin-top: 0; }
+h2 { border-top: 1px solid #ddd; padding-top: 1.1em; }
+li { margin: 0.25em 0; }
+p { margin: 0.85em 0; }
+</style>
+</head>
+<body>
+<h1>Learning Candidate Social Cohesion Vectors From Simulated Social Dilemmas</h1>
+<h2>Abstract</h2>
+<p>We introduce an early-stage compute-first pipeline for studying whether</p>
+<p>cooperative social orientation can be represented as interpretable directions in</p>
+<p>language-model activation space. The current system defines 25 social-dilemma</p>
+<p>scenarios spanning repeated Prisoner&#x27;s Dilemmas, public goods, negotiation,</p>
+<p>dialogue repair, and resource allocation. Deterministic scripted agents generate</p>
+<p>cooperative, self-protective, and adversarial trajectories under six</p>
+<p>intervention conditions. A transparent rubric scores each trajectory for</p>
+<p>cooperation, repair, fairness, hostility, truthfulness, and autonomy safety, then</p>
+<p>exports pairwise high/low examples for baseline ranking, activation capture, and</p>
+<p>future human validation. The initial local run produced 450 trajectories, 126</p>
+<p>pairwise probe examples, and 252 activation prompts. These results are</p>
+<p>preliminary and deliberately non-behavioral: they establish a reproducible</p>
+<p>scaffold and sanity baselines, not evidence that the learned directions affect</p>
+<p>humans. The next experiments replace scripted text with open-model generated</p>
+<p>trajectories, extract hidden-state activations on GPU, train contrastive</p>
+<p>directions, and evaluate whether activation-space projections generalize beyond</p>
+<p>lexical artifacts.</p>
+<h2>1. Introduction</h2>
+<p>Language and multimodal generative models are increasingly able to produce</p>
+<p>persuasive content. Most optimization pipelines target engagement, preference,</p>
+<p>retention, conversion, or task success. This project explores a different target:</p>
+<p>whether content generation can be steered toward agency-preserving social</p>
+<p>cohesion.</p>
+<p>The central scientific question is not whether there is a single moral vector.</p>
+<p>There almost certainly is not. The question is whether social modes such as</p>
+<p>reciprocity, repair, fairness, truthfulness, dehumanization, coercion, and</p>
+<p>punitive escalation have measurable structure in model behavior and activations.</p>
+<p>If they do, we can ask whether combinations of these directions predict or steer</p>
+<p>outputs toward healthier conflict trajectories without degrading truthfulness or</p>
+<p>autonomy.</p>
+<h2>2. Conceptual Background</h2>
+<p>The project combines four lineages.</p>
+<p>First, Aristotle&#x27;s ethical and political frame treats human flourishing as partly</p>
+<p>social. A good life is not merely preference satisfaction; it is activity in</p>
+<p>accordance with virtue, developed in relation and institutions.</p>
+<p>Second, Axelrod&#x27;s iterated-game work shows how cooperation can emerge among</p>
+<p>self-interested agents when interactions repeat and strategies can condition on</p>
+<p>prior behavior. Repetition, reciprocity, forgiveness, and clarity are central.</p>
+<p>Third, social psychology shows that group identity, intergroup contact, status,</p>
+<p>and threat shape cooperation beyond payoff matrices. Cohesion must therefore be</p>
+<p>distinguished from conformity and from majority pressure.</p>
+<p>Fourth, mechanistic interpretability and persona-vector work suggest that</p>
+<p>high-level behavioral traits can sometimes be represented as directions or sparse</p>
+<p>features in model activation space. This motivates open-model activation capture</p>
+<p>and contrastive direction training.</p>
+<h2>3. Methods</h2>
+<h3>3.1 Scenario Benchmark</h3>
+<p>The current benchmark includes 25 hand-authored scenarios across five kinds:</p>
+<ul>
+<li>iterated Prisoner&#x27;s Dilemma;</li>
+<li>public goods;</li>
+<li>negotiation;</li>
+<li>dialogue repair;</li>
+<li>resource allocation.</li>
+</ul>
+<p>Each scenario specifies agents, goals, risks, cooperative actions, defecting</p>
+<p>actions, and success metrics.</p>
+<h3>3.2 Scripted Simulation</h3>
+<p>For each scenario, deterministic scripted agents generate trajectories under</p>
+<p>three strategy profiles:</p>
+<ul>
+<li>cooperative;</li>
+<li>self-protective;</li>
+<li>adversarial.</li>
+</ul>
+<p>Each profile is crossed with six intervention conditions:</p>
+<ul>
+<li>no intervention;</li>
+<li>shared identity;</li>
+<li>perspective-taking;</li>
+<li>reciprocity;</li>
+<li>restorative accountability;</li>
+<li>truth-first framing.</li>
+</ul>
+<p>The first local run generated 450 trajectories.</p>
+<h3>3.3 Scoring</h3>
+<p>Each trajectory is scored with explicit components:</p>
+<ul>
+<li>cooperation;</li>
+<li>repair;</li>
+<li>fairness;</li>
+<li>hostility inverse;</li>
+<li>truthfulness;</li>
+<li>autonomy safety.</li>
+</ul>
+<p>The combined score is a weighted aggregate with bonuses for cooperative repair</p>
+<p>and penalties for hostility or manipulation risk. This score is interpretable</p>
+<p>but not yet externally validated.</p>
+<h3>3.4 Pairwise Dataset</h3>
+<p>Within each scenario, high-scoring and low-scoring trajectories are paired when</p>
+<p>their score margin exceeds a threshold. The first local run produced 126</p>
+<p>pairwise examples and 252 activation prompt records.</p>
+<h3>3.5 Activation Capture</h3>
+<p>The Modal lane targets open-weight causal language models. For each activation</p>
+<p>prompt, the system captures hidden states at a configured layer, mean-pools over</p>
+<p>tokens, and stores activation vectors with sample IDs, labels, and target</p>
+<p>scores. Contrastive directions can then be trained from high/low examples.</p>
+<h2>4. Current Compute-Only Results</h2>
+<p>The current scripted run is a sanity benchmark.</p>
+<ul>
+<li>Scenarios: 25</li>
+<li>Runs: 450</li>
+<li>Pairwise examples: 126</li>
+<li>Activation prompts: 252</li>
+<li>Mean pairwise score margin: approximately 0.272</li>
+<li>Minimum pairwise margin: approximately 0.154</li>
+<li>Maximum pairwise margin: approximately 0.558</li>
+</ul>
+<p>Mean cohesion score by strategy profile:</p>
+<ul>
+<li>adversarial: 0.620</li>
+<li>self-protective: 0.736</li>
+<li>cooperative: 0.855</li>
+</ul>
+<p>Mean cohesion score by intervention:</p>
+<ul>
+<li>none: 0.694</li>
+<li>reciprocity: 0.727</li>
+<li>truth-first: 0.740</li>
+<li>shared identity: 0.746</li>
+<li>perspective-taking: 0.752</li>
+<li>restorative accountability: 0.762</li>
+</ul>
+<p>These numbers are not claims about humans. They verify that the scripted</p>
+<p>benchmark creates graded trajectories and that interventions move scores in the</p>
+<p>expected direction under the current rubric.</p>
+<h2>5. Baselines</h2>
+<p>The current pairwise ranking baselines are deliberately simple. On the 126</p>
+<p>pair scripted dataset:</p>
+<ul>
+<li>chance: 0.500;</li>
+<li>strategy-profile prior: 0.988, 95% bootstrap CI [0.972, 1.000];</li>
+<li>metrics-only composite: 1.000;</li>
+<li>lexical-only heuristic: 1.000;</li>
+<li>full-scorer sanity check: 1.000.</li>
+</ul>
+<p>In the current scripted data, the task is easy. Metrics-only and lexical-only</p>
+<p>baselines recover the pair labels almost perfectly. This is expected because the</p>
+<p>dataset is generated from scripted agents and a transparent rubric. The result</p>
+<p>is useful as a warning: the first real benchmark must use held-out</p>
+<p>LLM-generated trajectories or human labels so that surface markers cannot solve</p>
+<p>the task.</p>
+<h2>6. Planned Activation Experiments</h2>
+<p>The first GPU activation experiment was run with `Qwen/Qwen2.5-0.5B-Instruct`,</p>
+<p>using final-layer hidden states mean-pooled over tokens. The resulting activation</p>
+<p>matrix has 252 prompt rows and 896 dimensions. A contrastive positive-vs-negative</p>
+<p>direction gives:</p>
+<ul>
+<li>in-sample pairwise accuracy: 1.000 on 126 pairs;</li>
+<li>leave-one-pair-out pairwise accuracy: 1.000 on 126 pairs;</li>
+<li>leave-one-pair-out mean positive-minus-negative projection margin: +26.4385.</li>
+</ul>
+<p>This is not yet strong evidence because the source trajectories remain scripted</p>
+<p>and lexically separable. It does show that the open-model activation lane is</p>
+<p>working end to end: local JSONL prompts → Modal GPU hidden states → local NPZ →</p>
+<p>contrastive vector → pairwise evaluation.</p>
+<p>The immediate next GPU experiment:</p>
+<p>1. Generate or sample less lexical, LLM-authored trajectories.</p>
+<p>2. Train on scripted trajectories and test on LLM-authored trajectories.</p>
+<p>3. Repeat by layer and model size.</p>
+<p>4. Add trait-family directions in the style of persona-vector work.</p>
+<p>5. Compare against lexical and metrics-only baselines.</p>
+<p>The next nontrivial experiment:</p>
+<p>1. Generate new trajectories with an open instruction model.</p>
+<p>2. Score them with the rubric.</p>
+<p>3. Train directions on scripted trajectories.</p>
+<p>4. Test transfer to generated trajectories.</p>
+<p>5. Look for failure modes where generic positivity, sycophancy, or compliance</p>
+<p>   are mistaken for cohesion.</p>
+<h2>7. Ethics And Safety</h2>
+<p>The target is not agreement maximization. The system must explicitly preserve:</p>
+<ul>
+<li>truthfulness;</li>
+<li>autonomy;</li>
+<li>principled dissent;</li>
+<li>minority interests;</li>
+<li>legitimate self-protection;</li>
+<li>informed consent in human studies.</li>
+</ul>
+<p>Any future content-selection loop must include manipulation-risk scoring and</p>
+<p>must not deploy claims about behavioral effects before Prolific or comparable</p>
+<p>human validation.</p>
+<h2>8. Limitations</h2>
+<p>The current results are synthetic and circular: pair labels are generated from</p>
+<p>the same rubric used by the full-scorer baseline. Scripted trajectories include</p>
+<p>surface lexical cues that make the task too easy. The benchmark does not yet</p>
+<p>show that activation directions generalize, steer outputs, or predict human</p>
+<p>behavior. It is a scaffold for those tests.</p>
+<h2>9. Next Experiments</h2>
+<p>1. Add LLM-generated trajectory generation.</p>
+<p>2. Add adversarial pseudo-cohesion examples.</p>
+<p>3. Run cross-scenario and generated-text transfer splits.</p>
+<p>4. Repeat activation capture at several layers and model sizes.</p>
+<p>5. Add persona-vector-style trait decomposition:</p>
+<p>   - repair;</p>
+<p>   - reciprocity;</p>
+<p>   - truthfulness;</p>
+<p>   - autonomy safety;</p>
+<p>   - sycophancy/compliance;</p>
+<p>   - coercion/domination;</p>
+<p>   - dehumanization;</p>
+<p>   - punitive escalation.</p>
+<p>6. Prepare a Prolific pairwise validation pilot.</p>
+<h2>References</h2>
+<ul>
+<li>Allport, G. W. (1954). *The Nature of Prejudice*.</li>
+<li>Anthropic. (2023). &quot;Towards Monosemanticity: Decomposing Language Models With Dictionary Learning.&quot;</li>
+<li>Anthropic. (2025). &quot;Persona vectors: Monitoring and controlling character traits in language models.&quot;</li>
+<li>Aristotle. *Nicomachean Ethics*.</li>
+<li>Axelrod, R. (1984). *The Evolution of Cooperation*.</li>
+<li>Nowak, M. A. (2006). &quot;Five Rules for the Evolution of Cooperation.&quot; *Science*.</li>
+<li>Ostrom, E. (1990). *Governing the Commons*.</li>
+<li>Rilling, J. K., et al. (2002). &quot;A neural basis for social cooperation.&quot; *Neuron*.</li>
+<li>Tajfel, H., &amp; Turner, J. C. (1979/1986). Social identity theory of intergroup behavior.</li>
+</ul>
+</body>
+</html>
