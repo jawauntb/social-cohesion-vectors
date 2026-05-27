@@ -1,0 +1,732 @@
+{
+  "scenarios": [
+    {
+      "id": "ipd_lab_shift_swap",
+      "kind": "iterated_prisoners_dilemma",
+      "title": "Late Shift Swap",
+      "setting": "Two lab coordinators repeatedly decide whether to cover each other's late equipment checks.",
+      "dilemma": "Covering the other person protects the project, but refusing preserves personal time if the other still helps.",
+      "agents": [
+        {
+          "id": "coordinator_a",
+          "role": "Senior lab coordinator",
+          "goal": "Keep the study schedule on track without burning out.",
+          "risk": "Being seen as always available for extra work."
+        },
+        {
+          "id": "coordinator_b",
+          "role": "New lab coordinator",
+          "goal": "Prove reliability while protecting family obligations.",
+          "risk": "Losing trust if they decline too often."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "cover the check and document what happened",
+      "defect_action": "leave the check for the other coordinator",
+      "success_metrics": ["coverage reliability", "burnout risk", "reciprocity"],
+      "tags": ["workplace", "repeated_game", "trust"]
+    },
+    {
+      "id": "ipd_roommate_dishes",
+      "kind": "iterated_prisoners_dilemma",
+      "title": "Roommate Sink Reset",
+      "setting": "Roommates face a nightly choice about cleaning shared dishes after dinner.",
+      "dilemma": "Cleaning helps everyone, but skipping is tempting when the other roommate may clean anyway.",
+      "agents": [
+        {
+          "id": "roommate_lee",
+          "role": "Roommate with early classes",
+          "goal": "Wake up to a usable kitchen.",
+          "risk": "Feeling exploited for being tidy."
+        },
+        {
+          "id": "roommate_morgan",
+          "role": "Roommate with late work shifts",
+          "goal": "Avoid chores after exhausting shifts.",
+          "risk": "Being labeled careless."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "wash a fair share before bed",
+      "defect_action": "leave dishes in the sink",
+      "success_metrics": ["clean kitchen", "resentment reduction", "habit stability"],
+      "tags": ["household", "routine", "fairness"]
+    },
+    {
+      "id": "ipd_open_source_review",
+      "kind": "iterated_prisoners_dilemma",
+      "title": "Open Source Review Queue",
+      "setting": "Two maintainers alternate between reviewing each other's pull requests.",
+      "dilemma": "Timely review keeps momentum, but each maintainer can free ride on the other's review labor.",
+      "agents": [
+        {
+          "id": "maintainer_core",
+          "role": "Core maintainer",
+          "goal": "Keep releases moving without doing all review work.",
+          "risk": "Approving rushed changes that create bugs."
+        },
+        {
+          "id": "maintainer_docs",
+          "role": "Documentation maintainer",
+          "goal": "Get docs fixes merged while helping code quality.",
+          "risk": "Review work crowding out writing time."
+        }
+      ],
+      "rounds": 7,
+      "cooperate_action": "review promptly with actionable notes",
+      "defect_action": "delay review and ask the other maintainer to handle it",
+      "success_metrics": ["review latency", "quality", "maintainer load"],
+      "tags": ["software", "volunteer", "reciprocity"]
+    },
+    {
+      "id": "ipd_neighbor_snow",
+      "kind": "iterated_prisoners_dilemma",
+      "title": "Shared Sidewalk Snow",
+      "setting": "Neighbors decide after each snowfall whether to clear the shared sidewalk edge.",
+      "dilemma": "Clearing the sidewalk helps both households, but each can wait for the other to shovel.",
+      "agents": [
+        {
+          "id": "neighbor_north",
+          "role": "North-side neighbor",
+          "goal": "Keep the block passable for elders and deliveries.",
+          "risk": "Taking on an unfair winter workload."
+        },
+        {
+          "id": "neighbor_south",
+          "role": "South-side neighbor",
+          "goal": "Save time before commuting.",
+          "risk": "A fall or citation if no one clears the path."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "shovel the shared stretch",
+      "defect_action": "wait and hope the neighbor shovels",
+      "success_metrics": ["sidewalk safety", "load balance", "neighbor trust"],
+      "tags": ["neighborhood", "safety", "seasonal"]
+    },
+    {
+      "id": "ipd_dataset_annotations",
+      "kind": "iterated_prisoners_dilemma",
+      "title": "Annotation Quality Loop",
+      "setting": "Two analysts repeatedly decide whether to double-check labels in a shared dataset.",
+      "dilemma": "Careful checking improves the dataset, but skipping saves time if the partner catches mistakes.",
+      "agents": [
+        {
+          "id": "analyst_prior",
+          "role": "Prior batch analyst",
+          "goal": "Deliver accurate labels before a model run.",
+          "risk": "Missing subtle errors under deadline pressure."
+        },
+        {
+          "id": "analyst_current",
+          "role": "Current batch analyst",
+          "goal": "Finish the batch while preserving label consistency.",
+          "risk": "Being blamed for inherited inconsistencies."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "audit labels and flag uncertainties",
+      "defect_action": "accept labels without checking",
+      "success_metrics": ["label quality", "audit burden", "shared confidence"],
+      "tags": ["research", "data_quality", "repeated_game"]
+    },
+    {
+      "id": "goods_clinic_supply_pool",
+      "kind": "public_goods",
+      "title": "Clinic Supply Pool",
+      "setting": "A small clinic asks teams to contribute supplies to a shared emergency cabinet.",
+      "dilemma": "Contributing protects all patients, but each team is tempted to keep supplies for its own room.",
+      "agents": [
+        {
+          "id": "triage_team",
+          "role": "Triage team",
+          "goal": "Guarantee rapid access to essentials.",
+          "risk": "Running short during a surge."
+        },
+        {
+          "id": "pediatrics_team",
+          "role": "Pediatrics team",
+          "goal": "Protect child-specific supplies.",
+          "risk": "Contributing items that are hard to restock."
+        },
+        {
+          "id": "urgent_care_team",
+          "role": "Urgent care team",
+          "goal": "Reduce delays for walk-in patients.",
+          "risk": "Being the only team that contributes."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "add supplies to the shared cabinet",
+      "defect_action": "hold supplies back for the home team",
+      "success_metrics": ["cabinet readiness", "department equity", "patient delays"],
+      "tags": ["healthcare", "public_good", "scarcity"]
+    },
+    {
+      "id": "goods_study_group_notes",
+      "kind": "public_goods",
+      "title": "Study Group Notes",
+      "setting": "Students decide whether to contribute high-quality notes to a shared exam folder.",
+      "dilemma": "Shared notes help everyone learn, but each student can download the folder without adding work.",
+      "agents": [
+        {
+          "id": "student_amara",
+          "role": "Student strong in lectures",
+          "goal": "Build a complete study guide.",
+          "risk": "Doing unpaid tutoring for the group."
+        },
+        {
+          "id": "student_devin",
+          "role": "Student strong in problem sets",
+          "goal": "Get concise review material.",
+          "risk": "Sharing incomplete solutions."
+        },
+        {
+          "id": "student_ren",
+          "role": "Student catching up",
+          "goal": "Understand missed classes.",
+          "risk": "Being judged for needing help."
+        }
+      ],
+      "rounds": 4,
+      "cooperate_action": "upload clear notes with corrections",
+      "defect_action": "download notes without contributing",
+      "success_metrics": ["coverage", "learning equity", "free riding"],
+      "tags": ["education", "public_good", "knowledge"]
+    },
+    {
+      "id": "goods_block_watch",
+      "kind": "public_goods",
+      "title": "Block Watch Rotation",
+      "setting": "Residents coordinate evening walks after a series of package thefts.",
+      "dilemma": "Walking the block deters theft for everyone, but individual households would rather stay home.",
+      "agents": [
+        {
+          "id": "resident_captain",
+          "role": "Block captain",
+          "goal": "Create a fair rotation that improves safety.",
+          "risk": "Appearing controlling or alarmist."
+        },
+        {
+          "id": "resident_parent",
+          "role": "Parent resident",
+          "goal": "Protect family routines and deliveries.",
+          "risk": "Losing evening childcare time."
+        },
+        {
+          "id": "resident_elder",
+          "role": "Elder resident",
+          "goal": "Feel safe without taking unsafe walks.",
+          "risk": "Being pressured beyond physical limits."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "take an assigned watch shift or arrange coverage",
+      "defect_action": "skip the rotation without notice",
+      "success_metrics": ["coverage", "inclusion", "perceived safety"],
+      "tags": ["neighborhood", "safety", "collective_action"]
+    },
+    {
+      "id": "goods_model_card_updates",
+      "kind": "public_goods",
+      "title": "Model Card Maintenance",
+      "setting": "Teams using a shared model decide whether to update its model card after each deployment.",
+      "dilemma": "Updates help every downstream user, but teams under deadline can benefit from others documenting risks.",
+      "agents": [
+        {
+          "id": "platform_team",
+          "role": "Platform team",
+          "goal": "Keep model documentation accurate.",
+          "risk": "Becoming the documentation bottleneck."
+        },
+        {
+          "id": "product_team",
+          "role": "Product team",
+          "goal": "Ship features with clear limitations.",
+          "risk": "Slowing launches with documentation work."
+        },
+        {
+          "id": "policy_team",
+          "role": "Policy team",
+          "goal": "Track safety-relevant changes.",
+          "risk": "Missing hidden behavior changes."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "contribute deployment notes and known limitations",
+      "defect_action": "ship without updating the shared card",
+      "success_metrics": ["documentation freshness", "risk visibility", "team burden"],
+      "tags": ["ai_safety", "documentation", "public_good"]
+    },
+    {
+      "id": "goods_mutual_aid_fridge",
+      "kind": "public_goods",
+      "title": "Mutual Aid Fridge",
+      "setting": "Volunteers decide whether to restock and clean a neighborhood community fridge.",
+      "dilemma": "Regular care keeps the fridge useful, but each volunteer can rely on others to do the upkeep.",
+      "agents": [
+        {
+          "id": "volunteer_stock",
+          "role": "Food pickup volunteer",
+          "goal": "Keep fresh food available.",
+          "risk": "Carrying all logistics alone."
+        },
+        {
+          "id": "volunteer_clean",
+          "role": "Cleaning volunteer",
+          "goal": "Keep the fridge safe and dignified.",
+          "risk": "Handling unpleasant tasks without support."
+        },
+        {
+          "id": "volunteer_outreach",
+          "role": "Outreach volunteer",
+          "goal": "Make sure neighbors know the fridge exists.",
+          "risk": "Overpromising availability."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "complete a restock, cleaning, or outreach task",
+      "defect_action": "skip upkeep while still taking credit",
+      "success_metrics": ["food availability", "sanitation", "volunteer retention"],
+      "tags": ["mutual_aid", "public_good", "community"]
+    },
+    {
+      "id": "negotiation_parent_teacher_plan",
+      "kind": "negotiation",
+      "title": "Parent Teacher Support Plan",
+      "setting": "A parent and teacher negotiate a support plan for a student who is falling behind.",
+      "dilemma": "Both want the student to recover, but each worries about taking on an unsustainable share of the plan.",
+      "agents": [
+        {
+          "id": "teacher",
+          "role": "Classroom teacher",
+          "goal": "Create a realistic academic support routine.",
+          "risk": "Accepting responsibilities that exceed classroom capacity."
+        },
+        {
+          "id": "parent",
+          "role": "Parent",
+          "goal": "Secure help without shaming the student.",
+          "risk": "Being blamed for missed assignments."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "offer a concrete concession and ask for constraints",
+      "defect_action": "shift blame and demand unilateral effort",
+      "success_metrics": ["student support", "shared burden", "relationship trust"],
+      "tags": ["education", "negotiation", "family"]
+    },
+    {
+      "id": "negotiation_team_deadline",
+      "kind": "negotiation",
+      "title": "Deadline Reset",
+      "setting": "A product manager and engineer renegotiate scope after a late-breaking bug.",
+      "dilemma": "They can jointly protect quality by changing scope, or each can defend their own performance metrics.",
+      "agents": [
+        {
+          "id": "product_manager",
+          "role": "Product manager",
+          "goal": "Preserve customer commitments.",
+          "risk": "Losing credibility with stakeholders."
+        },
+        {
+          "id": "engineer",
+          "role": "Engineer",
+          "goal": "Ship reliable code without heroics.",
+          "risk": "Being blamed for the delay."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "trade scope for quality with transparent rationale",
+      "defect_action": "protect one metric and externalize the cost",
+      "success_metrics": ["quality", "timeline honesty", "role trust"],
+      "tags": ["workplace", "software", "negotiation"]
+    },
+    {
+      "id": "negotiation_landlord_repairs",
+      "kind": "negotiation",
+      "title": "Apartment Repair Schedule",
+      "setting": "A tenant and landlord negotiate repairs after repeated heating failures.",
+      "dilemma": "They can coordinate repairs and temporary accommodations, or each can escalate defensively.",
+      "agents": [
+        {
+          "id": "tenant",
+          "role": "Tenant",
+          "goal": "Get heat restored quickly and safely.",
+          "risk": "Retaliation or ignored complaints."
+        },
+        {
+          "id": "landlord",
+          "role": "Landlord",
+          "goal": "Resolve the issue without unnecessary cost.",
+          "risk": "Accepting liability for broader building problems."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "share constraints and commit to a repair step",
+      "defect_action": "deny responsibility and threaten escalation",
+      "success_metrics": ["repair speed", "legal risk", "tenant safety"],
+      "tags": ["housing", "negotiation", "power_asymmetry"]
+    },
+    {
+      "id": "negotiation_research_credit",
+      "kind": "negotiation",
+      "title": "Research Credit Order",
+      "setting": "Collaborators negotiate authorship order after uneven contributions to a paper.",
+      "dilemma": "They can make contribution evidence explicit, or compete for credit through selective memory.",
+      "agents": [
+        {
+          "id": "grad_student",
+          "role": "Graduate student",
+          "goal": "Receive credit needed for career progress.",
+          "risk": "Challenging a senior collaborator."
+        },
+        {
+          "id": "postdoc",
+          "role": "Postdoc",
+          "goal": "Have invisible coordination work recognized.",
+          "risk": "Being squeezed out of first authorship."
+        },
+        {
+          "id": "principal_investigator",
+          "role": "Principal investigator",
+          "goal": "Keep the collaboration intact and accurate.",
+          "risk": "Appearing biased toward one trainee."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "name evidence and propose a transparent credit rule",
+      "defect_action": "argue from status and minimize others' work",
+      "success_metrics": ["credit accuracy", "career fairness", "collaboration continuity"],
+      "tags": ["research", "negotiation", "credit"]
+    },
+    {
+      "id": "negotiation_shift_coverage",
+      "kind": "negotiation",
+      "title": "Holiday Shift Coverage",
+      "setting": "Coworkers negotiate who will cover a holiday shift at a busy service desk.",
+      "dilemma": "They can share constraints and rotate fairly, or hide preferences and pressure the most flexible person.",
+      "agents": [
+        {
+          "id": "worker_primary",
+          "role": "Worker with seniority",
+          "goal": "Spend the holiday with family.",
+          "risk": "Being viewed as entitled."
+        },
+        {
+          "id": "worker_new",
+          "role": "New worker",
+          "goal": "Keep the job secure while asking for fairness.",
+          "risk": "Getting assigned every unpopular shift."
+        },
+        {
+          "id": "supervisor",
+          "role": "Supervisor",
+          "goal": "Keep the desk staffed with minimal resentment.",
+          "risk": "Setting a precedent that feels arbitrary."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "offer a fair rotation or compensating trade",
+      "defect_action": "withhold constraints and push the cost onto someone else",
+      "success_metrics": ["coverage", "procedural fairness", "team morale"],
+      "tags": ["workplace", "negotiation", "scheduling"]
+    },
+    {
+      "id": "repair_moderation_apology",
+      "kind": "dialogue_repair",
+      "title": "Moderation Apology",
+      "setting": "A community moderator repairs trust after mistakenly removing a member's post.",
+      "dilemma": "The moderator can acknowledge harm and clarify policy, or defend the decision to preserve authority.",
+      "agents": [
+        {
+          "id": "moderator",
+          "role": "Community moderator",
+          "goal": "Restore trust while keeping moderation standards clear.",
+          "risk": "Inviting accusations of inconsistency."
+        },
+        {
+          "id": "member",
+          "role": "Community member",
+          "goal": "Have the mistake acknowledged and corrected.",
+          "risk": "Being dismissed as disruptive."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "acknowledge impact and propose a repair step",
+      "defect_action": "focus on authority and dismiss the concern",
+      "success_metrics": ["repair quality", "policy clarity", "member dignity"],
+      "tags": ["online_community", "repair", "moderation"]
+    },
+    {
+      "id": "repair_cross_cultural_meeting",
+      "kind": "dialogue_repair",
+      "title": "Cross-Cultural Meeting Repair",
+      "setting": "Team members repair a meeting after one person's direct feedback was interpreted as disrespect.",
+      "dilemma": "They can separate intent from impact and reset norms, or argue about who is too sensitive.",
+      "agents": [
+        {
+          "id": "direct_speaker",
+          "role": "Direct feedback giver",
+          "goal": "Keep feedback efficient and honest.",
+          "risk": "Being labeled rude."
+        },
+        {
+          "id": "impacted_teammate",
+          "role": "Impacted teammate",
+          "goal": "Maintain dignity and psychological safety.",
+          "risk": "Being labeled fragile."
+        },
+        {
+          "id": "team_lead",
+          "role": "Team lead",
+          "goal": "Reset norms without blaming either person.",
+          "risk": "Flattening real cultural differences."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "reflect impact and propose a norm for next time",
+      "defect_action": "argue about intent and question motives",
+      "success_metrics": ["mutual understanding", "future norm clarity", "trust repair"],
+      "tags": ["workplace", "repair", "culture"]
+    },
+    {
+      "id": "repair_family_misread_text",
+      "kind": "dialogue_repair",
+      "title": "Misread Family Text",
+      "setting": "Siblings repair a conflict after a short text message sounded cold during a stressful week.",
+      "dilemma": "They can ask what was meant and name feelings, or retaliate with silence and sarcasm.",
+      "agents": [
+        {
+          "id": "sibling_sender",
+          "role": "Sibling who sent the text",
+          "goal": "Explain the context without being defensive.",
+          "risk": "Having every brief message treated as hostile."
+        },
+        {
+          "id": "sibling_receiver",
+          "role": "Sibling who received the text",
+          "goal": "Feel respected and included.",
+          "risk": "Escalating based on a mistaken read."
+        }
+      ],
+      "rounds": 4,
+      "cooperate_action": "ask for clarification and validate the feeling",
+      "defect_action": "assume bad intent and withdraw",
+      "success_metrics": ["clarity", "warmth", "future communication"],
+      "tags": ["family", "repair", "miscommunication"]
+    },
+    {
+      "id": "repair_customer_service",
+      "kind": "dialogue_repair",
+      "title": "Delayed Refund Repair",
+      "setting": "A support agent and customer discuss a delayed refund that has already missed one promised date.",
+      "dilemma": "They can stay truthful and repair trust, or trade blame and threats.",
+      "agents": [
+        {
+          "id": "support_agent",
+          "role": "Support agent",
+          "goal": "Resolve the refund without making false promises.",
+          "risk": "Being blamed for a back-office delay."
+        },
+        {
+          "id": "customer",
+          "role": "Customer",
+          "goal": "Get a reliable update and fair remedy.",
+          "risk": "Being strung along again."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "state what is known, apologize, and offer a concrete next step",
+      "defect_action": "make vague promises or accuse the other side",
+      "success_metrics": ["truthfulness", "repair", "resolution confidence"],
+      "tags": ["service", "repair", "truth"]
+    },
+    {
+      "id": "repair_public_health_thread",
+      "kind": "dialogue_repair",
+      "title": "Public Health Thread",
+      "setting": "A public health communicator replies to a skeptical resident in a local forum.",
+      "dilemma": "They can answer with evidence and respect, or dismiss the resident and deepen distrust.",
+      "agents": [
+        {
+          "id": "health_communicator",
+          "role": "Public health communicator",
+          "goal": "Correct misinformation without humiliating the resident.",
+          "risk": "Overstating certainty or sounding patronizing."
+        },
+        {
+          "id": "skeptical_resident",
+          "role": "Skeptical resident",
+          "goal": "Have safety concerns taken seriously.",
+          "risk": "Rejecting reliable evidence out of distrust."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "answer the concern with evidence and respect",
+      "defect_action": "mock the concern or spread unsupported claims",
+      "success_metrics": ["truth preservation", "dignity", "trust repair"],
+      "tags": ["public_health", "repair", "misinformation"]
+    },
+    {
+      "id": "allocation_disaster_generators",
+      "kind": "resource_allocation",
+      "title": "Disaster Generator Allocation",
+      "setting": "Emergency coordinators allocate a limited set of generators after a storm.",
+      "dilemma": "They can allocate by transparent need, or favor visible constituencies and leave quieter groups exposed.",
+      "agents": [
+        {
+          "id": "hospital_coord",
+          "role": "Hospital coordinator",
+          "goal": "Keep critical care powered.",
+          "risk": "Underestimating community shelter needs."
+        },
+        {
+          "id": "shelter_coord",
+          "role": "Shelter coordinator",
+          "goal": "Protect residents without power.",
+          "risk": "Being deprioritized because needs are less visible."
+        },
+        {
+          "id": "city_manager",
+          "role": "City manager",
+          "goal": "Make a defensible allocation under pressure.",
+          "risk": "Political backlash from any unmet group."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "share need data and accept a transparent allocation rule",
+      "defect_action": "inflate claims or lobby for a favored group",
+      "success_metrics": ["need coverage", "transparency", "fairness"],
+      "tags": ["disaster", "allocation", "scarcity"]
+    },
+    {
+      "id": "allocation_shared_gpu",
+      "kind": "resource_allocation",
+      "title": "Shared GPU Queue",
+      "setting": "Research groups allocate limited GPU time before a grant deadline.",
+      "dilemma": "They can reveal true urgency and share slots, or exaggerate priority and starve other projects.",
+      "agents": [
+        {
+          "id": "vision_group",
+          "role": "Vision research group",
+          "goal": "Finish a benchmark run before submission.",
+          "risk": "Losing novelty if delayed."
+        },
+        {
+          "id": "language_group",
+          "role": "Language research group",
+          "goal": "Run ablations needed for a paper.",
+          "risk": "Publishing underpowered results."
+        },
+        {
+          "id": "infra_admin",
+          "role": "Infrastructure admin",
+          "goal": "Allocate compute transparently.",
+          "risk": "Being blamed for research delays."
+        }
+      ],
+      "rounds": 6,
+      "cooperate_action": "state real deadlines and accept queue limits",
+      "defect_action": "overstate urgency and hoard GPU slots",
+      "success_metrics": ["compute fairness", "deadline coverage", "truthfulness"],
+      "tags": ["research", "compute", "allocation"]
+    },
+    {
+      "id": "allocation_food_bank",
+      "kind": "resource_allocation",
+      "title": "Food Bank Distribution",
+      "setting": "Partner organizations allocate a short shipment of staple foods.",
+      "dilemma": "They can match food to documented need, or compete for inventory based on institutional influence.",
+      "agents": [
+        {
+          "id": "downtown_partner",
+          "role": "Downtown pantry",
+          "goal": "Serve a high daily visitor count.",
+          "risk": "Crowding out smaller sites."
+        },
+        {
+          "id": "rural_partner",
+          "role": "Rural pantry",
+          "goal": "Reach isolated households with fewer alternatives.",
+          "risk": "Being overlooked due to lower volume."
+        },
+        {
+          "id": "distribution_lead",
+          "role": "Distribution lead",
+          "goal": "Allocate fairly across different need profiles.",
+          "risk": "Using a metric that misses hidden hardship."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "share need evidence and support a proportional split",
+      "defect_action": "claim extra inventory without evidence",
+      "success_metrics": ["need fit", "procedural fairness", "waste reduction"],
+      "tags": ["food_security", "allocation", "equity"]
+    },
+    {
+      "id": "allocation_family_care",
+      "kind": "resource_allocation",
+      "title": "Family Care Schedule",
+      "setting": "Adult siblings allocate caregiving time for a parent recovering from surgery.",
+      "dilemma": "They can share constraints honestly, or hide availability and let one sibling absorb the burden.",
+      "agents": [
+        {
+          "id": "sibling_nearby",
+          "role": "Sibling living nearby",
+          "goal": "Support the parent without becoming default caregiver.",
+          "risk": "Having proximity treated as unlimited availability."
+        },
+        {
+          "id": "sibling_far",
+          "role": "Sibling living farther away",
+          "goal": "Contribute meaningfully despite travel limits.",
+          "risk": "Being seen as absent."
+        },
+        {
+          "id": "parent",
+          "role": "Recovering parent",
+          "goal": "Receive steady care without causing conflict.",
+          "risk": "Minimizing needs to keep peace."
+        }
+      ],
+      "rounds": 5,
+      "cooperate_action": "name constraints and take a fair care slot",
+      "defect_action": "avoid commitments while criticizing the plan",
+      "success_metrics": ["care coverage", "burden balance", "family trust"],
+      "tags": ["family", "caregiving", "allocation"]
+    },
+    {
+      "id": "allocation_classroom_devices",
+      "kind": "resource_allocation",
+      "title": "Classroom Device Cart",
+      "setting": "Teachers allocate a limited cart of tablets for lessons during testing week.",
+      "dilemma": "They can schedule based on learning need, or reserve extra devices to protect their own lesson plans.",
+      "agents": [
+        {
+          "id": "science_teacher",
+          "role": "Science teacher",
+          "goal": "Run a lab simulation that needs tablets.",
+          "risk": "Losing a rare interactive lesson."
+        },
+        {
+          "id": "language_teacher",
+          "role": "Language teacher",
+          "goal": "Support students with translation tools.",
+          "risk": "Having accessibility needs treated as optional."
+        },
+        {
+          "id": "tech_coordinator",
+          "role": "Technology coordinator",
+          "goal": "Create a fair schedule and prevent conflicts.",
+          "risk": "Being pulled into every classroom dispute."
+        }
+      ],
+      "rounds": 4,
+      "cooperate_action": "share device needs and accept a transparent schedule",
+      "defect_action": "reserve more devices than needed",
+      "success_metrics": ["learning access", "schedule fairness", "teacher trust"],
+      "tags": ["education", "allocation", "technology"]
+    }
+  ]
+}
