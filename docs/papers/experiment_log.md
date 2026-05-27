@@ -63,6 +63,8 @@ model/layer family.
 - Generated final-layer activation shape: 100 x 896
 - Generated swept layers: `-1`, `-2`, `-4`, `-8`
 - Trait-axis final-layer activation shape: 20 x 896
+- Larger generated sweep smoke: `Qwen/Qwen2.5-1.5B-Instruct` layers `-1`
+  and `-4`, activation shape 100 x 1536
 
 ### Contrastive Activation Direction
 
@@ -76,6 +78,8 @@ Status: complete for scripted and first generated/trait sanity splits.
 | Generated leave-one-pair-out, layer -2 | 50 | 1.000 | +5.9122 |
 | Generated leave-one-pair-out, layer -4 | 50 | 1.000 | +4.1346 |
 | Generated leave-one-pair-out, layer -8 | 50 | 1.000 | +2.3388 |
+| Generated Qwen 1.5B leave-one-pair-out, layer -1 | 50 | 1.000 | +13.4552 |
+| Generated Qwen 1.5B leave-one-pair-out, layer -4 | 50 | 1.000 | +14.7591 |
 | Trait-axis leave-one-pair-out, layer -1 | 10 | 1.000 | pending margin review |
 
 Interpretation: the activation lane works end to end, but this result is not
@@ -100,6 +104,7 @@ Artifacts:
 - `data/processed/generated_scored_runs.jsonl`
 - `data/training/generated_pairwise_probe_dataset.jsonl`
 - `data/training/generated_activation_prompts.jsonl`
+- `data/reports/generated_benchmark.md`
 - `data/reports/generated_baseline_experiments.md`
 - `data/reports/generated_transfer_experiment.md`
 - `data/reports/generated_activation_vector_experiment.md`

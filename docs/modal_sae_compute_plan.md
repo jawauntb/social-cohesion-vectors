@@ -82,7 +82,14 @@ uv run python scripts/run_llm_trajectory_generation.py \
   --output data/processed/generated_trajectories.jsonl
 ```
 
-Convert generated trajectories into the same scored/pair/prompt artifacts:
+Convert generated trajectories into the same scored/pair/prompt artifacts and a
+small benchmark report:
+
+```bash
+uv run python scripts/run_generated_benchmark.py
+```
+
+The underlying manual steps are:
 
 ```bash
 uv run python scripts/build_probe_dataset.py \
@@ -94,6 +101,10 @@ uv run python scripts/export_activation_prompts.py \
   --input data/training/generated_pairwise_probe_dataset.jsonl \
   --output data/training/generated_activation_prompts.jsonl
 ```
+
+The first offline generated run produced 125 generated runs, 50 pairwise
+examples, and 100 activation prompts. It is still easy: strategy-prior,
+metrics-only, and lexical-only baselines score about 0.980.
 
 Smoke Modal first:
 
@@ -223,6 +234,15 @@ uv run python scripts/run_activation_vector_experiment.py \
 Track model, layer, prompt source, batch size, max length, pairwise accuracy,
 leave-one-scenario accuracy, and mean projection margin in a small table before
 deciding what to inspect with SAEs.
+
+Current smoke result:
+
+| Model | Prompt set | Layer | Dim | LOO acc | LOO margin |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `Qwen/Qwen2.5-0.5B-Instruct` | generated offline | -1 | 896 | 1.000 | +26.363 |
+| `Qwen/Qwen2.5-0.5B-Instruct` | generated offline | -4 | 896 | 1.000 | +4.135 |
+| `Qwen/Qwen2.5-1.5B-Instruct` | generated offline | -1 | 1536 | 1.000 | +13.455 |
+| `Qwen/Qwen2.5-1.5B-Instruct` | generated offline | -4 | 1536 | 1.000 | +14.759 |
 
 ## 5. SAE Feature Scan With `sae-lens`
 
