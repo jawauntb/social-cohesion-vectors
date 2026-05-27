@@ -191,6 +191,13 @@ activations. Feature 3056 still skews genuine, but it is weak alone; feature 703
 is the strongest single mean-activation feature; 28005 and 20249 should be
 treated as artifacts or inactive.
 
+A cleaner deterministic batch removes the genre wrappers and uses in-text term
+rewrites plus hyphen normalization. On this clean 120-pair batch, the same
+inspected GPT-2 SAE feature ensemble reaches 0.892 leave-one-pair-out accuracy;
+on clean-only variants without the seed prompts it reaches 0.889 over 90 pairs.
+This confirms that 28005 was a hyphen artifact and moves the next question to
+LLM-authored hard negatives rather than deterministic rewrite variants.
+
 ## Research Questions
 
 - Can social cohesion be represented as a stable direction or sparse feature set in LLM activation space?

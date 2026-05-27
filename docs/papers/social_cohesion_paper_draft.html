@@ -137,7 +137,8 @@ code { background: #f4f4f5; border-radius: 4px; padding: 0.1em 0.25em; }
 <p>A Qwen 0.5B Modal pass on the same expanded prompts also reaches 0.967 leave-one-pair-out accuracy with a +28.6866 mean margin. Its single failure is the resource-request contrast, where the pseudo social-debt pressure example and the genuine reciprocal-request example currently receive the same rubric score.</p>
 <p>Token-level SAE inspection further constrains the interpretation. Feature 3056 remains the best genuine-skew candidate, while 24555, 11737, and 703 remain pseudo-skew candidates. Feature 11737 is the most semantically suggestive pseudo-side feature because it activates on <code>you</code>/<code>comply</code> in the autonomy/coercion contrast. Features 28005 and 20249 should be demoted: 28005 is mostly a single <code>mutual-aid</code> hyphen artifact, and 20249 is inactive when activations are encoded token by token.</p>
 <p>The next expanded inspection pass wraps each of the 30 hand-authored contrasts in three neutral contexts: meeting note, facilitator script, and policy update. Together with the seed set, this produces 120 matched pairs and 240 activation prompts. On this batch, a signed ensemble over seven inspected GPT-2 SAE features reaches 0.825 leave-one-pair-out accuracy using mean activations and 0.758 using max activations. The best single mean-activation feature is 703 at 0.792. Feature 3056 remains genuinely skewed at the token level, but its single-feature leave-one-pair-out accuracy is only 0.600, so it should be treated as a useful candidate sub-feature rather than a named cohesion feature. This run also exposes artifact risk: 28005 remains a hyphen artifact, 20249 is inactive, and 11737 becomes partly punctuation-sensitive under the wrapper variants.</p>
-<p>Next artifacts: cleaner generated pseudo-cohesion variants, token-level SAE feature inspection on those variants, and hard-negative transfer reports that compare hand-wrapped examples against generated examples.</p>
+<p>A cleaner deterministic variant removes these genre wrappers and instead uses in-text term rewrites with hyphen normalization. On the clean 120-pair batch, the same inspected GPT-2 SAE feature ensemble reaches 0.892 leave-one-pair-out accuracy using mean activations. On clean-only variants without the seed prompts, the ensemble reaches 0.889 over 90 pairs. This cleaner run confirms that the ensemble signal is not merely a wrapper artifact, but it does not yet justify feature naming. The best single clean mean-activation feature is 11999 at 0.800, yet its top activations remain generic and <code>Your</code>-token heavy. Feature 703 reaches 0.775 and remains function-word heavy. Feature 3056 becomes more genuine-skewed at the token level, but reaches only 0.617 as a standalone held-out classifier. Feature 28005 becomes fully inactive when the seed prompts are removed, confirming the hyphen-artifact diagnosis, and 20249 remains inactive.</p>
+<p>Next artifacts: LLM-authored pseudo-cohesion variants, token-level SAE feature inspection on those variants, and hard-negative transfer reports that compare deterministic rewrites against generated examples.</p>
 <h3>6.3 Transfer Splits</h3>
 <p>Status: partial.</p>
 <p>The current transfer report includes scripted held-out scenario-id, scenario-kind, and explicit scripted/generated pair-set folds. These are still largely solved by lexical-only, metrics-only, and strategy-prior baselines, so they remain sanity checks rather than evidence of robust generalization. Scripted-to-generated transfer currently gives 0.960 for lexical-only and metrics-only baselines and 0.980 for the strategy prior. Generated-to-scripted transfer remains 1.000 for lexical-only and metrics-only baselines.</p>
@@ -168,13 +169,13 @@ code { background: #f4f4f5; border-radius: 4px; padding: 0.1em 0.25em; }
 </ol>
 <p>them through the generated benchmark. Status: pending.</p>
 <ol>
-<li>Extend the pseudo-cohesion hard-negative suite beyond hand-wrapped variants</li>
+<li>Extend the pseudo-cohesion hard-negative suite beyond deterministic rewrites</li>
 </ol>
 <p>and use current scorer/SAE artifacts to revise the dataset. Status: partial.</p>
 <ol>
 <li>Build transfer splits: scripted-to-generated, generated-to-scripted,</li>
 </ol>
-<p>intervention-held-out, and hard-negative-held-out. Status: partial for scripted/generated pair-set transfer and expanded SAE feature transfer.</p>
+<p>intervention-held-out, and hard-negative-held-out. Status: partial for scripted/generated pair-set transfer and expanded/clean SAE feature transfer.</p>
 <ol>
 <li>Repeat the generated activation sweep on a larger model if compute allows.</li>
 </ol>

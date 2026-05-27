@@ -39,14 +39,16 @@ readout keeps 3056 as a genuine-skew candidate, keeps 24555/11737/703 as
 pseudo-skew candidates, and demotes 28005/20249 because their token-level
 evidence is an artifact or inactive.
 
-The expanded pseudo-cohesion inspection lane now builds seed-plus-variant
-activation prompts: 120 matched pairs / 240 prompts from the 30 hand-authored
-contrasts plus meeting-note, facilitator-script, and policy-update framings. On
-that expanded set, a signed ensemble over the inspected GPT-2 SAE features gets
-0.825 leave-one-pair-out accuracy using mean activations. The best single
-mean-activation feature is 703 at 0.792. Feature 3056 still skews genuine but is
-only 0.600 alone, so it should be treated as a sub-feature rather than the
-cohesion direction. 28005 and 20249 remain demoted.
+The expanded pseudo-cohesion inspection lane now builds two stress batches. The
+wrapped batch uses meeting-note, facilitator-script, and policy-update framings:
+120 matched pairs / 240 prompts with 0.825 leave-one-pair-out accuracy for a
+signed ensemble over inspected GPT-2 SAE features. The clean batch uses in-text
+term rewrites and hyphen normalization instead of wrappers: 120 pairs / 240
+prompts with 0.892 ensemble accuracy. Clean-only variants without the original
+seed prompts stay high at 0.889 across 90 pairs / 180 prompts, and feature 28005
+goes fully inactive, confirming it was a hyphen artifact. Feature 3056 still
+skews genuine but is weak alone, so it should be treated as a sub-feature rather
+than the cohesion direction.
 
 ## What Waits For Later
 
@@ -73,6 +75,10 @@ uv run python scripts/run_scenario_simulations.py
 uv run python scripts/build_probe_dataset.py
 uv run python scripts/export_activation_prompts.py
 uv run python scripts/export_pseudo_cohesion_expanded_prompts.py
+uv run python scripts/export_pseudo_cohesion_expanded_prompts.py \
+  --variant-set clean \
+  --pairs-output data/training/pseudo_cohesion_clean_pairwise_probe_dataset.jsonl \
+  --prompts-output data/training/pseudo_cohesion_clean_activation_prompts.jsonl
 uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
   --prompts data/training/pseudo_cohesion_expanded_activation_prompts.jsonl \
   --json-output data/reports/gpt2_sae_token_feature_inspection_expanded.json \

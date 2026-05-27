@@ -61,6 +61,11 @@ These work without new humans or new neural recordings.
   0.825 leave-one-pair-out accuracy with mean activations; 703 is the best
   single mean-activation feature at 0.792, while 3056 remains genuine-skewed but
   weak alone at 0.600.
+- Clean pseudo-cohesion SAE transfer: in-text rewrite variants without genre
+  wrappers also create 120 matched pairs / 240 prompts and improve the inspected
+  GPT-2 SAE feature ensemble to 0.892 leave-one-pair-out accuracy. The clean-only
+  variant batch reaches 0.889 over 90 pairs and makes 28005 fully inactive,
+  confirming it was a hyphen artifact.
 
 ## Low-Cost Human Next
 
@@ -105,8 +110,8 @@ These need Prolific or comparable validation but not new neural recordings.
   scenarios, improve scenario diversity and reduce lexical shortcuts.
 - If weak or SAE-compatible models fail specifically on pseudo-cohesion, expand
   that dataset and inspect sparse features before naming a "cohesion" direction.
-  Treat wrapper-sensitive or punctuation-heavy features as artifacts until they
-  survive cleaner generated variants.
+  Treat wrapper-sensitive, punctuation-heavy, or deterministic-rewrite-sensitive
+  features as artifacts until they survive cleaner generated variants.
 - If vectors transfer across scenarios/models, run Prolific.
 - If Prolific shows human preference or behavioral movement, then the
   brain-aligned bridge becomes worth spending compute on.

@@ -91,6 +91,8 @@ Status: complete for scripted and first generated/trait sanity splits.
 | Expanded pseudo-cohesion GPT-2 residual leave-one-pair-out, layer 11 | 30 | 0.967 | +9.7512 |
 | Expanded pseudo-cohesion GPT-2 SAE-feature leave-one-pair-out, layer 11 | 30 | 0.533 | -0.0029 |
 | Expanded pseudo-cohesion selected GPT-2 SAE feature ensemble | 120 | 0.825 | +1.7647 |
+| Clean pseudo-cohesion selected GPT-2 SAE feature ensemble | 120 | 0.892 | +2.6021 |
+| Clean-only pseudo-cohesion selected GPT-2 SAE feature ensemble | 90 | 0.889 | +2.6186 |
 | Trait-axis leave-one-pair-out, layer -1 | 10 | 1.000 | pending margin review |
 
 Interpretation: the activation lane works end to end, but this result is not
@@ -180,6 +182,13 @@ policy-update contexts:
 - `data/training/pseudo_cohesion_expanded_pairwise_probe_dataset.jsonl`
 - `data/training/pseudo_cohesion_expanded_activation_prompts.jsonl`
 
+It also has a clean in-text rewrite mode that avoids wrapper prefixes/suffixes
+and normalizes hyphenated words:
+
+- `scripts/export_pseudo_cohesion_expanded_prompts.py --variant-set clean`
+- `data/training/pseudo_cohesion_clean_pairwise_probe_dataset.jsonl`
+- `data/training/pseudo_cohesion_clean_activation_prompts.jsonl`
+
 | Metric | Result |
 | --- | ---: |
 | Total examples | 60 |
@@ -241,6 +250,44 @@ transfer. Feature 703 transfers best as a single mean-activation feature but is
 function-word heavy. Feature 11737 remains relevant to pseudo-cohesion around
 autonomy/resource-pressure contrasts, though the expanded wrappers introduce
 punctuation artifacts. Features 28005 and 20249 should stay demoted.
+
+### Clean SAE Token Inspection And Feature Transfer
+
+Status: complete for clean in-text variants and clean-only variants.
+
+Reports:
+
+- `data/reports/gpt2_sae_token_feature_inspection_clean.md`
+- `data/reports/gpt2_sae_token_feature_inspection_clean_only.md`
+
+The clean export keeps the 120-pair / 240-prompt size, but uses deterministic
+in-text term rewrites instead of genre wrappers. A clean-only export removes the
+original seed prompts and uses 90 pairs / 180 prompts. These runs test whether
+the selected features survive after wrapper and punctuation artifacts are
+reduced.
+
+| Feature set | Batch | Aggregation | Pairs | Accuracy | Mean margin | Failures |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| inspected ensemble | clean + seed | mean activation | 120 | 0.892 | +2.6021 | 13 |
+| inspected ensemble | clean + seed | max activation | 120 | 0.725 | +2.3176 | 33 |
+| inspected ensemble | clean only | mean activation | 90 | 0.889 | +2.6186 | 10 |
+| inspected ensemble | clean only | max activation | 90 | 0.733 | +2.3554 | 24 |
+| 11999 only | clean + seed | mean activation | 120 | 0.800 | +0.6953 | 24 |
+| 703 only | clean + seed | mean activation | 120 | 0.775 | +0.6373 | 27 |
+| 24555 only | clean + seed | mean activation | 120 | 0.692 | +0.6235 | 37 |
+| 11737 only | clean + seed | mean activation | 120 | 0.667 | +0.3333 | 40 |
+| 3056 only | clean + seed | mean activation | 120 | 0.617 | +0.3137 | 46 |
+
+Interpretation: the selected feature ensemble survives the cleaner rewrite
+stress test and improves over the wrapper batch. This argues against the whole
+effect being a wrapper artifact. However, the strongest single clean feature is
+11999, whose top activations remain generic and `Your`-token heavy, so it should
+not be named as a social concept. Feature 703 remains a useful pseudo-side
+transfer feature but is still function-word heavy. Feature 3056 becomes more
+genuine-skewed in token mean (+0.2423), with large positive deltas on privacy,
+reality validation, and exit/autonomy-related contrasts, but it remains weak as
+a standalone held-out classifier. In the clean-only run, 28005 is completely
+inactive, confirming the hyphen-artifact diagnosis; 20249 remains inactive.
 
 ### Transfer Splits
 
