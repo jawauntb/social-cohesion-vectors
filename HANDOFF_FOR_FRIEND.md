@@ -18,6 +18,9 @@ The current local pipeline can:
 6. Extract open-weight LLM activations on Modal/GPU.
 7. Train/evaluate a contrastive activation direction.
 8. Run simple baselines.
+9. Generate harder LLM-style trajectories with a deterministic offline fallback.
+10. Run pseudo-cohesion hard-negative checks.
+11. Run transfer splits and activation layer-sweep orchestration.
 
 ## Setup
 
@@ -36,6 +39,9 @@ uv run python scripts/run_scenario_simulations.py
 uv run python scripts/build_probe_dataset.py
 uv run python scripts/export_activation_prompts.py
 uv run python scripts/run_baseline_experiments.py
+uv run python scripts/run_llm_trajectory_generation.py --provider offline
+uv run python scripts/run_pseudo_cohesion_experiment.py
+uv run python scripts/run_transfer_experiment.py
 ```
 
 Expected local artifact counts:
@@ -44,6 +50,8 @@ Expected local artifact counts:
 - `data/processed/scored_runs.jsonl`: 450 rows
 - `data/training/pairwise_probe_dataset.jsonl`: 126 rows
 - `data/training/activation_prompts.jsonl`: 252 rows
+- `data/processed/generated_trajectories.jsonl`: 125 rows from the offline
+  generated-trajectory fallback
 
 ## Run The GPU Activation Lane
 
@@ -74,6 +82,25 @@ contrastive vector. On scripted data, in-sample and leave-one-pair-out pairwise
 accuracy were both 1.000. This is only a sanity check because lexical and
 metrics-only baselines also solve the scripted task.
 
+## Additional Local Results
+
+Pseudo-cohesion hard negatives are now wired. The first run used 8 hand-authored
+examples: 4 pseudo-cohesion cases and 4 genuine contrasts. The current scorer
+assigned high cohesion to 2 pseudo cases:
+
+- `pseudo_compliance_maximizing`
+- `pseudo_dissent_suppression`
+
+The lexical-only baseline also failed on 2 pseudo cases:
+
+- `pseudo_coercive_alignment`
+- `pseudo_dissent_suppression`
+
+Transfer reports now run over held-out scenario ids and held-out scenario
+families. On the current scripted data, lexical-only and metrics-only baselines
+still score 1.000, so generated and hard-negative transfer remain the important
+next targets.
+
 ## Current Interpretation
 
 The scaffold works. The science is not done.
@@ -91,13 +118,9 @@ the task harder.
 ## Next High-Value Experiments
 
 1. Generate held-out LLM-authored trajectories with fewer obvious lexical cues.
-2. Add pseudo-cohesion hard negatives:
-   - polite coercion;
-   - sycophantic agreement;
-   - unity rhetoric that suppresses dissent;
-   - truth-hiding "repair";
-   - compliance framed as harmony.
-3. Train on scripted data and test on generated/hard-negative data.
+2. Expand pseudo-cohesion hard negatives and use current failures to revise the
+   scorer/dataset.
+3. Train on scripted data and test on scored generated/hard-negative data.
 4. Sweep activation layers and model sizes.
 5. Split the target into persona-vector-style trait families:
    - repair;
@@ -114,6 +137,7 @@ the task harder.
 
 - `docs/papers/social_cohesion_primer.md`
 - `docs/papers/social_cohesion_paper_draft.md`
+- `docs/papers/experiment_log.md`
 - `docs/overnight_execution_map.md`
 - `docs/research_brief.md`
 
