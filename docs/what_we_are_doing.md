@@ -100,6 +100,19 @@ It includes:
    Ostrom, social identity/contact theory, cooperation neuroscience,
    hyperscanning, mechanistic interpretability, and persona vectors.
 
+9. A generated-trajectory benchmark and transfer lane.
+   The repo can now generate offline LLM-style trajectories, score them, build
+   generated pairwise examples, and compare scripted-to-generated transfer.
+
+10. A pseudo-cohesion hard-negative lane.
+    This explicitly tests cases that sound warm or group-oriented but are really
+    coercive, sycophantic, dissent-suppressing, or compliance-maximizing.
+
+11. A first matched GPT-2 SAE probe.
+    Because Qwen does not currently have a convenient matching pretrained SAE in
+    the local `sae-lens` directory, the first sparse-feature inspection uses
+    GPT-2 as a weak but SAE-compatible reference model.
+
 ## Current Results
 
 The first local run produced:
@@ -125,6 +138,32 @@ The activation-vector result was:
 - in-sample pairwise accuracy: 1.000;
 - leave-one-pair-out pairwise accuracy: 1.000.
 
+The generated offline benchmark produced:
+
+- 125 generated trajectories;
+- 50 generated pairwise examples;
+- 100 generated activation prompts;
+- strong but imperfect simple baselines around 0.980.
+
+Qwen-style activation directions separate generated and pseudo-cohesion prompt
+sets cleanly in the current smoke tests, but the simple baselines are still
+strong enough that this is not yet a robust construct-level result.
+
+The most interesting current failure case is GPT-2:
+
+- generated leave-one-pair-out accuracy: 0.860;
+- 7 generated misses, all involving `pseudo_cohesion_compliance` as the negative
+  example;
+- pseudo-cohesion leave-one-pair-out accuracy: 0.750;
+- missed contrast: `pseudo_compliance_maximizing` vs
+  `genuine_participation_boundary`.
+
+The first matched SAE smoke uses `gpt2-small`,
+`gpt2-small-resid-post-v5-32k`, and `blocks.11.hook_resid_post`. On the tiny
+8-prompt pseudo-cohesion set, candidate sparse features 3056 and 28005 are
+higher on genuine cohesion, while 24555 and 703 are higher on pseudo-cohesion.
+These are inspection targets, not final feature names.
+
 Important caveat: this is not yet a deep scientific result. The scripted
 benchmark is too easy. Lexical and metrics-only baselines solve it, which means
 the activation result is currently a pipeline sanity check, not evidence of a
@@ -149,7 +188,8 @@ High-value next steps:
 3. Train on scripted examples and test on generated examples.
 4. Sweep model layers and model sizes.
 5. Break the target into multiple persona-vector-style axes.
-6. Run a small Prolific validation only after the compute benchmarks stop being
+6. Inspect GPT-2 SAE candidate features on a larger pseudo-cohesion set.
+7. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting

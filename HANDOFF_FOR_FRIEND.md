@@ -155,6 +155,7 @@ the task harder.
 
 ## Reading
 
+- `docs/friend_text_update.md`
 - `docs/papers/social_cohesion_primer.md`
 - `docs/papers/social_cohesion_paper_draft.md`
 - `docs/papers/experiment_log.md`

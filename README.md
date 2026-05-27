@@ -5,13 +5,30 @@ social cohesion vectors before touching expensive human or neural experiments.
 
 ## What We Can Run Now
 
-- Generate social-dilemma transcripts from 20-30 seed scenarios.
+- Generate social-dilemma transcripts from 25 seed scenarios.
 - Score trajectories for cooperation, repair, hostility, fairness, autonomy risk,
   and truth-preserving dialogue quality.
 - Build paired cooperative-vs-adversarial text examples for probes, activation
   captures, reward models, and SAE dataset exports.
 - Extract open-weight LLM activations on Modal and train contrastive directions
   over those activations.
+- Generate harder offline LLM-style trajectories, run transfer checks, and probe
+  pseudo-cohesion hard negatives.
+- Run a matched GPT-2 SAE smoke test for sparse-feature inspection.
+
+## Current Status Snapshot
+
+The scripted scaffold is working but too easy: lexical and metrics-only
+baselines solve the first scripted benchmark, so the 1.000 activation-vector
+results are sanity checks rather than scientific evidence.
+
+The more useful early signal is the pseudo-cohesion lane. GPT-2 gets 0.860 on
+generated leave-one-pair-out examples, and all 7 misses involve
+`pseudo_cohesion_compliance` as the negative example. On the 4 hand-authored
+pseudo-cohesion contrasts, Qwen 3B separates all four while GPT-2 misses the
+`pseudo_compliance_maximizing` case. A first GPT-2 SAE smoke surfaces candidate
+features 3056 and 28005 as higher on genuine cohesion, and 24555 and 703 as
+higher on pseudo-cohesion.
 
 ## What Waits For Later
 
@@ -41,6 +58,13 @@ uv run python scripts/export_activation_prompts.py
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.
 Only `data/scenarios/seed_scenarios.json` is tracked.
+
+For a quick human handoff, start with:
+
+- `HANDOFF_FOR_FRIEND.md`
+- `docs/friend_text_update.md`
+- `docs/papers/experiment_log.md`
+- `docs/modal_sae_compute_plan.md`
 
 ## Modal Activation Lane
 
