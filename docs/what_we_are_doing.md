@@ -115,6 +115,11 @@ It includes:
     the local `sae-lens` directory, the first sparse-feature inspection uses
     GPT-2 as a weak but SAE-compatible reference model.
 
+12. An expanded pseudo-cohesion SAE stress batch.
+    The repo can now wrap each hand-authored contrast in neutral meeting-note,
+    facilitator-script, and policy-update contexts, then run token-level SAE
+    inspection and leave-one-pair-out feature transfer on the larger batch.
+
 ## Current Results
 
 The first local run produced:
@@ -183,6 +188,17 @@ candidates, though not clean enough to name. Feature 28005 is mostly a
 `mutual-aid` hyphen artifact, and feature 20249 is inactive at token level, so
 both should be demoted.
 
+The expanded pseudo-cohesion SAE stress batch now has 120 matched pairs / 240
+prompts. A signed ensemble over the inspected GPT-2 SAE features gets 0.825
+leave-one-pair-out accuracy using mean activations. The strongest single
+mean-activation feature is 703 at 0.792. Feature 3056 still skews genuine, with
+large deltas around privacy, exit rights, reality validation, voluntary
+participation, and autonomy contrasts, but it only reaches 0.600 as a single
+held-out feature. That makes it a candidate sub-feature rather than a standalone
+social-cohesion vector. The expanded run also shows why cleaner generated
+variants matter: some pseudo-side features become sensitive to wrappers or
+punctuation.
+
 Important caveat: this is not yet a deep scientific result. The scripted
 benchmark is too easy. Lexical and metrics-only baselines solve it, which means
 the activation result is currently a pipeline sanity check, not evidence of a
@@ -207,8 +223,10 @@ High-value next steps:
 3. Train on scripted examples and test on generated examples.
 4. Sweep model layers and model sizes.
 5. Break the target into multiple persona-vector-style axes.
-6. Re-run GPT-2 SAE token inspection on generated pseudo-cohesion examples.
-7. Add hard-negative-held-out transfer reports for the expanded pseudo set.
+6. Re-run GPT-2 SAE token inspection on cleaner generated pseudo-cohesion
+   variants.
+7. Compare expanded hand-wrapped transfer against generated hard-negative
+   transfer.
 8. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 

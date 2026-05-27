@@ -56,6 +56,11 @@ These work without new humans or new neural recordings.
 - GPT-2 SAE token inspection: 3056 remains a genuine-skew candidate;
   24555/11737/703 remain pseudo-skew candidates; 28005/20249 are demoted by
   token-level evidence.
+- Expanded pseudo-cohesion SAE transfer: seed-plus-variant export creates 120
+  matched pairs / 240 prompts. The inspected GPT-2 SAE feature ensemble reaches
+  0.825 leave-one-pair-out accuracy with mean activations; 703 is the best
+  single mean-activation feature at 0.792, while 3056 remains genuine-skewed but
+  weak alone at 0.600.
 
 ## Low-Cost Human Next
 
@@ -100,6 +105,8 @@ These need Prolific or comparable validation but not new neural recordings.
   scenarios, improve scenario diversity and reduce lexical shortcuts.
 - If weak or SAE-compatible models fail specifically on pseudo-cohesion, expand
   that dataset and inspect sparse features before naming a "cohesion" direction.
+  Treat wrapper-sensitive or punctuation-heavy features as artifacts until they
+  survive cleaner generated variants.
 - If vectors transfer across scenarios/models, run Prolific.
 - If Prolific shows human preference or behavioral movement, then the
   brain-aligned bridge becomes worth spending compute on.

@@ -127,6 +127,10 @@ def run_inspection(
         "top_k_tokens": top_k_tokens,
         "top_k_examples": top_k_examples,
         "top_k_pairs": top_k_pairs,
+        "transfer_evaluation": evaluate_feature_transfer(
+            example_rows_by_feature=example_rows,
+            features=feature_ids,
+        ),
         "feature_reports": [
             summarize_feature(
                 feature=feature,
@@ -139,6 +143,193 @@ def run_inspection(
             for feature in feature_ids
         ],
     }
+
+
+def evaluate_feature_transfer(
+    *,
+    example_rows_by_feature: Mapping[int, Sequence[Mapping[str, Any]]],
+    features: Sequence[int],
+) -> dict[str, Any]:
+    """Evaluate whether selected feature activations transfer by held-out pair."""
+
+    rows = feature_matrix_rows(
+        example_rows_by_feature=example_rows_by_feature,
+        features=features,
+    )
+    return {
+        "description": (
+            "Leave-one-pair-out transfer using feature signs learned from all "
+            "other pairs. Scores use z-scored feature means or maxima."
+        ),
+        "n_examples": len(rows),
+        "n_pairs": len({str(row["pair_id"]) for row in rows}),
+        "feature_ids": [int(feature) for feature in features],
+        "metrics": [
+            {
+                "activation_metric": metric,
+                "ensemble": evaluate_signed_feature_loo(
+                    rows=rows,
+                    features=features,
+                    activation_metric=metric,
+                ),
+                "single_features": [
+                    {
+                        "feature": int(feature),
+                        **evaluate_signed_feature_loo(
+                            rows=rows,
+                            features=[feature],
+                            activation_metric=metric,
+                        ),
+                    }
+                    for feature in features
+                ],
+            }
+            for metric in ("mean_activation", "max_activation")
+        ],
+    }
+
+
+def feature_matrix_rows(
+    *,
+    example_rows_by_feature: Mapping[int, Sequence[Mapping[str, Any]]],
+    features: Sequence[int],
+) -> list[dict[str, Any]]:
+    """Combine per-feature example rows into one row per prompt."""
+
+    by_sample: dict[str, dict[str, Any]] = {}
+    for feature in features:
+        for row in example_rows_by_feature.get(feature, []):
+            sample_id = str(row["sample_id"])
+            sample = by_sample.setdefault(
+                sample_id,
+                {
+                    "sample_id": sample_id,
+                    "pair_id": str(row["pair_id"]),
+                    "label": str(row["label"]),
+                    "features": {},
+                },
+            )
+            sample["features"][int(feature)] = {
+                "mean_activation": float(row["mean_activation"]),
+                "max_activation": float(row["max_activation"]),
+            }
+    return sorted(
+        by_sample.values(),
+        key=lambda row: (str(row["pair_id"]), str(row["label"]), str(row["sample_id"])),
+    )
+
+
+def evaluate_signed_feature_loo(
+    *,
+    rows: Sequence[Mapping[str, Any]],
+    features: Sequence[int],
+    activation_metric: str,
+) -> dict[str, Any]:
+    """Fit feature signs on all but one pair and score the held-out contrast."""
+
+    pair_ids = sorted({str(row["pair_id"]) for row in rows})
+    outcomes: list[dict[str, Any]] = []
+    for pair_id in pair_ids:
+        train_rows = [row for row in rows if str(row["pair_id"]) != pair_id]
+        test_rows = [row for row in rows if str(row["pair_id"]) == pair_id]
+        positive = _row_by_label(test_rows, "positive")
+        negative = _row_by_label(test_rows, "negative")
+        if positive is None or negative is None:
+            continue
+        model = fit_signed_feature_model(
+            rows=train_rows,
+            features=features,
+            activation_metric=activation_metric,
+        )
+        positive_score = score_feature_row(positive, model=model)
+        negative_score = score_feature_row(negative, model=model)
+        margin = positive_score - negative_score
+        outcomes.append(
+            {
+                "pair_id": pair_id,
+                "margin": round(margin, 6),
+                "correct": margin > 0.0,
+                "positive_projection": round(positive_score, 6),
+                "negative_projection": round(negative_score, 6),
+                "directions": {
+                    str(feature): int(model["directions"][int(feature)])
+                    for feature in features
+                },
+            }
+        )
+
+    failures = [row for row in outcomes if not row["correct"]]
+    return {
+        "features": [int(feature) for feature in features],
+        "pairs": len(outcomes),
+        "accuracy": round((len(outcomes) - len(failures)) / len(outcomes), 6)
+        if outcomes
+        else 0.0,
+        "mean_margin": round(
+            sum(float(row["margin"]) for row in outcomes) / len(outcomes),
+            6,
+        )
+        if outcomes
+        else 0.0,
+        "failures": failures,
+    }
+
+
+def fit_signed_feature_model(
+    *,
+    rows: Sequence[Mapping[str, Any]],
+    features: Sequence[int],
+    activation_metric: str,
+) -> dict[str, Any]:
+    """Fit per-feature sign and scale from training rows."""
+
+    directions: dict[int, int] = {}
+    centers: dict[int, float] = {}
+    scales: dict[int, float] = {}
+    for feature in features:
+        values = [
+            _feature_value(row, feature=feature, activation_metric=activation_metric)
+            for row in rows
+        ]
+        positive_values = [
+            _feature_value(row, feature=feature, activation_metric=activation_metric)
+            for row in rows
+            if row.get("label") == "positive"
+        ]
+        negative_values = [
+            _feature_value(row, feature=feature, activation_metric=activation_metric)
+            for row in rows
+            if row.get("label") == "negative"
+        ]
+        delta = _mean_float(positive_values) - _mean_float(negative_values)
+        directions[int(feature)] = 1 if delta >= 0.0 else -1
+        centers[int(feature)] = _mean_float(values)
+        scales[int(feature)] = _std_float(values) or 1.0
+    return {
+        "activation_metric": activation_metric,
+        "features": [int(feature) for feature in features],
+        "directions": directions,
+        "centers": centers,
+        "scales": scales,
+    }
+
+
+def score_feature_row(
+    row: Mapping[str, Any],
+    *,
+    model: Mapping[str, Any],
+) -> float:
+    """Project one prompt row onto a signed, standardized feature ensemble."""
+
+    metric = str(model["activation_metric"])
+    score = 0.0
+    for feature_id in _int_sequence(model.get("features")):
+        value = _feature_value(row, feature=feature_id, activation_metric=metric)
+        center = float(_int_key_mapping(model["centers"]).get(feature_id, 0.0))
+        scale = float(_int_key_mapping(model["scales"]).get(feature_id, 1.0)) or 1.0
+        direction = int(_int_key_mapping(model["directions"]).get(feature_id, 1))
+        score += direction * ((value - center) / scale)
+    return score
 
 
 def summarize_feature(
@@ -343,6 +534,8 @@ def render_markdown(report: Mapping[str, Any]) -> str:
             f"{float(summary.get('example_max_pos_minus_neg', 0.0)):+.4f} |"
         )
 
+    lines.extend(render_transfer_markdown(report.get("transfer_evaluation")))
+
     for raw_feature_report in _sequence(report.get("feature_reports")):
         feature_report = _mapping(raw_feature_report)
         summary = _mapping(feature_report.get("summary"))
@@ -446,6 +639,53 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_transfer_markdown(raw_transfer: object) -> list[str]:
+    """Render the feature-transfer summary table."""
+
+    transfer = _mapping(raw_transfer)
+    if not transfer:
+        return []
+    lines = [
+        "",
+        "## Leave-One-Pair-Out Feature Transfer",
+        "",
+        str(transfer.get("description", "")),
+        "",
+        "| Aggregation | Features | Accuracy | Mean margin | Failures |",
+        "| --- | --- | ---: | ---: | ---: |",
+    ]
+    for metric in _sequence(transfer.get("metrics")):
+        item = _mapping(metric)
+        activation_metric = str(item.get("activation_metric", ""))
+        lines.append(_transfer_markdown_row(activation_metric, "ensemble", item))
+        for raw_single in _sequence(item.get("single_features")):
+            single = _mapping(raw_single)
+            lines.append(
+                _transfer_markdown_row(
+                    activation_metric,
+                    str(int(single.get("feature", 0))),
+                    {"ensemble": single},
+                )
+            )
+    return lines
+
+
+def _transfer_markdown_row(
+    activation_metric: str,
+    feature_label: str,
+    result: Mapping[str, Any],
+) -> str:
+    item = _mapping(result.get("ensemble"))
+    return (
+        "| "
+        f"{_cell(activation_metric)} | "
+        f"{_cell(feature_label)} | "
+        f"{float(item.get('accuracy', 0.0)):.3f} | "
+        f"{float(item.get('mean_margin', 0.0)):+.4f} | "
+        f"{len(_sequence(item.get('failures')))} |"
+    )
+
+
 def short_pair_id(pair_id: str) -> str:
     """Remove the pseudo-cohesion namespace in reports."""
 
@@ -547,6 +787,46 @@ def _mean_float(values: Sequence[float] | Any) -> float:
     if not collected:
         return 0.0
     return round(sum(float(value) for value in collected) / len(collected), 6)
+
+
+def _std_float(values: Sequence[float] | Any) -> float:
+    collected = [float(value) for value in values]
+    if len(collected) < 2:
+        return 0.0
+    mean = sum(collected) / len(collected)
+    variance = sum((value - mean) ** 2 for value in collected) / len(collected)
+    return variance**0.5
+
+
+def _row_by_label(
+    rows: Sequence[Mapping[str, Any]],
+    label: str,
+) -> Mapping[str, Any] | None:
+    for row in rows:
+        if row.get("label") == label:
+            return row
+    return None
+
+
+def _feature_value(
+    row: Mapping[str, Any],
+    *,
+    feature: int,
+    activation_metric: str,
+) -> float:
+    features = _int_key_mapping(row.get("features"))
+    feature_values = _mapping(features.get(feature))
+    return float(feature_values.get(activation_metric, 0.0))
+
+
+def _int_sequence(value: object) -> list[int]:
+    return [int(cast(Any, item)) for item in _sequence(value)]
+
+
+def _int_key_mapping(value: object) -> Mapping[int, Any]:
+    if isinstance(value, Mapping):
+        return cast(Mapping[int, Any], value)
+    return {}
 
 
 def _clean_token(token: str) -> str:

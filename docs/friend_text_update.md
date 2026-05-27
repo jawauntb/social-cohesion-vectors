@@ -43,10 +43,17 @@ Concrete early signals:
   level. 3056 remains the best genuine-skew candidate; 24555/11737/703 remain
   pseudo-skew candidates, with 11737 showing the most interpretable
   `you`/`comply` signal.
+- I also expanded the pseudo-cohesion prompt batch into neutral genre variants:
+  120 matched pairs / 240 prompts. On that harder batch, the inspected GPT-2 SAE
+  features get 0.825 leave-one-pair-out accuracy as a signed mean-activation
+  ensemble. The best single feature is 703 at 0.792; 3056 still skews genuine
+  but only gets 0.600 alone, so it is more like a useful sub-feature than "the"
+  cohesion feature.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is token/example-level
-SAE inspection, hard-negative-held-out transfer, and reducing lexical shortcuts.
+SAE inspection, better generated hard negatives, and reducing lexical or wrapper
+shortcuts.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is inspecting the GPT-2 SAE candidate

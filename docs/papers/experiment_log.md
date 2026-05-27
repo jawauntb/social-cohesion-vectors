@@ -90,6 +90,7 @@ Status: complete for scripted and first generated/trait sanity splits.
 | Expanded pseudo-cohesion Qwen 0.5B leave-one-pair-out, layer -1 | 30 | 0.967 | +28.6866 |
 | Expanded pseudo-cohesion GPT-2 residual leave-one-pair-out, layer 11 | 30 | 0.967 | +9.7512 |
 | Expanded pseudo-cohesion GPT-2 SAE-feature leave-one-pair-out, layer 11 | 30 | 0.533 | -0.0029 |
+| Expanded pseudo-cohesion selected GPT-2 SAE feature ensemble | 120 | 0.825 | +1.7647 |
 | Trait-axis leave-one-pair-out, layer -1 | 10 | 1.000 | pending margin review |
 
 Interpretation: the activation lane works end to end, but this result is not
@@ -171,6 +172,14 @@ The hard-negative examples are now exportable as pairwise activation prompts:
 - `data/training/pseudo_cohesion_pairwise_probe_dataset.jsonl`
 - `data/training/pseudo_cohesion_activation_prompts.jsonl`
 
+The deterministic expansion script creates a larger feature-inspection batch by
+wrapping each contrast in neutral meeting-note, facilitator-script, and
+policy-update contexts:
+
+- `scripts/export_pseudo_cohesion_expanded_prompts.py`
+- `data/training/pseudo_cohesion_expanded_pairwise_probe_dataset.jsonl`
+- `data/training/pseudo_cohesion_expanded_activation_prompts.jsonl`
+
 | Metric | Result |
 | --- | ---: |
 | Total examples | 60 |
@@ -203,6 +212,35 @@ Lexical-only failure cases:
 Success criteria: pseudo-cohesion examples should not receive high cohesion
 scores merely because they sound warm or group-oriented. Any high-scoring pseudo
 case is a useful failure case for improving scorer components and datasets.
+
+### Expanded SAE Token Inspection And Feature Transfer
+
+Status: complete for seed-plus-variant GPT-2 SAE pass.
+
+Report: `data/reports/gpt2_sae_token_feature_inspection_expanded.md`
+
+The expanded export produced 120 matched pairs / 240 prompts: the 30
+hand-authored contrasts plus three neutral genre variants per contrast. The
+token-level report now also includes leave-one-pair-out transfer using feature
+signs learned from all other pairs.
+
+| Feature set | Aggregation | Pairs | Accuracy | Mean margin | Failures |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 3056/24555/28005/20249/11999/11737/703 | mean activation | 120 | 0.825 | +1.7647 | 21 |
+| 3056/24555/28005/20249/11999/11737/703 | max activation | 120 | 0.758 | +1.8082 | 29 |
+| 703 only | mean activation | 120 | 0.792 | +0.5836 | 25 |
+| 11999 only | mean activation | 120 | 0.733 | +0.2117 | 32 |
+| 11737 only | max activation | 120 | 0.725 | +0.3563 | 33 |
+| 3056 only | mean activation | 120 | 0.600 | +0.2039 | 48 |
+
+Interpretation: the selected SAE features contain transferable signal, but not a
+clean named cohesion feature. Feature 3056 still skews genuine at the token
+level, especially around privacy, exit rights, reality validation, voluntary
+participation, and autonomy contrasts, but it is weak alone under held-out
+transfer. Feature 703 transfers best as a single mean-activation feature but is
+function-word heavy. Feature 11737 remains relevant to pseudo-cohesion around
+autonomy/resource-pressure contrasts, though the expanded wrappers introduce
+punctuation artifacts. Features 28005 and 20249 should stay demoted.
 
 ### Transfer Splits
 

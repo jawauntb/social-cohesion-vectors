@@ -261,8 +261,22 @@ autonomy/coercion contrast. Features 28005 and 20249 should be demoted: 28005 is
 mostly a single `mutual-aid` hyphen artifact, and 20249 is inactive when
 activations are encoded token by token.
 
-Next artifacts: generated pseudo-cohesion examples, token-level SAE feature
-inspection, and hard-negative-held-out transfer reports.
+The next expanded inspection pass wraps each of the 30 hand-authored contrasts
+in three neutral contexts: meeting note, facilitator script, and policy update.
+Together with the seed set, this produces 120 matched pairs and 240 activation
+prompts. On this batch, a signed ensemble over seven inspected GPT-2 SAE
+features reaches 0.825 leave-one-pair-out accuracy using mean activations and
+0.758 using max activations. The best single mean-activation feature is 703 at
+0.792. Feature 3056 remains genuinely skewed at the token level, but its
+single-feature leave-one-pair-out accuracy is only 0.600, so it should be
+treated as a useful candidate sub-feature rather than a named cohesion feature.
+This run also exposes artifact risk: 28005 remains a hyphen artifact, 20249 is
+inactive, and 11737 becomes partly punctuation-sensitive under the wrapper
+variants.
+
+Next artifacts: cleaner generated pseudo-cohesion variants, token-level SAE
+feature inspection on those variants, and hard-negative transfer reports that
+compare hand-wrapped examples against generated examples.
 
 ### 6.3 Transfer Splits
 
@@ -342,11 +356,11 @@ behavior. It is a scaffold for those tests.
 
 1. Generate external-model trajectories with reduced template leakage and score
    them through the generated benchmark. Status: pending.
-2. Extend the pseudo-cohesion hard-negative suite beyond the first hand-authored
-   probe and use current scorer failures to revise the dataset. Status: partial.
+2. Extend the pseudo-cohesion hard-negative suite beyond hand-wrapped variants
+   and use current scorer/SAE artifacts to revise the dataset. Status: partial.
 3. Build transfer splits: scripted-to-generated, generated-to-scripted,
    intervention-held-out, and hard-negative-held-out. Status: partial for
-   scripted scenario-held-out only.
+   scripted/generated pair-set transfer and expanded SAE feature transfer.
 4. Repeat the generated activation sweep on a larger model if compute allows.
    Status: pending.
 5. Expand the persona-vector-style trait families:

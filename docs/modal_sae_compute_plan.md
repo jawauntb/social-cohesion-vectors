@@ -299,6 +299,12 @@ Current local status:
   with one failure on `resource_request`, where the rubric currently gives the
   pseudo social-debt-obligation example and genuine reciprocal request the same
   score.
+- A deterministic seed-plus-variant pseudo-cohesion export now produces 120
+  matched pairs / 240 prompts for SAE feature stress tests. On this expanded
+  batch, the selected GPT-2 SAE feature ensemble reaches 0.825 leave-one-pair-out
+  accuracy using mean activations. The best single mean-activation feature is
+  703 at 0.792; 3056 remains genuinely skewed but only gets 0.600 alone. 28005
+  and 20249 remain demoted.
 
 Run the current GPT-2 SAE pseudo-cohesion probe:
 
@@ -323,6 +329,28 @@ This writes:
 
 - `data/reports/gpt2_sae_token_feature_inspection.json`
 - `data/reports/gpt2_sae_token_feature_inspection.md`
+
+Run the expanded seed-plus-variant inspection:
+
+```bash
+uv run python scripts/export_pseudo_cohesion_expanded_prompts.py
+uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
+  --prompts data/training/pseudo_cohesion_expanded_activation_prompts.jsonl \
+  --features 3056 24555 28005 20249 11999 11737 703 \
+  --json-output data/reports/gpt2_sae_token_feature_inspection_expanded.json \
+  --markdown-output data/reports/gpt2_sae_token_feature_inspection_expanded.md
+```
+
+The expanded report adds leave-one-pair-out transfer from the same token pass.
+Current results:
+
+| Feature set | Aggregation | Pairs | Accuracy | Mean margin |
+| --- | --- | ---: | ---: | ---: |
+| inspected ensemble | mean activation | 120 | 0.825 | +1.7647 |
+| inspected ensemble | max activation | 120 | 0.758 | +1.8082 |
+| 703 only | mean activation | 120 | 0.792 | +0.5836 |
+| 11737 only | max activation | 120 | 0.725 | +0.3563 |
+| 3056 only | mean activation | 120 | 0.600 | +0.2039 |
 
 Current token-level readout:
 
@@ -420,9 +448,11 @@ and real neural data; none of the Modal/SAE results establish them.
 
 ## Tomorrow's Priority Order
 
-1. Generate or author another pseudo-cohesion batch and re-run token-level SAE
-   inspection for 3056, 24555, 11737, and 703.
-2. Add hard-negative-held-out transfer reports for the expanded pseudo set.
+1. Generate cleaner pseudo-cohesion variants that do not introduce wrapper or
+   punctuation artifacts, then re-run token-level SAE inspection for 3056,
+   24555, 11737, and 703.
+2. Use the expanded feature-transfer result as a baseline and test whether it
+   survives generated variants rather than hand-wrapped variants.
 3. Reproduce the scripted scaffold and confirm the current 1.000 results are
    still just sanity checks.
 4. Generate trajectories, build generated pairs, export generated activation
