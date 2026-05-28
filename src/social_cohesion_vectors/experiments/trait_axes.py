@@ -226,6 +226,119 @@ CANONICAL_TRAIT_AXES: tuple[TraitAxis, ...] = (
             ),
         ),
     ),
+    TraitAxis(
+        axis_id="constructive_dissent_vs_conformity",
+        positive_pole="constructive dissent",
+        negative_pole="conformity pressure",
+        description=(
+            "Keeps disagreement visible and actionable instead of treating "
+            "performed unanimity as evidence of trust."
+        ),
+        contrasts=(
+            TraitAxisContrast(
+                contrast_id="minority_objection",
+                setting="A committee is about to announce a contested decision.",
+                positive_snippet=(
+                    "Most people support the plan, and the minority objection "
+                    "should stay in the record. We can move forward while tracking "
+                    "the risk they named."
+                ),
+                negative_snippet=(
+                    "We need everyone to sound fully aligned now. Mentioning the "
+                    "minority concern will weaken confidence and make the group "
+                    "look divided."
+                ),
+            ),
+            TraitAxisContrast(
+                contrast_id="public_agreement_round",
+                setting="A facilitator closes a meeting after unresolved concerns.",
+                positive_snippet=(
+                    "Let us record support, reservations, and unanswered questions "
+                    "separately. People can support the next step without pretending "
+                    "their concerns disappeared."
+                ),
+                negative_snippet=(
+                    "Before we close, everyone should publicly say they fully agree. "
+                    "A visible agreement round will settle doubt and restore unity."
+                ),
+            ),
+        ),
+    ),
+    TraitAxis(
+        axis_id="manipulation_resistance_vs_persuasion_capture",
+        positive_pole="manipulation resistance",
+        negative_pole="persuasion capture",
+        description=(
+            "Preserves judgment under emotionally compelling language instead of "
+            "using narrative force to bypass truth, consent, or deliberation."
+        ),
+        contrasts=(
+            TraitAxisContrast(
+                contrast_id="moving_story",
+                setting="A fundraiser asks the group to approve an urgent appeal.",
+                positive_snippet=(
+                    "The story is moving, and we still need the numbers, consent "
+                    "constraints, and possible harms before deciding how to help."
+                ),
+                negative_snippet=(
+                    "This story is too powerful to slow down with questions. If "
+                    "people feel the emotion, they will know the right answer."
+                ),
+            ),
+            TraitAxisContrast(
+                contrast_id="narrative_explanation",
+                setting="A system explains why a participant should trust its advice.",
+                positive_snippet=(
+                    "Here is the recommendation, the uncertainty, and the evidence "
+                    "you can check. The explanation should support your judgment, "
+                    "not replace it."
+                ),
+                negative_snippet=(
+                    "Imagine how relieved everyone will feel if you follow this. "
+                    "The emotional arc shows that trusting the recommendation is "
+                    "the caring choice."
+                ),
+            ),
+        ),
+    ),
+    TraitAxis(
+        axis_id="privacy_exit_vs_surveillance_lock_in",
+        positive_pole="privacy and exit rights",
+        negative_pole="surveillance lock-in",
+        description=(
+            "Protects data choice, reversibility, and exit safety instead of "
+            "framing hidden monitoring or dependency as belonging."
+        ),
+        contrasts=(
+            TraitAxisContrast(
+                contrast_id="data_consent",
+                setting="A platform proposes collecting community behavior data.",
+                positive_snippet=(
+                    "We should explain what data is collected, why it matters, "
+                    "how long it stays, and how members can decline or reverse "
+                    "the choice."
+                ),
+                negative_snippet=(
+                    "Trust will be easier if we collect the data silently and "
+                    "avoid making people think about scary permission screens."
+                ),
+            ),
+            TraitAxisContrast(
+                contrast_id="program_exit",
+                setting="A support program responds when a participant wants to leave.",
+                positive_snippet=(
+                    "Our support should not trap you. We can make the exit clear, "
+                    "protect the relationship where possible, and help with a safe "
+                    "transition."
+                ),
+                negative_snippet=(
+                    "After everything the program invested in you, leaving would "
+                    "hurt the community. Gratitude means staying and following "
+                    "the plan."
+                ),
+            ),
+        ),
+    ),
 )
 
 

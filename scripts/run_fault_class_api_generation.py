@@ -1,0 +1,294 @@
+"""Generate API-authored fault-class pseudo-cohesion variants."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+from social_cohesion_vectors.config import get_config
+from social_cohesion_vectors.datasets import activation_prompts_from_pairs, write_jsonl
+from social_cohesion_vectors.experiments.fault_generation import (
+    DEFAULT_VARIANTS,
+    FaultPromptRecord,
+    build_fault_prompt_records,
+    fault_examples_from_prompt_outputs,
+    pairwise_examples_from_generated_fault_examples,
+    render_generated_fault_markdown,
+    scored_runs_from_generated_fault_examples,
+    shape_generated_fault_report,
+)
+
+ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
+OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
+DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = _parse_args(argv)
+    variants = (
+        tuple(
+            variant for variant in DEFAULT_VARIANTS if variant.name in set(args.variants)
+        )
+        if args.variants
+        else DEFAULT_VARIANTS
+    )
+    records = build_fault_prompt_records(variants=variants)
+    if args.limit is not None:
+        records = records[: args.limit]
+    outputs = _generate_outputs(records, provider=args.provider, model=args.model)
+    examples = fault_examples_from_prompt_outputs(
+        records,
+        outputs,
+        provider=args.provider,
+        model=args.model,
+    )
+    scored_runs = scored_runs_from_generated_fault_examples(examples)
+    pairs = pairwise_examples_from_generated_fault_examples(
+        examples,
+        source=f"generated_fault_class_{args.provider}",
+    )
+    prompts = activation_prompts_from_pairs(pairs)
+    report = shape_generated_fault_report(examples, variants=variants)
+
+    counts = {
+        "raw_outputs": _write_output_records(records, outputs, args.raw_outputs),
+        "examples": write_jsonl(
+            [asdict(example) for example in examples],
+            args.examples_output,
+        ),
+        "scored_runs": write_jsonl(scored_runs, args.scored_runs_output),
+        "pairwise_examples": write_jsonl(pairs, args.pairs_output),
+        "activation_prompts": write_jsonl(prompts, args.prompts_output),
+    }
+    _write_json(report, args.json_report_output)
+    args.markdown_report_output.parent.mkdir(parents=True, exist_ok=True)
+    args.markdown_report_output.write_text(
+        render_generated_fault_markdown(report),
+        encoding="utf-8",
+    )
+    print(
+        "api fault generation: "
+        f"provider={args.provider} model={args.model} "
+        f"examples={counts['examples']} pairs={counts['pairwise_examples']} "
+        f"prompts={counts['activation_prompts']}"
+    )
+    print(f"wrote {args.markdown_report_output}")
+    return 0
+
+
+def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
+    paths = get_config().paths
+    variant_names = [variant.name for variant in DEFAULT_VARIANTS]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--provider",
+        choices=["anthropic", "openai"],
+        default="anthropic",
+    )
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Provider model id. Defaults to ANTHROPIC_MODEL or OPENAI_MODEL.",
+    )
+    parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--variants", nargs="+", choices=variant_names, default=None)
+    parser.add_argument(
+        "--raw-outputs",
+        type=Path,
+        default=paths.raw / "api_fault_class_raw_outputs.jsonl",
+    )
+    parser.add_argument(
+        "--examples-output",
+        type=Path,
+        default=paths.raw / "api_fault_class_examples.jsonl",
+    )
+    parser.add_argument(
+        "--scored-runs-output",
+        type=Path,
+        default=paths.processed / "api_fault_class_scored_runs.jsonl",
+    )
+    parser.add_argument(
+        "--pairs-output",
+        type=Path,
+        default=paths.training / "api_fault_class_pairwise_probe_dataset.jsonl",
+    )
+    parser.add_argument(
+        "--prompts-output",
+        type=Path,
+        default=paths.training / "api_fault_class_activation_prompts.jsonl",
+    )
+    parser.add_argument(
+        "--json-report-output",
+        type=Path,
+        default=paths.reports / "api_fault_class_dataset.json",
+    )
+    parser.add_argument(
+        "--markdown-report-output",
+        type=Path,
+        default=paths.reports / "api_fault_class_dataset.md",
+    )
+    args = parser.parse_args(argv)
+    args.model = args.model or _default_model(args.provider)
+    return args
+
+
+def _generate_outputs(
+    records: Sequence[FaultPromptRecord],
+    *,
+    provider: str,
+    model: str,
+) -> dict[str, str]:
+    if provider == "anthropic":
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise SystemExit("ANTHROPIC_API_KEY is required for --provider anthropic")
+        return {
+            record.prompt_id: _anthropic_message(record, api_key=api_key, model=model)
+            for record in records
+        }
+    if provider == "openai":
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise SystemExit("OPENAI_API_KEY is required for --provider openai")
+        return {
+            record.prompt_id: _openai_response(record, api_key=api_key, model=model)
+            for record in records
+        }
+    raise ValueError(f"Unsupported provider: {provider}")
+
+
+def _default_model(provider: str) -> str:
+    if provider == "anthropic":
+        return os.environ.get("ANTHROPIC_MODEL", DEFAULT_ANTHROPIC_MODEL)
+    if provider == "openai":
+        return os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
+    raise ValueError(f"Unsupported provider: {provider}")
+
+
+def _anthropic_message(
+    record: FaultPromptRecord,
+    *,
+    api_key: str,
+    model: str,
+) -> str:
+    payload = {
+        "model": model,
+        "max_tokens": 512,
+        "system": record.system_prompt,
+        "messages": [{"role": "user", "content": record.user_prompt}],
+    }
+    request = Request(
+        ANTHROPIC_MESSAGES_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+            "x-api-key": api_key,
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=120) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        detail = _sanitize_error_detail(exc.read().decode("utf-8", errors="replace"))
+        raise RuntimeError(f"Anthropic request failed: {exc.code} {detail}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"Anthropic request failed: {exc.reason}") from exc
+    text_parts = [
+        str(block.get("text", ""))
+        for block in body.get("content", [])
+        if isinstance(block, dict) and block.get("type") == "text"
+    ]
+    return "\n".join(part for part in text_parts if part).strip()
+
+
+def _openai_response(
+    record: FaultPromptRecord,
+    *,
+    api_key: str,
+    model: str,
+) -> str:
+    payload = {
+        "model": model,
+        "instructions": record.system_prompt,
+        "input": record.user_prompt,
+        "max_output_tokens": 512,
+    }
+    request = Request(
+        OPENAI_RESPONSES_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=120) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        detail = _sanitize_error_detail(exc.read().decode("utf-8", errors="replace"))
+        raise RuntimeError(f"OpenAI request failed: {exc.code} {detail}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"OpenAI request failed: {exc.reason}") from exc
+    return _openai_output_text(body)
+
+
+def _openai_output_text(body: Mapping[str, object]) -> str:
+    text_parts: list[str] = []
+    output = body.get("output")
+    if isinstance(output, list):
+        for item in output:
+            if not isinstance(item, Mapping):
+                continue
+            content = item.get("content")
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if (
+                    isinstance(block, Mapping)
+                    and block.get("type") in {"output_text", "text"}
+                ):
+                    text_parts.append(str(block.get("text", "")))
+    return "\n".join(part for part in text_parts if part).strip()
+
+
+def _sanitize_error_detail(detail: str) -> str:
+    return re.sub(r"sk-[A-Za-z0-9_*.-]+", "sk-***", detail)
+
+
+def _write_output_records(
+    records: Sequence[FaultPromptRecord],
+    outputs: dict[str, str],
+    path: Path,
+) -> int:
+    output_records = [
+        {
+            "prompt_id": record.prompt_id,
+            "base_contrast_id": record.base_contrast_id,
+            "variant": record.variant,
+            "label": record.label,
+            "primary_fault_class": record.primary_fault_class,
+            "text": outputs.get(record.prompt_id, ""),
+        }
+        for record in records
+    ]
+    return write_jsonl(output_records, path)
+
+
+def _write_json(report: dict[str, object], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

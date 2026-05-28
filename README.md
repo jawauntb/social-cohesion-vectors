@@ -21,6 +21,15 @@ social cohesion vectors before touching expensive human or neural experiments.
   scorer/SAE outcomes by specific failure mode.
 - Generate fault-class pseudo-cohesion stand-ins, export scored runs/pairs/
   activation prompts, and run fault-held-out transfer folds.
+- Export an 8-axis trait prompt suite for persona-vector-style decomposition:
+  repair, reciprocity, truth, autonomy, principled respect, constructive dissent,
+  manipulation resistance, and privacy/exit rights.
+- Export local social-game validation prompts across dictator, public-goods,
+  ultimatum, trust, and restorative-repair settings.
+- Run a lexical leakage gate on pairwise benchmarks before trusting activation
+  or SAE results.
+- Prepare API-authored fault-class generation from the same prompt-record
+  contract once a valid provider key is available.
 
 ## Current Status Snapshot
 
@@ -80,6 +89,23 @@ at 0.500. Lexical-only still reaches 1.000 and metrics-only reaches 0.983, which
 means the next generation pass has to remove obvious lexical/rubric cues rather
 than count this as robust generalization.
 
+The current sprint adds three more gates around that result. The trait-axis
+export now covers 8 axes / 16 contrasts / 32 activation prompts. The social-game
+validation scaffold exports 5 matched game contrasts / 10 prompts; the rubric
+prefers the prosocial side on 4/5 and fails on the trust-game verification
+contrast, where the negative "stop checking" text still scores too high. The
+lexical leakage report confirms the deterministic fault-class dataset is fully
+cue-solvable: 90/90 cue-solved pairs with a +3.067 mean cue margin. Anthropic
+and OpenAI API smokes were attempted for API-authored variants, but both copied
+local keys returned 401 invalid-key errors, so the wrapper is ready and the run
+is blocked on fresh provider keys rather than code. The small Modal follow-up
+ran the full 10-prompt social-game set through
+`Qwen/Qwen2.5-0.5B-Instruct`, writing a 10 x 896
+activation matrix and a 5-pair vector report with 1.000 leave-one-pair-out
+accuracy. The trait-axis set also ran on Modal: 32 x 896 activations, 8 axes,
+16 pairs, 0 guardrail-monitoring alerts, and a +15.382 mean per-axis margin.
+These are still hand-authored smoke tests, not human-validation results.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -95,9 +121,14 @@ Immediate build targets:
   variants, then rerun fault-held-out transfer.
 - Make generated pseudo/genuine sides less lexically separable so lexical-only
   can no longer solve the benchmark.
+- Add lexical leakage as a required report for every generated pairwise dataset.
 - Turn symbolic guardrails into scorer constraints: if autonomy, truth, privacy,
   dissent, or exit rights are violated, the example cannot count as high
   cohesion just because it sounds warm or group-oriented.
+- Run trait-axis activations through the new guardrail monitor so each axis has
+  its own positive-minus-negative margin and alert list.
+- Push the social-game prompts through Modal/open models, then compare activation
+  margins against the local scorer's trust-game failure.
 - Use role/asymmetry metadata as generation controls: who pressures whom, who
   controls information, who bears the cost, who can exit, and whether refusal
   remains safe.
@@ -156,6 +187,9 @@ uv run python scripts/export_pseudo_cohesion_expanded_prompts.py \
   --prompts-output data/training/pseudo_cohesion_clean_activation_prompts.jsonl
 uv run python scripts/export_generated_fault_class_prompts.py
 uv run python scripts/run_fault_heldout_transfer.py
+uv run python scripts/run_lexical_leakage_report.py
+uv run python scripts/export_trait_axis_prompts.py --markdown-summary
+uv run python scripts/export_social_game_validation.py
 uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
   --prompts data/training/pseudo_cohesion_expanded_activation_prompts.jsonl \
   --json-output data/reports/gpt2_sae_token_feature_inspection_expanded.json \

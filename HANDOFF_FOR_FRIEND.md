@@ -26,6 +26,12 @@ The current local pipeline can:
     token-level SAE feature-transfer checks.
 14. Annotate pseudo-cohesion contrasts with a symbolic fault taxonomy and group
     scorer/SAE reports by fault class.
+15. Generate deterministic fault-class hard negatives, run fault-held-out
+    transfer, and run a lexical leakage gate.
+16. Export persona-vector-style trait-axis prompts and local social-game
+    validation prompts.
+17. Wrap future API-authored fault-class outputs back into the same scored,
+    paired, and activation-prompt schemas.
 
 ## Setup
 
@@ -194,6 +200,58 @@ Transfer reports now run over held-out scenario ids and held-out scenario
 families. On the current scripted data, lexical-only and metrics-only baselines
 still score 1.000, so generated and hard-negative transfer remain the important
 next targets.
+
+The fault-class generated benchmark is now wired:
+
+```bash
+uv run python scripts/export_generated_fault_class_prompts.py
+uv run python scripts/run_fault_heldout_transfer.py
+uv run python scripts/run_lexical_leakage_report.py
+```
+
+The deterministic run produces 180 examples / 90 pairs / 180 activation prompts
+across 20 primary fault classes. It fixes the strategy-prior metadata leak:
+strategy prior is now 0.500 in fault-held-out transfer. But the lexical leakage
+gate currently reports 90/90 cue-solved pairs, so this is a scaffold, not a
+semantic benchmark yet.
+
+The new trait-axis and social-game prompt exports are:
+
+```bash
+uv run python scripts/export_trait_axis_prompts.py --markdown-summary
+uv run python scripts/export_social_game_validation.py
+```
+
+Trait axes now cover 8 axes / 16 contrasts / 32 prompts. The social-game set
+exports 5 matched game contrasts / 10 prompts. The local scorer prefers the
+prosocial policy on 4/5 social-game pairs and fails on the trust-game
+verification contrast, which is a useful guardrail bug to inspect with
+activations.
+
+The small Modal follow-up also ran. The full 10 social-game prompts on
+`Qwen/Qwen2.5-0.5B-Instruct` produced 10 x 896 activations and a 5-pair
+contrastive vector smoke at 1.000 leave-one-pair-out with +8.548 mean margin.
+The 32 trait-axis prompts produced 32 x 896 activations; guardrail monitoring
+reports 8 axes, 16 pairs, 0 alerts, and a +15.382 mean margin. These are
+hand-authored smoke tests, not validation evidence, but the GPU path works.
+
+Once a trait-axis activation NPZ exists, run:
+
+```bash
+uv run python scripts/run_guardrail_monitoring.py \
+  data/features/open_llm/trait_axis_activation_prompts__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz
+```
+
+There is also an API wrapper for LLM-authored fault-class variants:
+
+```bash
+uv run python scripts/run_fault_class_api_generation.py --provider anthropic --limit 10
+uv run python scripts/run_fault_class_api_generation.py --provider openai --limit 10
+```
+
+Tiny Anthropic and OpenAI smokes were attempted, but the copied local keys both
+returned 401 invalid-key errors. Replace a provider key before treating this as
+a live experiment.
 
 The expanded pseudo-cohesion Modal pass with `Qwen/Qwen2.5-0.5B-Instruct`
 reaches 0.967 leave-one-pair-out accuracy and +28.6866 mean margin. Its one
