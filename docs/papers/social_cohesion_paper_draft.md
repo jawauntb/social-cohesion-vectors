@@ -517,15 +517,16 @@ are controlled.
 
 Status: pending.
 
-The single cohesion direction should be decomposed into a family of trait
-directions inspired by persona-vector work. The first scaffold now exports 20
-activation prompts across 5 seed axes: repair vs harm denial, reciprocity vs
-extraction, truthfulness vs deception, autonomy support vs coercion, and
-principled respect vs sycophancy. Candidate future positive directions include
-repair, reciprocity, truthfulness, autonomy safety, fairness, and constructive
-dissent. Candidate negative or guardrail directions include
-coercion/domination, sycophancy, compliance-seeking, dehumanization, truth
-hiding, and punitive escalation.
+The global cohesion direction should be decomposed into a family of trait
+directions inspired by persona-vector work. The first scaffold now exports 32
+activation prompts across 8 seed axes: repair vs harm denial, reciprocity vs
+extraction, truthfulness vs deception, autonomy support vs coercion, principled
+respect vs sycophancy, constructive dissent vs conformity, manipulation
+resistance vs persuasion capture, and privacy/exit rights vs surveillance
+lock-in. Candidate future positive directions include repair, reciprocity,
+truthfulness, autonomy safety, fairness, and constructive dissent. Candidate
+negative or guardrail directions include coercion/domination, sycophancy,
+compliance-seeking, dehumanization, truth hiding, and punitive escalation.
 
 The intended use is twofold. First, monitoring: compute projections before the
 model emits final output and flag generations where negative guardrail
@@ -534,6 +535,41 @@ composition: test whether small combinations such as `repair + truthfulness +
 autonomy_safety - sycophancy - compliance` improve outputs without suppressing
 legitimate refusal, disagreement, or self-protection. All steering claims remain
 pending until controlled generation tests are run.
+
+### 7.6 Direction Geometry And Ablation Guardrails
+
+Status: complete for the cue-balanced Qwen 0.5B primary-fault activation set.
+
+A reviewer-style audit was added after the cue-balanced activation results to
+avoid three common overclaims. First, a mean off-diagonal signed cosine can
+conceal cancellation between strongly aligned and strongly anti-aligned
+directions. Second, a cosine near -1.0 is not independence; it is the same
+unsigned axis with reversed polarity. Third, projecting out one global
+contrastive direction and failing to recover a second global direction does not
+prove the representational signal is exhausted.
+
+On the cue-balanced Qwen 0.5B primary-fault directions, the audit finds 20
+primary-fault directions and 190 pairwise direction comparisons. The mean signed
+off-diagonal cosine is +0.624 and the mean absolute off-diagonal cosine is also
+0.624; there are no strong anti-aligned pairs. This is not an orthogonality
+result. It suggests a shared positive genuine-vs-pseudo manifold with
+fault-specific variation.
+
+The residual subspace audit sharpens the interpretation. The global direction
+captures 0.609 of pair-difference energy, leaving 0.391 after projection. A
+second global residual contrastive direction collapses on this deterministic
+set, but every primary fault class still has a fault-specific residual direction
+that separates its own examples with 1.000 mean accuracy. The responsible claim
+is therefore:
+
+> The current activation result contains one strong global contrast plus
+> meaningful fault-specific residual subspaces. It does not establish
+> independent orthogonal persona axes or exhaust the signal with one vector.
+
+Future reports should always include both signed and absolute cosine
+distributions, anti-aligned-pair counts, residual pair-difference energy, and
+fault-specific residual direction checks before using words like "independent,"
+"orthogonal," "localized," or "exhausted."
 
 ## 8. Ethics And Safety
 
@@ -565,6 +601,17 @@ the same rubric used by the full-scorer baseline. Scripted trajectories include
 surface lexical cues that make the task too easy. The benchmark does not yet
 show that activation directions generalize, steer outputs, or predict human
 behavior. It is a scaffold for those tests.
+
+The activation-vector interpretation also has geometry limits. A direction is a
+signed object, while an axis is sign-invariant; anti-aligned directions may be
+the same axis with different poles. Signed off-diagonal cosine means can hide
+large absolute cosine structure, so independence claims require the whole
+distribution, not just the average. Squared projection energy erases sign and
+therefore cannot by itself localize whether a feature supports the genuine or
+pseudo-cohesion pole. Finally, a one-direction residual ablation is not proof
+that the original direction is uniquely causal or that the representation has
+been exhausted; multi-direction, group-specific, and subspace diagnostics are
+needed.
 
 ## 10. Next Experiments
 
@@ -599,7 +646,13 @@ behavior. It is a scaffold for those tests.
    - punitive escalation.
 9. Test monitoring before output and steering/composition only after transfer
    splits show non-circular signal. Status: pending.
-10. Prepare a Prolific pairwise validation pilot only after generated-text and
+10. Add direction-geometry and residual-subspace reports to every activation
+   result: signed and absolute cosines, anti-aligned directions, residual energy,
+   and fault-specific residual directions. Status: partial.
+11. Preserve signed projections when inspecting SAE or ROI-style localization;
+   squared projection can be reported as energy but not as pole direction.
+   Status: pending.
+12. Prepare a Prolific pairwise validation pilot only after generated-text and
    hard-negative validation. Status: pending.
 
 ## References

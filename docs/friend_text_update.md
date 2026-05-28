@@ -98,12 +98,20 @@ Concrete early signals:
   pairs with +32.458 mean margin, and 1.000 held-out-primary-fault accuracy
   across 20 folds with +31.530 mean margin. Still deterministic, but it is a
   much better next signal than the fully cue-leaky version.
+- I also added a reviewer-style geometry check so we do not overclaim this.
+  The 20 primary-fault directions are not near-orthogonal: mean signed
+  off-diagonal cosine is +0.624 and mean absolute cosine is 0.624, with no
+  strong anti-aligned pairs. After projecting out the global direction, 0.391 of
+  pair-difference energy remains; a second global direction collapses, but all
+  20 fault-specific residual directions still separate their own groups. So the
+  honest current claim is one strong global genuine-vs-pseudo direction plus
+  meaningful fault-specific residual subspaces, not independent orthogonal axes.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
-LLM-authored hard negatives, forcing lexical leakage down, running trait-axis
-and social-game activations, and checking whether the same fault-specific
-feature bundles survive.
+LLM-authored hard negatives, forcing lexical leakage down, running the geometry
+and residual-subspace audits on every activation/SAE result, and checking
+whether the same fault-specific feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated

@@ -263,6 +263,16 @@ folds with a +31.530 mean margin. This is still deterministic text, but it is
 currently the strongest compute-only signal: the hand scorer fails when cues are
 removed, while the activation direction still separates the labels.
 
+The newest reviewer-style check keeps us honest about what that does and does
+not mean. The 20 primary-fault activation directions are not orthogonal: mean
+signed off-diagonal cosine is +0.624, and mean absolute off-diagonal cosine is
+also 0.624. There are no strong anti-aligned pairs, so the result is not a
+cancellation artifact. After projecting out the global direction, 0.391 of
+pair-difference energy remains. A second global residual direction collapses,
+but all 20 fault-specific residual directions still separate their own examples.
+So the current claim is "one strong global pseudo-vs-genuine direction plus
+fault-specific residual subspaces," not "independent orthogonal axes."
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -322,7 +332,12 @@ High-value next steps:
 12. Fix the autonomy-safety scorer failure exposed by the cue-balanced set.
 13. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
-14. Run a small Prolific validation only after the compute benchmarks stop being
+14. Run direction-geometry and residual-subspace audits before claiming that
+   trait or fault directions are independent, orthogonal, localized, or
+   exhausted by one vector.
+15. Preserve signed projections in SAE/localization reports; squared projection
+   energy is useful, but it erases which pole a feature supports.
+16. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting

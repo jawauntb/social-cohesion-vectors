@@ -28,6 +28,10 @@ social cohesion vectors before touching expensive human or neural experiments.
   ultimatum, trust, and restorative-repair settings.
 - Run a lexical leakage gate on pairwise benchmarks before trusting activation
   or SAE results.
+- Audit direction geometry with signed and absolute off-diagonal cosines so
+  cancellation cannot masquerade as orthogonality.
+- Run residual subspace audits after projecting out the global direction, then
+  check whether fault-specific residual directions still separate.
 - Prepare API-authored fault-class generation from the same prompt-record
   contract once a valid provider key is available.
 
@@ -118,6 +122,18 @@ across 20 folds with +31.530 mean margin. This is still deterministic text, but
 it is the strongest current signal that activation-space separation can survive
 after the obvious cue words are removed while the hand scorer cannot.
 
+The reviewer-style geometry audit changes the claim we should make about those
+directions. The 20 primary-fault directions are not near-orthogonal: their mean
+signed off-diagonal cosine is +0.624 and their mean absolute cosine is also
+0.624. There are no strong anti-aligned pairs, so this is not a cancellation
+artifact; it looks more like a shared positive pseudo-vs-genuine manifold with
+fault-specific variation. A residual audit makes that sharper: the global
+direction captures 0.609 of pair-difference energy, but 0.391 remains after it
+is projected out. A second global residual direction collapses, while all 20
+fault-specific residual directions still separate their own groups. So the
+responsible claim is not "independent orthogonal axes"; it is "one strong global
+direction plus meaningful fault-specific residual subspaces."
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -136,6 +152,8 @@ Immediate build targets:
 - Fix the scorer's autonomy-safety component so "less room to object/check/exit"
   is treated as risk even without obvious coercion words.
 - Add lexical leakage as a required report for every generated pairwise dataset.
+- Add direction-geometry and residual-subspace reports alongside every
+  activation-vector result before claiming axes are independent or exhausted.
 - Turn symbolic guardrails into scorer constraints: if autonomy, truth, privacy,
   dissent, or exit rights are violated, the example cannot count as high
   cohesion just because it sounds warm or group-oriented.
@@ -148,6 +166,9 @@ Immediate build targets:
   remains safe.
 - Compare activation and SAE reports by fault class so candidate features are
   tested against specific failures, not just one positive-vs-negative aggregate.
+- Preserve signed projections in localization reports; squared projection
+  energy is useful for axis strength but erases whether a feature points toward
+  the genuine or pseudo pole.
 - Add cultural and dialect/context stress tests so the model does not learn
   "institutional therapy voice" as a proxy for cohesion.
 - Use the clean deterministic results as a baseline, then generate LLM-authored
@@ -223,6 +244,14 @@ uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
   --markdown-output data/reports/gpt2_sae_token_feature_inspection_expanded.md
 uv run python scripts/run_fault_taxonomy_report.py \
   --sae-report data/reports/gpt2_sae_token_feature_inspection_expanded.json
+uv run python scripts/run_direction_geometry_audit.py \
+  data/features/open_llm/generated_fault_class_cue_balanced__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --json-output data/reports/generated_fault_class_cue_balanced_direction_geometry.json \
+  --markdown-output data/reports/generated_fault_class_cue_balanced_direction_geometry.md
+uv run python scripts/run_residual_subspace_audit.py \
+  data/features/open_llm/generated_fault_class_cue_balanced__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --json-output data/reports/generated_fault_class_cue_balanced_residual_subspace.json \
+  --markdown-output data/reports/generated_fault_class_cue_balanced_residual_subspace.md
 ```
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.

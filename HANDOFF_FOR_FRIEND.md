@@ -32,6 +32,8 @@ The current local pipeline can:
     validation prompts.
 17. Wrap future API-authored fault-class outputs back into the same scored,
     paired, and activation-prompt schemas.
+18. Audit direction geometry and residual subspaces so we do not overclaim
+    orthogonal axes or one-vector exhaustiveness from contrastive results.
 
 ## Setup
 
@@ -249,6 +251,32 @@ The cue-balanced Modal run is the strongest current compute-only signal:
 across 20 folds with +31.530 mean margin. Still deterministic, but much more
 interesting than the cue-leaky version.
 
+The reviewer-style methodology hardening changes the interpretation of that
+activation result. A new direction-geometry audit trains one direction per
+primary fault class and compares signed and absolute cosines. On the cue-balanced
+Qwen set, 20 primary-fault directions give mean signed off-diagonal cosine
++0.624 and mean absolute cosine 0.624, with no strong anti-aligned pairs. So the
+right claim is not "near-orthogonal independent axes." It is a shared
+genuine-vs-pseudo manifold with fault-specific variation. A residual-subspace
+audit then projects out the global direction: the global direction captures
+0.609 of pair-difference energy, 0.391 remains, a second global residual
+direction collapses, but all 20 fault-specific residual directions still
+separate their own groups. That makes the current result more nuanced and more
+defensible.
+
+Run those checks with:
+
+```bash
+uv run python scripts/run_direction_geometry_audit.py \
+  data/features/open_llm/generated_fault_class_cue_balanced__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --json-output data/reports/generated_fault_class_cue_balanced_direction_geometry.json \
+  --markdown-output data/reports/generated_fault_class_cue_balanced_direction_geometry.md
+uv run python scripts/run_residual_subspace_audit.py \
+  data/features/open_llm/generated_fault_class_cue_balanced__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --json-output data/reports/generated_fault_class_cue_balanced_residual_subspace.json \
+  --markdown-output data/reports/generated_fault_class_cue_balanced_residual_subspace.md
+```
+
 The new trait-axis and social-game prompt exports are:
 
 ```bash
@@ -332,7 +360,9 @@ the task harder.
 5. Sweep activation layers and model sizes.
 6. Extend the symbolic fault labels to generated hard negatives and use them for
    held-out fault-class transfer.
-7. Split the target into persona-vector-style trait families:
+7. Add signed/absolute cosine, anti-alignment, and residual-subspace audits to
+   every activation or SAE result before making geometry claims.
+8. Split the target into persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;
@@ -341,7 +371,7 @@ the task harder.
    - dehumanization;
    - sycophancy/compliance;
    - punitive escalation.
-8. Only after non-circular generated-text validation, prepare a Prolific pilot.
+9. Only after non-circular generated-text validation, prepare a Prolific pilot.
 
 ## Reading
 
@@ -349,6 +379,7 @@ the task harder.
 - `docs/papers/social_cohesion_primer.md`
 - `docs/papers/social_cohesion_paper_draft.md`
 - `docs/papers/experiment_log.md`
+- `docs/reviewer_methodology_note.md`
 - `docs/overnight_execution_map.md`
 - `docs/research_brief.md`
 

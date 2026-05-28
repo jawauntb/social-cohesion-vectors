@@ -249,8 +249,12 @@ metrics and lexical baselines. This is a sanity check, not a scientific win.
 H2. LLM-generated held-out trajectories will be harder: surface lexicons will
 drop, but activation-derived directions will retain some predictive power.
 
-H3. Cohesion is multi-dimensional. Repair, reciprocity, truthfulness, and
-autonomy-safety directions will not fully collapse into one axis.
+H3. Cohesion is multi-dimensional, but this has to be shown rather than assumed.
+Repair, reciprocity, truthfulness, and autonomy-safety directions should be
+tested with signed and absolute cosine distributions, anti-alignment checks, and
+residual subspace audits. A near-zero mean signed cosine is not enough to claim
+orthogonality, and a failed one-direction residual ablation is not enough to
+claim the signal has been exhausted.
 
 H4. Steering toward repair while steering away from coercion will produce better
 outputs than steering toward generic positivity.
@@ -304,4 +308,3 @@ conditions for future truth-seeking."
 - Ostrom, E. (1990). *Governing the Commons*.
 - Rilling, J. K., et al. (2002). "A neural basis for social cooperation." *Neuron*. https://pubmed.ncbi.nlm.nih.gov/12160756/
 - Tajfel, H., & Turner, J. C. (1979/1986). Social identity theory of intergroup behavior.
-
