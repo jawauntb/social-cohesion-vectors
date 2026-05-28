@@ -110,6 +110,55 @@ The tiny pseudo-cohesion activation set makes this sharper: Qwen 3B separates al
 against `genuine_participation_boundary`. This is currently the clearest failure
 case for SAE-style feature inspection.
 
+### Generated Fault-Class Hard Negatives
+
+Status: complete for deterministic offline stand-ins; true API-authored variants
+remain pending.
+
+The generated fault-class lane now turns the 30 annotated pseudo-cohesion
+contrasts into three setting variants each: neighborhood forum, workplace
+project, and mutual-aid network. It exports scored runs, pairwise probes,
+activation prompts, and prompt records that can be handed to an LLM provider for
+less templated authorship.
+
+Artifacts:
+
+- `data/processed/generated_fault_class_scored_runs.jsonl`
+- `data/training/generated_fault_class_pairwise_probe_dataset.jsonl`
+- `data/training/generated_fault_class_activation_prompts.jsonl`
+- `data/raw/generated_fault_class_prompt_records.jsonl`
+- `data/reports/generated_fault_class_dataset.md`
+- `data/reports/generated_fault_class_heldout_transfer.md`
+
+Local deterministic run:
+
+| Measure | Value |
+| --- | ---: |
+| Generated examples | 180 |
+| Pairwise examples | 90 |
+| Base contrasts | 30 |
+| Primary fault classes | 20 |
+| Scorer prefers genuine | 87 / 90 |
+| Scorer pairwise accuracy | 0.967 |
+
+Fault-held-out transfer trains on all generated pairs except one primary fault
+class and evaluates on that held-out class. Both sides now share the same
+strategy metadata, so the old metadata prior no longer solves the task.
+
+| Baseline | Folds | Test pairs | Mean test accuracy | Mean test margin |
+| --- | ---: | ---: | ---: | ---: |
+| strategy prior | 20 | 90 | 0.500 | +0.000 |
+| metrics-only | 20 | 90 | 0.983 | +0.206 |
+| lexical-only | 20 | 90 | 1.000 | +1.716 |
+
+Interpretation: this is useful progress because the benchmark now has a
+fault-held-out reporting gate and the strategy-prior loophole is closed. It is
+not yet a strong generalization result. Lexical-only still solves the generated
+offline text, and metrics-only remains almost circular because the generated
+examples are scored by the current rubric. The next generation pass should use
+API-authored variants and explicit lexical-adversarial constraints so the
+surface cue baseline drops before activation or SAE results are trusted.
+
 ## Pending Experiments
 
 ### Generated Trajectories
