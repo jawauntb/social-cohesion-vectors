@@ -62,6 +62,13 @@ social-debt coercion, exit-rights, privacy, and assimilation-pressure contrasts,
 but it flips pseudo-skewed for verification-blocking and scapegoating contrasts.
 That makes 3056 useful evidence for a bundle, not a standalone cohesion vector.
 
+The paper draft now folds in the 2024-2026 arXiv state of the art around sparse
+autoencoders, persona vectors, refusal and sycophancy directions, altruism
+features, plural value steering, persuasion risk, and LLM-agent social dynamics.
+It also adds a *Magnifica Humanitas* grounding: cohesion means truthful,
+dignity-preserving, agency-respecting relation, not optimized agreement,
+dependence, or conformity.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -86,6 +93,12 @@ Immediate build targets:
 - Use the clean deterministic results as a baseline, then generate LLM-authored
   hard negatives to test whether the same feature ensemble survives less
   templated language.
+- Add persuasion-risk and narrative-reliance checks before any human-facing
+  experiment.
+- Add multi-agent social-dynamics tests for direct reciprocity, indirect
+  reciprocity, public goods, reputation, and long-horizon cooperation.
+- Try public Gemma Scope-style SAE dictionaries as the next cross-model
+  interpretability baseline before training custom SAEs.
 
 The meaningful research question for the next sprint is:
 

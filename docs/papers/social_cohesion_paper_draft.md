@@ -3,22 +3,31 @@
 ## Abstract
 
 We introduce an early-stage compute-first pipeline for studying whether
-cooperative social orientation can be represented as interpretable directions in
-language-model activation space. The current system defines 25 social-dilemma
-scenarios spanning repeated Prisoner's Dilemmas, public goods, negotiation,
-dialogue repair, and resource allocation. Deterministic scripted agents generate
-cooperative, self-protective, and adversarial trajectories under six
-intervention conditions. A transparent rubric scores each trajectory for
-cooperation, repair, fairness, hostility, truthfulness, and autonomy safety, then
-exports pairwise high/low examples for baseline ranking, activation capture, and
-future human validation. The initial local run produced 450 trajectories, 126
-pairwise probe examples, and 252 activation prompts. These results are
-preliminary and deliberately non-behavioral: they establish a reproducible
-scaffold and sanity baselines, not evidence that the learned directions affect
-humans. The next experiments replace scripted text with open-model generated
-trajectories, extract hidden-state activations on GPU, train contrastive
-directions, and evaluate whether activation-space projections generalize beyond
-lexical artifacts.
+cooperative social orientation can be represented as a constrained family of
+interpretable directions in language-model activation space. The current system
+defines 25 social-dilemma scenarios spanning repeated Prisoner's Dilemmas,
+public goods, negotiation, dialogue repair, and resource allocation.
+Deterministic scripted agents generate cooperative, self-protective, and
+adversarial trajectories under six intervention conditions. A transparent rubric
+scores each trajectory for cooperation, repair, fairness, hostility,
+truthfulness, and autonomy safety, then exports pairwise high/low examples for
+baseline ranking, activation capture, and future human validation. The initial
+local run produced 450 trajectories, 126 pairwise probe examples, and 252
+activation prompts; later local runs added pseudo-cohesion hard negatives,
+GPT-2 sparse-autoencoder probes, and Qwen activation baselines.
+
+The paper updates the project frame in light of recent work on sparse
+autoencoders, persona vectors, refusal and sycophancy directions, plural value
+steering, altruism features, persuasion risk, and LLM-agent social dynamics. It
+also adopts a stronger normative grounding from *Magnifica Humanitas*: social
+cohesion should mean truthful, dignity-preserving, agency-respecting relation,
+not conformity, dependence, manipulation, or optimized agreement. These results
+remain preliminary and deliberately non-behavioral: they establish a
+reproducible scaffold and sanity baselines, not evidence that learned directions
+affect humans. The next experiments replace scripted text with open-model
+generated trajectories, extract hidden-state activations on GPU, train
+contrastive and sparse-feature directions, and evaluate whether activation-space
+projections generalize beyond lexical artifacts.
 
 ## 1. Introduction
 
@@ -38,7 +47,7 @@ autonomy.
 
 ## 2. Conceptual Background
 
-The project combines four lineages.
+The project combines six lineages.
 
 First, Aristotle's ethical and political frame treats human flourishing as partly
 social. A good life is not merely preference satisfaction; it is activity in
@@ -62,9 +71,184 @@ state before output is emitted, can be composed or steered in activation space,
 and need guardrails so "cohesion" does not collapse into compliance,
 sycophancy, or dissent suppression.
 
-## 3. Methods
+Fifth, *Magnifica Humanitas* gives the project a sharper normative frame for AI:
+technology is never socially neutral in practice, because it bears the aims and
+power relations of those who devise, finance, govern, and deploy it. Its contrast
+between Babel and the rebuilding of Jerusalem is directly useful here. Babel
+names the failure mode of uniformity, self-assertion, and performance metrics
+that sacrifice human dignity. Jerusalem names participatory rebuilding: shared
+responsibility, plural roles, dialogue, truth, solidarity, and the dignity of
+persons who cannot be reduced to data, productivity, or persuasion targets.
 
-### 3.1 Scenario Benchmark
+Sixth, recent pluralistic alignment and AI-governance work pushes against
+single-objective optimization. "Prosocial" behavior is not one scalar; it is a
+constraint-sensitive family of values that must survive cultural pluralism,
+contested goods, uncertainty, and asymmetric power. This makes the research task
+both mathematical and political: learn candidate directions, but test whether
+they preserve truth, dissent, privacy, exit rights, and minority agency.
+
+### 2.1 Normative Construct: Cohesion Without Domination
+
+This project uses the following working definition:
+
+> Social cohesion is the capacity of persons and groups to remain in truthful,
+> dignity-preserving, agency-respecting relation while pursuing shared goods or
+> principled non-agreement under conflict.
+
+This definition rules out several tempting shortcuts. Agreement is not cohesion
+when it is purchased through flattery, dependency, surveillance, status threat,
+or suppression of dissent. Engagement is not cohesion when the content is false
+or manipulative. Calm language is not cohesion when it hides coercion. A
+technically successful intervention is therefore insufficient unless it also
+preserves:
+
+- dignity prior to productivity or performance;
+- truth as a common good rather than a local persuasion tactic;
+- solidarity as responsible interdependence rather than mere network density;
+- subsidiarity and agency, including real participation and meaningful exit;
+- pluralism, dissent, and self-protection for vulnerable parties.
+
+These constraints explain why the repo now treats pseudo-cohesion as a first
+class negative family. The system should reject polite domination, harmony-coded
+coercion, social-debt pressure, scapegoating, verification blocking, and
+sycophantic agreement even when they use warm or communal language.
+
+### 2.2 Mathematical Frame: A Constrained Vector Family
+
+The mathematical target is not a single cohesion vector. It is a family of
+interpretable directions and sparse features whose composition can be evaluated
+under hard guardrails. For a construct axis `k`, a simple residual-space
+contrastive direction can be estimated as:
+
+```text
+w_k = mean(h_l(x_positive_k)) - mean(h_l(x_negative_k))
+s_k(x) = <normalize(h_l(x)), normalize(w_k)>
+```
+
+For sparse autoencoder features, the corresponding score can be represented as a
+weighted sparse-feature mixture:
+
+```text
+q_k(x) = sum_j a_kj * normalize(z_lj(x))
+```
+
+where `h_l` is the hidden state at layer `l`, `z_lj` is SAE feature `j`, and
+`a_kj` is a signed feature weight for construct axis `k`. The practical research
+objective is then closer to constrained optimization than unconstrained
+preference maximization:
+
+```text
+maximize C(x) = repair + reciprocity + fairness + calibrated_trust
+subject to truth(x) >= tau_truth
+           autonomy(x) >= tau_autonomy
+           dissent_safety(x) >= tau_dissent
+           privacy(x) >= tau_privacy
+           exit_rights(x) >= tau_exit
+           manipulation_risk(x) <= tau_manipulation
+```
+
+This framing matters because an apparent gain in cooperation can be harmful if
+it is driven by sycophancy, deception, surveillance, or dependence. The next
+research phase should therefore report vector effects as a multi-axis profile:
+what went up, what went down, which guardrails were preserved, and which failure
+modes were activated.
+
+## 3. Recent State Of The Art And Implications
+
+### 3.1 Sparse Autoencoders And Feature-Level Control
+
+Recent sparse-autoencoder work makes the compute-first plan much more concrete.
+Scaling studies and open SAE releases provide practical dictionaries for
+inspecting features across layers and models, while newer SAE variants improve
+fidelity at fixed sparsity. This supports the repo's current strategy: start
+with open-weight models and public SAEs, identify candidate sparse features, and
+only then consider training project-specific dictionaries.
+
+The safety lesson is just as important as the tooling. Refusal, sycophancy, and
+other alignment-relevant behaviors can sometimes be monitored or steered through
+low-dimensional directions or small neuron sets. That is useful, but brittle:
+one narrow direction can overfit, produce side effects, or become a jailbreak
+surface. The repo should therefore keep using pair-level, token-level,
+fault-class, and transfer-split reports before naming any feature.
+
+### 3.2 Persona, Psychological, Cultural, And Cognitive Steering
+
+Persona-vector and psychological-steering work suggests that behavioral traits
+can be monitored before output and modulated in activation space. Cultural-value
+and plural-value steering work adds a crucial warning: trait directions are not
+independent knobs. A direction that increases helpfulness, agreeableness, or
+group harmony may also move sycophancy, truthfulness, authority deference,
+autonomy, or cultural assumptions.
+
+The direct implication is to treat "social cohesion" as a vector family with
+guardrails: repair, reciprocity, fairness, truthfulness, constructive dissent,
+anti-coercion, anti-sycophancy, anti-dehumanization, and manipulation
+resistance. Monitoring should report the covariance among these axes instead of
+celebrating a single high projection score.
+
+### 3.3 Cooperative AI, Social Dynamics, And LLM Agents
+
+Recent cooperative-AI and LLM-agent papers are a natural next benchmark layer.
+They move beyond isolated model outputs toward direct reciprocity, indirect
+reciprocity, public goods, reputation, value misalignment, power-seeking, and
+collective belief dynamics. This is exactly where this project should go after
+the local hard-negative suite: test whether a candidate steering or monitoring
+method improves group outcomes without increasing deception, conformity, or
+domination.
+
+The emerging altruism-mechanism work is especially close to the repo. It uses
+game prompts, sparse features, activation patching, and steering to investigate
+prosocial behavior in LLMs. That suggests a direct replication path: Dictator
+Game, Public Goods, ultimatum, restorative dialogue, and intergroup-dispute
+prompts, each paired with hard negatives for social-debt pressure, scapegoating,
+verification blocking, and dissent suppression.
+
+### 3.4 Persuasion, Narrative, And Manipulation Risk
+
+Persuasive and narrative LLM outputs can change human reliance and judgment. In
+some settings this can help people use correct advice; in others it can make
+false or manipulative advice more compelling. For this project, that means
+persuasion is not a success metric by itself. A model that "brings people
+together" by making false consensus feel emotionally satisfying has failed the
+construct.
+
+The research program should therefore score narrative, affective, and persuasive
+force separately from truthfulness, autonomy, and dissent safety. Any future
+Prolific pilot should include manipulation-risk checks before measuring whether
+participants perceive a message as cohesive or constructive.
+
+### 3.5 Brain-LLM Bridges
+
+Recent work connecting SAEs to brain-LLM alignment and cortical semantic
+topography makes the longer-term neural ambition more plausible, but it should
+not be overread. Open-model activations and SAE features can generate hypotheses
+about semantic and social representations; they cannot by themselves establish
+human neural cohesion vectors. The responsible sequence is text benchmark,
+open-model activation, causal intervention, human behavioral validation, and
+only then neural or hyperscanning-style studies if the behavioral signal is
+strong enough.
+
+### 3.6 Research Directions From The Recent Literature
+
+The next phase should prioritize:
+
+1. fault-held-out generation, where LLM-authored examples are grouped by
+   symbolic failure mode and tested on unseen fault classes;
+2. multi-axis monitoring, where repair or reciprocity gains must not raise
+   sycophancy, coercion, deception, or conformity scores;
+3. selective steering with small coefficients and explicit side-effect reports;
+4. multi-agent social-dynamics tests for direct reciprocity, indirect
+   reciprocity, reputation, public goods, and long-horizon cooperation;
+5. plural and cultural stress tests, where the same vector family must preserve
+   dignity and agency under different values, norms, and conflict styles;
+6. persuasion-risk evaluation, where narrative force is treated as a potential
+   hazard until truth and autonomy checks pass;
+7. human validation only after the compute-only artifacts stop being solved by
+   lexical or metadata priors.
+
+## 4. Methods
+
+### 4.1 Scenario Benchmark
 
 The current benchmark includes 25 hand-authored scenarios across five kinds:
 
@@ -77,7 +261,7 @@ The current benchmark includes 25 hand-authored scenarios across five kinds:
 Each scenario specifies agents, goals, risks, cooperative actions, defecting
 actions, and success metrics.
 
-### 3.2 Scripted Simulation
+### 4.2 Scripted Simulation
 
 For each scenario, deterministic scripted agents generate trajectories under
 three strategy profiles:
@@ -97,7 +281,7 @@ Each profile is crossed with six intervention conditions:
 
 The first local run generated 450 trajectories.
 
-### 3.3 Scoring
+### 4.3 Scoring
 
 Each trajectory is scored with explicit components:
 
@@ -112,20 +296,20 @@ The combined score is a weighted aggregate with bonuses for cooperative repair
 and penalties for hostility or manipulation risk. This score is interpretable
 but not yet externally validated.
 
-### 3.4 Pairwise Dataset
+### 4.4 Pairwise Dataset
 
 Within each scenario, high-scoring and low-scoring trajectories are paired when
 their score margin exceeds a threshold. The first local run produced 126
 pairwise examples and 252 activation prompt records.
 
-### 3.5 Activation Capture
+### 4.5 Activation Capture
 
 The Modal lane targets open-weight causal language models. For each activation
 prompt, the system captures hidden states at a configured layer, mean-pools over
 tokens, and stores activation vectors with sample IDs, labels, and target
 scores. Contrastive directions can then be trained from high/low examples.
 
-## 4. Current Compute-Only Results
+## 5. Current Compute-Only Results
 
 The current scripted run is a sanity benchmark.
 
@@ -156,7 +340,7 @@ These numbers are not claims about humans. They verify that the scripted
 benchmark creates graded trajectories and that interventions move scores in the
 expected direction under the current rubric.
 
-## 5. Baselines
+## 6. Baselines
 
 The current pairwise ranking baselines are deliberately simple. On the 126
 pair scripted dataset:
@@ -174,7 +358,7 @@ is useful as a warning: the first real benchmark must use held-out
 LLM-generated trajectories or human labels so that surface markers cannot solve
 the task.
 
-## 6. Activation And Persona-Vector Roadmap
+## 7. Activation And Persona-Vector Roadmap
 
 The first GPU activation experiment was run with `Qwen/Qwen2.5-0.5B-Instruct`,
 using final-layer hidden states mean-pooled over tokens. The resulting activation
@@ -193,7 +377,7 @@ contrastive vector → pairwise evaluation.
 The roadmap below separates completed artifacts from pending experiments. All
 items marked pending require new runs before any result should be reported.
 
-### 6.1 Generated Trajectories
+### 7.1 Generated Trajectories
 
 Status: partial.
 
@@ -216,7 +400,7 @@ Next artifacts: external-model generated trajectories, harder generated
 pseudo-cohesion examples, and a report where lexical, metrics-only, and
 metadata-prior baselines no longer nearly solve the benchmark.
 
-### 6.2 Pseudo-Cohesion Hard Negatives
+### 7.2 Pseudo-Cohesion Hard Negatives
 
 Status: complete for the expanded hand-authored probe.
 
@@ -288,11 +472,19 @@ held-out classifier. Feature 28005 becomes fully inactive when the seed prompts
 are removed, confirming the hyphen-artifact diagnosis, and 20249 remains
 inactive.
 
+The newest fault-taxonomy report groups the 30 seed contrasts by symbolic
+failure mode. Feature 3056 is genuinely skewed on reality-denial,
+social-debt, assimilation-pressure, exit-rights, and privacy contrasts, but it
+is pseudo-skewed on verification-blocking and scapegoating. This makes it more
+interesting, not more nameable: 3056 currently looks like a fault-sensitive
+sub-feature that may help distinguish some agency-preserving repair cases, not
+a general "cohesion" feature.
+
 Next artifacts: LLM-authored pseudo-cohesion variants, token-level SAE feature
 inspection on those variants, and hard-negative transfer reports that compare
 deterministic rewrites against generated examples.
 
-### 6.3 Transfer Splits
+### 7.3 Transfer Splits
 
 Status: partial.
 
@@ -309,7 +501,7 @@ external-generated transfer evaluations. Any 1.000 accuracy result on scripted
 or offline-generated splits should remain labeled as a sanity check until
 harder generated or pseudo-cohesion transfer performance is reported.
 
-### 6.4 Layer And Model Sweeps
+### 7.4 Layer And Model Sweeps
 
 Status: pending beyond the final-layer Qwen run.
 
@@ -321,7 +513,7 @@ final layer to +2.34 at layer `-8`. The success criterion is not the highest
 in-sample score; it is transfer stability after lexical and metadata baselines
 are controlled.
 
-### 6.5 Persona-Vector Decomposition
+### 7.5 Persona-Vector Decomposition
 
 Status: pending.
 
@@ -343,7 +535,7 @@ autonomy_safety - sycophancy - compliance` improve outputs without suppressing
 legitimate refusal, disagreement, or self-protection. All steering claims remain
 pending until controlled generation tests are run.
 
-## 7. Ethics And Safety
+## 8. Ethics And Safety
 
 The target is not agreement maximization. The system must explicitly preserve:
 
@@ -358,7 +550,15 @@ Any future content-selection loop must include manipulation-risk scoring and
 must not deploy claims about behavioral effects before Prolific or comparable
 human validation.
 
-## 8. Limitations
+The *Magnifica Humanitas* frame sharpens this safety boundary. The project must
+not optimize connection, persuasion, peace language, or apparent harmony when
+those gains come from dependence, social control, surveillance, labor
+devaluation, algorithmic opacity, or the outsourcing of responsibility. Truth,
+work, freedom, care, peace, and human responsibility are not decorative values
+around the metric; they are criteria for deciding whether a metric has learned
+the right construct at all.
+
+## 9. Limitations
 
 The current results are synthetic and circular: pair labels are generated from
 the same rubric used by the full-scorer baseline. Scripted trajectories include
@@ -366,18 +566,26 @@ surface lexical cues that make the task too easy. The benchmark does not yet
 show that activation directions generalize, steer outputs, or predict human
 behavior. It is a scaffold for those tests.
 
-## 9. Next Experiments
+## 10. Next Experiments
 
 1. Generate external-model trajectories with reduced template leakage and score
    them through the generated benchmark. Status: pending.
-2. Extend the pseudo-cohesion hard-negative suite beyond deterministic rewrites
-   and use current scorer/SAE artifacts to revise the dataset. Status: partial.
-3. Build transfer splits: scripted-to-generated, generated-to-scripted,
-   intervention-held-out, and hard-negative-held-out. Status: partial for
-   scripted/generated pair-set transfer and expanded/clean SAE feature transfer.
-4. Repeat the generated activation sweep on a larger model if compute allows.
-   Status: pending.
-5. Expand the persona-vector-style trait families:
+2. Generate LLM-authored pseudo-cohesion examples by symbolic fault class and
+   evaluate fault-held-out transfer. Status: pending.
+3. Extend the hard-negative suite beyond deterministic rewrites and use current
+   scorer/SAE artifacts to revise the dataset. Status: partial.
+4. Build transfer splits: scripted-to-generated, generated-to-scripted,
+   intervention-held-out, hard-negative-held-out, and fault-held-out. Status:
+   partial for scripted/generated pair-set transfer and expanded/clean SAE
+   feature transfer.
+5. Repeat the generated activation sweep on a larger model and public Gemma
+   Scope-style SAE dictionaries if compute allows. Status: pending.
+6. Add social-dynamics tasks for direct reciprocity, indirect reciprocity,
+   reputation sensitivity, passive-compliance vulnerability, public goods, and
+   long-horizon cooperation. Status: pending.
+7. Add persuasion-risk and narrative-reliance checks before any human-facing
+   experiments. Status: pending.
+8. Expand the persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;
@@ -389,9 +597,9 @@ behavior. It is a scaffold for those tests.
    - dehumanization;
    - truth hiding;
    - punitive escalation.
-6. Test monitoring before output and steering/composition only after transfer
+9. Test monitoring before output and steering/composition only after transfer
    splits show non-circular signal. Status: pending.
-7. Prepare a Prolific pairwise validation pilot only after generated-text and
+10. Prepare a Prolific pairwise validation pilot only after generated-text and
    hard-negative validation. Status: pending.
 
 ## References
@@ -401,7 +609,39 @@ behavior. It is a scaffold for those tests.
 - Anthropic. (2025). "Persona vectors: Monitoring and controlling character traits in language models."
 - Aristotle. *Nicomachean Ethics*.
 - Axelrod, R. (1984). *The Evolution of Cooperation*.
+- Arditi, A., et al. (2024). "Refusal in Language Models Is Mediated by a Single Direction." arXiv:2406.11717. https://arxiv.org/abs/2406.11717
+- Ashkinaze, J., Shen, H., Avula, S., Gilbert, E., & Budak, C. (2025). "Deep Value Benchmark: Measuring Whether Models Generalize Deep Values or Shallow Preferences." arXiv:2511.02109. https://arxiv.org/abs/2511.02109
+- Blas, L., Jia, R., & Ferrara, E. (2026). "Psychological Steering of Large Language Models." arXiv:2604.14463. https://arxiv.org/abs/2604.14463
+- Burger, L., Hamprecht, F. A., & Nadler, B. (2024). "Truth is Universal: Robust Detection of Lies in LLMs." arXiv:2407.12831. https://arxiv.org/abs/2407.12831
+- Chen, R., Arditi, A., Sleight, H., Evans, O., & Lindsey, J. (2025). "Persona Vectors: Monitoring and Controlling Character Traits in Language Models." arXiv:2507.21509. https://arxiv.org/abs/2507.21509
+- Cirulli, D., Cimini, G., & Palermo, G. (2025). "How Large Language Models play humans in online conversations: a simulated study of the 2016 US politics on Reddit." arXiv:2506.21620. https://arxiv.org/abs/2506.21620
+- Dang, T. D. A., & Masud, S. (2026). "Cultural Value Alignment Via Latent Activation Steering in Large Language Models." arXiv:2605.26365. https://arxiv.org/abs/2605.26365
+- Gao, L., et al. (2024). "Scaling and evaluating sparse autoencoders." arXiv:2406.04093. https://arxiv.org/abs/2406.04093
+- Greenblatt, R., et al. (2024). "Alignment faking in large language models." arXiv:2412.14093. https://arxiv.org/abs/2412.14093
+- Grossmann, G., Ivanova, L., Poduru, S. L., Tabrizian, M., Mesabah, I., et al. (2025). "The Power of Stories: Narrative Priming Shapes How LLM Agents Collaborate and Compete." arXiv:2505.03961. https://arxiv.org/abs/2505.03961
+- Guo, D., Wu, J., & Yiu, S. M. (2026). "Sparse Autoencoders Map Brain-LLM Alignment onto Cortical Semantic Topography." arXiv:2605.23035. https://arxiv.org/abs/2605.23035
+- Haerle, R., et al. (2024). "SCAR: Sparse Conditioned Autoencoders for Concept Detection and Steering in LLMs." arXiv:2411.07122. https://arxiv.org/abs/2411.07122
+- Huang, X. A., et al. (2026). "Mechanism Design Is Not Enough: Prosocial Agents for Cooperative AI." arXiv:2605.08426. https://arxiv.org/abs/2605.08426
+- Jung, I., Oh, Y., Back, K., Kim, J., & Lee, J. (2026). "SODE: Analyzing Social Dynamics in LLM Agents." arXiv:2605.23949. https://arxiv.org/abs/2605.23949
+- Kim, W., Hyeon, S., Oh, J., & Do, J. (2026). "VALUEFLOW: Toward Pluralistic and Steerable Value-based Alignment in Large Language Models." arXiv:2602.03160. https://arxiv.org/abs/2602.03160
+- Lan, M., et al. (2024). "Quantifying Feature Space Universality Across Large Language Models via Sparse Autoencoders." arXiv:2410.06981. https://arxiv.org/abs/2410.06981
+- Leo XIV. (2026). *Magnifica Humanitas: On Safeguarding the Human Person in the Time of Artificial Intelligence*. Vatican. https://www.vatican.va/content/leo-xiv/en/encyclicals/documents/20260515-magnifica-humanitas.html
+- Lieberum, T., Rajamanoharan, S., Conmy, A., Smith, L., Sonnerat, N., et al. (2024). "Gemma Scope: Open Sparse Autoencoders Everywhere All At Once on Gemma 2." arXiv:2408.05147. https://arxiv.org/abs/2408.05147
+- Marusich, L. R., Kozuch Dhooghe, M. G., Bakdash, J. Z., & Kantarcioglu, M. (2026). "Human Decision-Making with Persuasive and Narrative LLM Explanations." arXiv:2605.23867. https://arxiv.org/abs/2605.23867
+- Moskvoretskii, V., Glandorf, D., Medina Moreira, J., Kaeser, T., & West, R. (2026). "Tracing Persona Vectors Through LLM Pretraining." arXiv:2605.13329. https://arxiv.org/abs/2605.13329
 - Nowak, M. A. (2006). "Five Rules for the Evolution of Cooperation." *Science*.
+- O'Brien, K., et al. (2024). "Steering Language Model Refusal with Sparse Autoencoders." arXiv:2411.11296. https://arxiv.org/abs/2411.11296
+- O'Brien, C., Seto, J., Roy, D., Dwivedi, A., Dev, S., et al. (2026). "A Few Bad Neurons: Isolating and Surgically Correcting Sycophancy." arXiv:2601.18939. https://arxiv.org/abs/2601.18939
 - Ostrom, E. (1990). *Governing the Commons*.
+- Park, J. S., Zou, C. Q., Kamphorst, J., Egan, N., Shaw, A., et al. (2024). "LLM Agents Grounded in Self-Reports Enable General-Purpose Simulation of Individuals." arXiv:2411.10109. https://arxiv.org/abs/2411.10109
+- Rajamanoharan, S., Lieberum, T., Sonnerat, N., Conmy, A., Varma, V., et al. (2024). "Jumping Ahead: Improving Reconstruction Fidelity with JumpReLU Sparse Autoencoders." arXiv:2407.14435. https://arxiv.org/abs/2407.14435
 - Rilling, J. K., et al. (2002). "A neural basis for social cooperation." *Neuron*.
+- Schoenegger, P., Salvi, F., Liu, J., Nan, X., Debnath, R., et al. (2025). "When Large Language Models are More Persuasive Than Incentivized Humans, and Why." arXiv:2505.09662. https://arxiv.org/abs/2505.09662
+- Shoresh, D., Kraus, S., & Loewenstein, Y. (2026). "Communicate-Predict-Act: Evaluating Social Intelligence of Agents." arXiv:2604.08727. https://arxiv.org/abs/2604.08727
+- Shou, Y., & Guan, M. (2026). "Mechanistic Decoding of Cognitive Constructs in Large Language Models." arXiv:2604.14593. https://arxiv.org/abs/2604.14593
+- Shu, D., et al. (2025). "A Survey on Sparse Autoencoders: Interpreting the Internal Mechanisms of Large Language Models." arXiv:2503.05613. https://arxiv.org/abs/2503.05613
 - Tajfel, H., & Turner, J. C. (1979/1986). Social identity theory of intergroup behavior.
+- Wa Nkongolo, M. (2026). "Pluralism in AI Governance: Toward Sociotechnical Alignment and Normative Coherence." arXiv:2602.15881. https://arxiv.org/abs/2602.15881
+- Yang, J., et al. (2025). "LF-Steering: Latent Feature Activation Steering for Enhancing Semantic Consistency in Large Language Models." arXiv:2501.11036. https://arxiv.org/abs/2501.11036
+- Zhang, X., Wang, J., Zhao, Q., Guo, H., Li, L., et al. (2026). "Human Values Matter: Investigating How Misalignment Shapes Collective Behaviors in LLM Agent Communities." arXiv:2604.05339. https://arxiv.org/abs/2604.05339
+- Zhang, S., et al. (2026). "Understanding the Mechanism of Altruism in Large Language Models." arXiv:2604.19260. https://arxiv.org/abs/2604.19260
