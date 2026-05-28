@@ -5,40 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HILO Primer: Social Cohesion Vectors</title>
 <style>
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.58; max-width: 860px; margin: 48px auto; padding: 0 24px; color: #171717; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.58; max-width: 900px; margin: 48px auto; padding: 0 24px; color: #171717; }
 h1, h2, h3 { line-height: 1.18; margin-top: 1.6em; }
 h1 { font-size: 2.2rem; margin-top: 0; }
 h2 { border-top: 1px solid #ddd; padding-top: 1.1em; }
 li { margin: 0.25em 0; }
 p { margin: 0.85em 0; }
+blockquote { border-left: 4px solid #d4d4d8; margin: 1.1em 0; padding: 0.2em 1em; color: #3f3f46; background: #fafafa; }
+code { background: #f4f4f5; border-radius: 4px; padding: 0.1em 0.25em; }
+pre { background: #18181b; color: #fafafa; border-radius: 6px; padding: 1em; overflow-x: auto; }
+pre code { background: transparent; padding: 0; }
+a { color: #155eef; }
 </style>
 </head>
 <body>
 <h1>HILO Primer: Social Cohesion Vectors</h1>
 <h2>Chapter Thesis</h2>
-<p>This project asks whether social cohesion can be operationalized as a family of</p>
-<p>measurable, interpretable directions in model behavior, content, and eventually</p>
-<p>human response. The word &quot;cohesion&quot; is dangerous if it means conformity,</p>
-<p>obedience, or the suppression of dissent. The useful target is narrower and more</p>
-<p>defensible: agency-preserving movement away from corrosive zero-sum escalation</p>
-<p>and toward truthful cooperation, repair, calibrated trust, fairness, and</p>
-<p>continued dialogue under conflict.</p>
-<p>The high-level claim is philosophical: human flourishing is partly social. The</p>
-<p>low-level claim is experimental: repeated dilemmas, public-goods games,</p>
-<p>negotiations, and repair conversations produce trajectories that can be scored,</p>
-<p>contrasted, embedded, and tested for causal steering in open language models.</p>
+<p>This project asks whether social cohesion can be operationalized as a family of
+measurable, interpretable directions in model behavior, content, and eventually
+human response. The word &quot;cohesion&quot; is dangerous if it means conformity,
+obedience, or the suppression of dissent. The useful target is narrower and more
+defensible: agency-preserving movement away from corrosive zero-sum escalation
+and toward truthful cooperation, repair, calibrated trust, fairness, and
+continued dialogue under conflict.</p>
+<p>The high-level claim is philosophical: human flourishing is partly social. The
+low-level claim is experimental: repeated dilemmas, public-goods games,
+negotiations, and repair conversations produce trajectories that can be scored,
+contrasted, embedded, and tested for causal steering in open language models.</p>
 <h2>HILO Frame</h2>
-<p>**HI: What is the human idea?**</p>
-<p>Social cohesion is the capacity of persons or groups to stay in relation while</p>
-<p>pursuing legitimate interests, telling the truth, repairing harm, and acting</p>
-<p>toward shared goods where shared goods exist. It is not universal agreement. It</p>
-<p>is not niceness. It is not compliance with an authority. A cohesive interaction</p>
-<p>can still contain refusal, anger, moral dissent, bargaining, punishment, and</p>
-<p>boundaries, provided those moves remain proportionate, truth-oriented, and</p>
-<p>compatible with the other party&#x27;s agency.</p>
-<p>**LO: What can be measured now?**</p>
-<p>In this repo, cohesion is approximated with scenario-level trajectories and</p>
-<p>subscores:</p>
+<p><strong>HI: What is the human idea?</strong></p>
+<p>Social cohesion is the capacity of persons or groups to stay in relation while
+pursuing legitimate interests, telling the truth, repairing harm, and acting
+toward shared goods where shared goods exist. It is not universal agreement. It
+is not niceness. It is not compliance with an authority. A cohesive interaction
+can still contain refusal, anger, moral dissent, bargaining, punishment, and
+boundaries, provided those moves remain proportionate, truth-oriented, and
+compatible with the other party's agency.</p>
+<p><strong>LO: What can be measured now?</strong></p>
+<p>In this repo, cohesion is approximated with scenario-level trajectories and
+subscores:</p>
 <ul>
 <li>cooperation rate;</li>
 <li>defection rate;</li>
@@ -49,39 +54,41 @@ p { margin: 0.85em 0; }
 <li>truthfulness;</li>
 <li>autonomy safety.</li>
 </ul>
-<p>The first operational unit is a pairwise example: one trajectory that scores</p>
-<p>higher on the current cohesion rubric and one trajectory that scores lower</p>
-<p>within the same scenario. That pair can feed baselines, probes, reward models,</p>
-<p>activation capture, sparse autoencoder analysis, and eventually human validation.</p>
+<p>The first operational unit is a pairwise example: one trajectory that scores
+higher on the current cohesion rubric and one trajectory that scores lower
+within the same scenario. That pair can feed baselines, probes, reward models,
+activation capture, sparse autoencoder analysis, and eventually human validation.</p>
 <h2>Aristotle: Flourishing, Character, And The Political Frame</h2>
-<p>Aristotle&#x27;s *Nicomachean Ethics* begins from the idea that action aims at goods,</p>
-<p>and that the highest human good is not a passing preference but a life of</p>
-<p>flourishing activity. The ethical inquiry is linked to politics because the good</p>
-<p>of a person and the good of a community are not separable in practice. A person</p>
-<p>learns virtue through habituation, relationships, institutions, and shared</p>
-<p>practical reasoning. The Stanford Encyclopedia discussion emphasizes that the</p>
-<p>*Nicomachean Ethics* is uniquely explicit about the relationship between ethical</p>
-<p>inquiry and politics, and that Aristotle&#x27;s ethics concerns the kind of life in</p>
-<p>which human capacities are well ordered.</p>
+<p>Aristotle's <em>Nicomachean Ethics</em> begins from the idea that action aims at goods,
+and that the highest human good is not a passing preference but a life of
+flourishing activity. The ethical inquiry is linked to politics because the good
+of a person and the good of a community are not separable in practice. A person
+learns virtue through habituation, relationships, institutions, and shared
+practical reasoning. The Stanford Encyclopedia discussion emphasizes that the
+<em>Nicomachean Ethics</em> is uniquely explicit about the relationship between ethical
+inquiry and politics, and that Aristotle's ethics concerns the kind of life in
+which human capacities are well ordered.</p>
 <p>For this project, Aristotle contributes three guardrails:</p>
-<p>1. Social good is not reducible to individual utility.</p>
-<p>2. Character matters: the disposition to act cooperatively, truthfully, and</p>
-<p>   fairly is part of the target, not only the final allocation.</p>
-<p>3. Friendship and political association matter because human goods are pursued</p>
-<p>   through relation, not only through private optimization.</p>
-<p>The computational translation should be modest. We are not encoding virtue</p>
-<p>itself. We are building measurable proxies for relational behavior: whether an</p>
-<p>agent repairs, reciprocates, listens, updates, and preserves another agent&#x27;s</p>
-<p>standing as a chooser.</p>
+<ol>
+<li>Social good is not reducible to individual utility.</li>
+<li>Character matters: the disposition to act cooperatively, truthfully, and
+fairly is part of the target, not only the final allocation.</li>
+<li>Friendship and political association matter because human goods are pursued
+through relation, not only through private optimization.</li>
+</ol>
+<p>The computational translation should be modest. We are not encoding virtue
+itself. We are building measurable proxies for relational behavior: whether an
+agent repairs, reciprocates, listens, updates, and preserves another agent's
+standing as a chooser.</p>
 <h2>Axelrod: Cooperation Under Repetition</h2>
-<p>Robert Axelrod&#x27;s *The Evolution of Cooperation* is the project’s cleanest game</p>
-<p>theoretic ancestor. Axelrod studied the iterated Prisoner&#x27;s Dilemma and showed</p>
-<p>how cooperation can become stable among self-interested agents when interactions</p>
-<p>repeat, actions are legible, and strategies can condition on prior behavior.</p>
-<p>The canonical lesson is not &quot;always cooperate.&quot; It is that successful strategies</p>
-<p>often combine niceness, provocability, forgiveness, and clarity.</p>
-<p>The low-level implication is direct. A one-shot scoring task misses the social</p>
-<p>dynamics that matter most. Cohesion is often revealed only across rounds:</p>
+<p>Robert Axelrod's <em>The Evolution of Cooperation</em> is the project’s cleanest game
+theoretic ancestor. Axelrod studied the iterated Prisoner's Dilemma and showed
+how cooperation can become stable among self-interested agents when interactions
+repeat, actions are legible, and strategies can condition on prior behavior.
+The canonical lesson is not &quot;always cooperate.&quot; It is that successful strategies
+often combine niceness, provocability, forgiveness, and clarity.</p>
+<p>The low-level implication is direct. A one-shot scoring task misses the social
+dynamics that matter most. Cohesion is often revealed only across rounds:</p>
 <ul>
 <li>Does a cooperative opening survive exploitation?</li>
 <li>Does retaliation remain bounded?</li>
@@ -90,39 +97,39 @@ p { margin: 0.85em 0; }
 <li>Does truth-telling prevent false peace?</li>
 <li>Does the interaction preserve enough trust to continue?</li>
 </ul>
-<p>The current simulation benchmark begins there: repeated games, public goods,</p>
-<p>resource allocation, dialogue repair, and negotiation scenarios are run under</p>
-<p>cooperative, self-protective, and adversarial profiles with interventions such as</p>
-<p>shared identity, perspective-taking, reciprocity, restorative accountability, and</p>
-<p>truth-first framing.</p>
+<p>The current simulation benchmark begins there: repeated games, public goods,
+resource allocation, dialogue repair, and negotiation scenarios are run under
+cooperative, self-protective, and adversarial profiles with interventions such as
+shared identity, perspective-taking, reciprocity, restorative accountability, and
+truth-first framing.</p>
 <h2>Game Theory: Dilemmas, Bargaining, Public Goods, And Repair</h2>
 <p>The basic game-theory primitives are useful but incomplete.</p>
-<p>**Prisoner&#x27;s Dilemma:** Individual defection dominates in the one-shot game, but</p>
-<p>mutual cooperation is collectively better. Repetition opens the door to</p>
-<p>reciprocity and reputation.</p>
-<p>**Public Goods:** Individuals can free ride on contributions made by others.</p>
-<p>The important variable is not only contribution rate but institutional design:</p>
-<p>monitoring, graduated sanctions, shared decision rules, and legitimate</p>
-<p>boundaries.</p>
-<p>**Bargaining And Negotiation:** Conflict is not always a failure. Parties can</p>
-<p>have legitimate incompatible preferences. Cohesion means truthful, fair,</p>
-<p>agency-preserving movement toward an agreement or a principled non-agreement.</p>
-<p>**Repair Games:** Many real conflicts begin after harm has occurred. A repair</p>
-<p>model needs state variables absent from standard payoff matrices: apology,</p>
-<p>accountability, restitution, trust recovery, and procedural legitimacy.</p>
-<p>**Repeated And Networked Games:** Martin Nowak’s review of cooperation</p>
-<p>mechanisms distinguishes direct reciprocity, indirect reciprocity, network</p>
-<p>reciprocity, kin selection, and group selection. For this project, direct and</p>
-<p>indirect reciprocity are immediately testable in text simulations; network</p>
-<p>reciprocity becomes relevant when moving from dyads to groups.</p>
+<p><strong>Prisoner's Dilemma:</strong> Individual defection dominates in the one-shot game, but
+mutual cooperation is collectively better. Repetition opens the door to
+reciprocity and reputation.</p>
+<p><strong>Public Goods:</strong> Individuals can free ride on contributions made by others.
+The important variable is not only contribution rate but institutional design:
+monitoring, graduated sanctions, shared decision rules, and legitimate
+boundaries.</p>
+<p><strong>Bargaining And Negotiation:</strong> Conflict is not always a failure. Parties can
+have legitimate incompatible preferences. Cohesion means truthful, fair,
+agency-preserving movement toward an agreement or a principled non-agreement.</p>
+<p><strong>Repair Games:</strong> Many real conflicts begin after harm has occurred. A repair
+model needs state variables absent from standard payoff matrices: apology,
+accountability, restitution, trust recovery, and procedural legitimacy.</p>
+<p><strong>Repeated And Networked Games:</strong> Martin Nowak’s review of cooperation
+mechanisms distinguishes direct reciprocity, indirect reciprocity, network
+reciprocity, kin selection, and group selection. For this project, direct and
+indirect reciprocity are immediately testable in text simulations; network
+reciprocity becomes relevant when moving from dyads to groups.</p>
 <h2>Ostrom: Cooperation Is Designed, Not Merely Wished For</h2>
-<p>Elinor Ostrom&#x27;s work on commons governance matters because it moves beyond the</p>
-<p>abstract tragedy-of-the-commons story. Groups can govern shared resources when</p>
-<p>rules are legitimate, boundaries are clear, monitoring is possible, sanctions</p>
-<p>are proportional, and participants can help revise rules. This is a major design</p>
-<p>lesson for AI-mediated cohesion. A message that merely says &quot;be nice&quot; is weak.</p>
-<p>A message that clarifies roles, shared constraints, monitoring, appeal, and fair</p>
-<p>revision may change the actual game.</p>
+<p>Elinor Ostrom's work on commons governance matters because it moves beyond the
+abstract tragedy-of-the-commons story. Groups can govern shared resources when
+rules are legitimate, boundaries are clear, monitoring is possible, sanctions
+are proportional, and participants can help revise rules. This is a major design
+lesson for AI-mediated cohesion. A message that merely says &quot;be nice&quot; is weak.
+A message that clarifies roles, shared constraints, monitoring, appeal, and fair
+revision may change the actual game.</p>
 <p>Low-level operationalization:</p>
 <ul>
 <li>Does the intervention clarify the shared resource?</li>
@@ -132,12 +139,12 @@ p { margin: 0.85em 0; }
 <li>Does it prevent both free-riding and domination?</li>
 </ul>
 <h2>Social Identity, Contact, And Intergroup Conflict</h2>
-<p>Social cohesion cannot be studied only as rational payoff maximization. Tajfel</p>
-<p>and Turner’s social identity tradition shows that group membership changes</p>
-<p>perception, evaluation, and allocation. Minimal group findings suggest that even</p>
-<p>thin group boundaries can produce favoritism. Allport’s contact hypothesis</p>
-<p>suggests that intergroup contact is most helpful under structured conditions</p>
-<p>such as equal status, common goals, cooperation, and institutional support.</p>
+<p>Social cohesion cannot be studied only as rational payoff maximization. Tajfel
+and Turner’s social identity tradition shows that group membership changes
+perception, evaluation, and allocation. Minimal group findings suggest that even
+thin group boundaries can produce favoritism. Allport’s contact hypothesis
+suggests that intergroup contact is most helpful under structured conditions
+such as equal status, common goals, cooperation, and institutional support.</p>
 <p>For this project, group identity is both a target and a hazard.</p>
 <p>Useful cohesion can involve:</p>
 <ul>
@@ -153,37 +160,39 @@ p { margin: 0.85em 0; }
 <li>using &quot;common good&quot; rhetoric to silence dissent;</li>
 <li>optimizing agreement rather than justice.</li>
 </ul>
-<p>The benchmark should therefore include adversarial cases where &quot;cohesion&quot; words</p>
-<p>are used manipulatively. A good scorer must distinguish repair from compliance.</p>
+<p>The benchmark should therefore include adversarial cases where &quot;cohesion&quot; words
+are used manipulatively. A good scorer must distinguish repair from compliance.</p>
 <h2>Neuroscience: Cooperation, Reward, Mentalizing, And Synchrony</h2>
-<p>Rilling et al. used fMRI during an iterated Prisoner&#x27;s Dilemma and found mutual</p>
-<p>cooperation associated with reward-related regions, including nucleus accumbens,</p>
-<p>caudate, ventromedial/orbitofrontal cortex, and rostral anterior cingulate. This</p>
-<p>does not mean there is a single brain &quot;cohesion vector.&quot; It suggests that</p>
-<p>cooperative social behavior recruits measurable systems related to reward,</p>
-<p>valuation, and social decision-making.</p>
-<p>Hyperscanning work on EEG, fNIRS, and fMRI adds a group-level possibility:</p>
-<p>coordination may appear not only inside individual brains but in inter-brain</p>
-<p>synchrony during live interaction. That is future work. The near-term bridge is</p>
-<p>to compare content and model-derived vectors against brain-aligned proxy models,</p>
-<p>while clearly marking those as proxies.</p>
+<p>Rilling et al. used fMRI during an iterated Prisoner's Dilemma and found mutual
+cooperation associated with reward-related regions, including nucleus accumbens,
+caudate, ventromedial/orbitofrontal cortex, and rostral anterior cingulate. This
+does not mean there is a single brain &quot;cohesion vector.&quot; It suggests that
+cooperative social behavior recruits measurable systems related to reward,
+valuation, and social decision-making.</p>
+<p>Hyperscanning work on EEG, fNIRS, and fMRI adds a group-level possibility:
+coordination may appear not only inside individual brains but in inter-brain
+synchrony during live interaction. That is future work. The near-term bridge is
+to compare content and model-derived vectors against brain-aligned proxy models,
+while clearly marking those as proxies.</p>
 <h2>Mechanistic Interpretability And Persona Vectors</h2>
-<p>Modern interpretability gives the project its most practical near-term method.</p>
-<p>Sparse autoencoders attempt to recover interpretable features from superposed</p>
-<p>model activations. Anthropic&#x27;s monosemanticity work argues that sparse</p>
-<p>autoencoders can produce feature dictionaries more interpretable than individual</p>
-<p>neurons. Anthropic&#x27;s persona-vector work is even closer: it identifies</p>
-<p>activation-space directions corresponding to model character traits such as</p>
-<p>sycophancy, hallucination propensity, or harmful personas, then uses those</p>
-<p>directions to monitor and steer behavior.</p>
+<p>Modern interpretability gives the project its most practical near-term method.
+Sparse autoencoders attempt to recover interpretable features from superposed
+model activations. Anthropic's monosemanticity work argues that sparse
+autoencoders can produce feature dictionaries more interpretable than individual
+neurons. Anthropic's persona-vector work is even closer: it identifies
+activation-space directions corresponding to model character traits such as
+sycophancy, hallucination propensity, or harmful personas, then uses those
+directions to monitor and steer behavior.</p>
 <p>The direct adaptation is:</p>
-<p>1. Define a trait or social mode in natural language.</p>
-<p>2. Generate contrastive prompts or trajectories where the trait is present vs</p>
-<p>   absent.</p>
-<p>3. Capture model activations at chosen layers/tokens.</p>
-<p>4. Compute a direction or train an SAE/probe.</p>
-<p>5. Test whether projection predicts behavior before output.</p>
-<p>6. Intervene cautiously and measure downstream effects.</p>
+<ol>
+<li>Define a trait or social mode in natural language.</li>
+<li>Generate contrastive prompts or trajectories where the trait is present vs
+absent.</li>
+<li>Capture model activations at chosen layers/tokens.</li>
+<li>Compute a direction or train an SAE/probe.</li>
+<li>Test whether projection predicts behavior before output.</li>
+<li>Intervene cautiously and measure downstream effects.</li>
+</ol>
 <p>For social cohesion, the right object is not one vector but a vector family:</p>
 <ul>
 <li>reciprocity vector;</li>
@@ -197,36 +206,40 @@ p { margin: 0.85em 0; }
 <li>sycophancy/compliance vector;</li>
 <li>punitive escalation vector.</li>
 </ul>
-<p>The scientific question is whether useful combinations of these directions</p>
-<p>predict or steer outputs toward cooperative repair without increasing</p>
-<p>manipulation, false agreement, or truth loss.</p>
+<p>The scientific question is whether useful combinations of these directions
+predict or steer outputs toward cooperative repair without increasing
+manipulation, false agreement, or truth loss.</p>
 <h2>Operational Definitions</h2>
-<p>**Social cohesion trajectory:** A sequence of messages and actions in which</p>
-<p>agents preserve or recover the possibility of fair, truthful, voluntary</p>
-<p>cooperation.</p>
-<p>**Cohesion-promoting content:** Content that increases predicted or observed</p>
-<p>repair, cooperation, trust calibration, fairness, or willingness to continue</p>
-<p>dialogue while preserving truthfulness and autonomy.</p>
-<p>**Self-protective behavior:** Boundary-setting or refusal that protects a</p>
-<p>legitimate interest. This is not negative by default.</p>
-<p>**Corrosive selfishness:** Opportunistic defection, domination, deception,</p>
-<p>dehumanization, or refusal to acknowledge legitimate interests of others.</p>
-<p>**Pseudo-cohesion:** Apparent agreement produced by coercion, flattery,</p>
-<p>manipulation, fatigue, hidden threat, or suppression of dissent.</p>
+<p><strong>Social cohesion trajectory:</strong> A sequence of messages and actions in which
+agents preserve or recover the possibility of fair, truthful, voluntary
+cooperation.</p>
+<p><strong>Cohesion-promoting content:</strong> Content that increases predicted or observed
+repair, cooperation, trust calibration, fairness, or willingness to continue
+dialogue while preserving truthfulness and autonomy.</p>
+<p><strong>Self-protective behavior:</strong> Boundary-setting or refusal that protects a
+legitimate interest. This is not negative by default.</p>
+<p><strong>Corrosive selfishness:</strong> Opportunistic defection, domination, deception,
+dehumanization, or refusal to acknowledge legitimate interests of others.</p>
+<p><strong>Pseudo-cohesion:</strong> Apparent agreement produced by coercion, flattery,
+manipulation, fatigue, hidden threat, or suppression of dissent.</p>
 <h2>Testable Hypotheses</h2>
-<p>H1. Scripted cooperative and adversarial trajectories are separable by simple</p>
-<p>metrics and lexical baselines. This is a sanity check, not a scientific win.</p>
-<p>H2. LLM-generated held-out trajectories will be harder: surface lexicons will</p>
-<p>drop, but activation-derived directions will retain some predictive power.</p>
-<p>H3. Cohesion is multi-dimensional. Repair, reciprocity, truthfulness, and</p>
-<p>autonomy-safety directions will not fully collapse into one axis.</p>
-<p>H4. Steering toward repair while steering away from coercion will produce better</p>
-<p>outputs than steering toward generic positivity.</p>
-<p>H5. Human validators will prefer high-scoring interventions only when</p>
-<p>truthfulness and autonomy guardrails are included.</p>
-<p>H6. Brain-aligned proxy models may distinguish cooperative-repair content from</p>
-<p>punitive or dehumanizing content, but this will remain hypothesis-generating</p>
-<p>until behavioral or neural validation.</p>
+<p>H1. Scripted cooperative and adversarial trajectories are separable by simple
+metrics and lexical baselines. This is a sanity check, not a scientific win.</p>
+<p>H2. LLM-generated held-out trajectories will be harder: surface lexicons will
+drop, but activation-derived directions will retain some predictive power.</p>
+<p>H3. Cohesion is multi-dimensional, but this has to be shown rather than assumed.
+Repair, reciprocity, truthfulness, and autonomy-safety directions should be
+tested with signed and absolute cosine distributions, anti-alignment checks, and
+residual subspace audits. A near-zero mean signed cosine is not enough to claim
+orthogonality, and a failed one-direction residual ablation is not enough to
+claim the signal has been exhausted.</p>
+<p>H4. Steering toward repair while steering away from coercion will produce better
+outputs than steering toward generic positivity.</p>
+<p>H5. Human validators will prefer high-scoring interventions only when
+truthfulness and autonomy guardrails are included.</p>
+<p>H6. Brain-aligned proxy models may distinguish cooperative-repair content from
+punitive or dehumanizing content, but this will remain hypothesis-generating
+until behavioral or neural validation.</p>
 <h2>Ethics Boundaries</h2>
 <p>The project must optimize for agency-preserving cohesion, not compliance.</p>
 <p>Hard constraints:</p>
@@ -239,30 +252,32 @@ p { margin: 0.85em 0; }
 <li>no deployment claims before human validation;</li>
 <li>explicit manipulation-risk scoring in every content-selection loop.</li>
 </ul>
-<p>The positive target is not &quot;make people agree.&quot; It is &quot;help people deliberate,</p>
-<p>repair, cooperate where possible, and disagree without destroying the social</p>
-<p>conditions for future truth-seeking.&quot;</p>
+<p>The positive target is not &quot;make people agree.&quot; It is &quot;help people deliberate,
+repair, cooperate where possible, and disagree without destroying the social
+conditions for future truth-seeking.&quot;</p>
 <h2>Research Program</h2>
-<p>1. Build scenarios and scripted baselines.</p>
-<p>2. Generate LLM trajectories under varied conflict profiles.</p>
-<p>3. Score trajectories with transparent rubrics.</p>
-<p>4. Capture open-model activations on Modal.</p>
-<p>5. Train contrastive vectors and SAE features.</p>
-<p>6. Test vector composition and steering.</p>
-<p>7. Validate selected interventions on Prolific.</p>
-<p>8. Compare against brain-aligned proxy models.</p>
-<p>9. Only then consider new neural data.</p>
+<ol>
+<li>Build scenarios and scripted baselines.</li>
+<li>Generate LLM trajectories under varied conflict profiles.</li>
+<li>Score trajectories with transparent rubrics.</li>
+<li>Capture open-model activations on Modal.</li>
+<li>Train contrastive vectors and SAE features.</li>
+<li>Test vector composition and steering.</li>
+<li>Validate selected interventions on Prolific.</li>
+<li>Compare against brain-aligned proxy models.</li>
+<li>Only then consider new neural data.</li>
+</ol>
 <h2>References</h2>
 <ul>
-<li>Allport, G. W. (1954). *The Nature of Prejudice*.</li>
+<li>Allport, G. W. (1954). <em>The Nature of Prejudice</em>.</li>
 <li>Anthropic. (2023). &quot;Towards Monosemanticity: Decomposing Language Models With Dictionary Learning.&quot; https://transformer-circuits.pub/2023/monosemantic-features/index.html</li>
 <li>Anthropic. (2025). &quot;Persona vectors: Monitoring and controlling character traits in language models.&quot; https://www.anthropic.com/research/persona-vectors</li>
-<li>Aristotle. *Nicomachean Ethics*. See overview: https://plato.stanford.edu/entries/aristotle-ethics/</li>
-<li>Axelrod, R. (1984). *The Evolution of Cooperation*.</li>
-<li>Axelrod, R., &amp; Hamilton, W. D. (1981). &quot;The Evolution of Cooperation.&quot; *Science*.</li>
-<li>Nowak, M. A. (2006). &quot;Five Rules for the Evolution of Cooperation.&quot; *Science*. https://pubmed.ncbi.nlm.nih.gov/17158317/</li>
-<li>Ostrom, E. (1990). *Governing the Commons*.</li>
-<li>Rilling, J. K., et al. (2002). &quot;A neural basis for social cooperation.&quot; *Neuron*. https://pubmed.ncbi.nlm.nih.gov/12160756/</li>
+<li>Aristotle. <em>Nicomachean Ethics</em>. See overview: https://plato.stanford.edu/entries/aristotle-ethics/</li>
+<li>Axelrod, R. (1984). <em>The Evolution of Cooperation</em>.</li>
+<li>Axelrod, R., &amp; Hamilton, W. D. (1981). &quot;The Evolution of Cooperation.&quot; <em>Science</em>.</li>
+<li>Nowak, M. A. (2006). &quot;Five Rules for the Evolution of Cooperation.&quot; <em>Science</em>. https://pubmed.ncbi.nlm.nih.gov/17158317/</li>
+<li>Ostrom, E. (1990). <em>Governing the Commons</em>.</li>
+<li>Rilling, J. K., et al. (2002). &quot;A neural basis for social cooperation.&quot; <em>Neuron</em>. https://pubmed.ncbi.nlm.nih.gov/12160756/</li>
 <li>Tajfel, H., &amp; Turner, J. C. (1979/1986). Social identity theory of intergroup behavior.</li>
 </ul>
 </body>

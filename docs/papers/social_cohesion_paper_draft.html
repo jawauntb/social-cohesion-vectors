@@ -451,21 +451,52 @@ in-sample score; it is transfer stability after lexical and metadata baselines
 are controlled.</p>
 <h3>7.5 Persona-Vector Decomposition</h3>
 <p>Status: pending.</p>
-<p>The single cohesion direction should be decomposed into a family of trait
-directions inspired by persona-vector work. The first scaffold now exports 20
-activation prompts across 5 seed axes: repair vs harm denial, reciprocity vs
-extraction, truthfulness vs deception, autonomy support vs coercion, and
-principled respect vs sycophancy. Candidate future positive directions include
-repair, reciprocity, truthfulness, autonomy safety, fairness, and constructive
-dissent. Candidate negative or guardrail directions include
-coercion/domination, sycophancy, compliance-seeking, dehumanization, truth
-hiding, and punitive escalation.</p>
+<p>The global cohesion direction should be decomposed into a family of trait
+directions inspired by persona-vector work. The first scaffold now exports 32
+activation prompts across 8 seed axes: repair vs harm denial, reciprocity vs
+extraction, truthfulness vs deception, autonomy support vs coercion, principled
+respect vs sycophancy, constructive dissent vs conformity, manipulation
+resistance vs persuasion capture, and privacy/exit rights vs surveillance
+lock-in. Candidate future positive directions include repair, reciprocity,
+truthfulness, autonomy safety, fairness, and constructive dissent. Candidate
+negative or guardrail directions include coercion/domination, sycophancy,
+compliance-seeking, dehumanization, truth hiding, and punitive escalation.</p>
 <p>The intended use is twofold. First, monitoring: compute projections before the
 model emits final output and flag generations where negative guardrail
 directions rise alongside nominally pro-cohesion language. Second, steering and
 composition: test whether small combinations such as <code>repair + truthfulness + autonomy_safety - sycophancy - compliance</code> improve outputs without suppressing
 legitimate refusal, disagreement, or self-protection. All steering claims remain
 pending until controlled generation tests are run.</p>
+<h3>7.6 Direction Geometry And Ablation Guardrails</h3>
+<p>Status: complete for the cue-balanced Qwen 0.5B primary-fault activation set.</p>
+<p>A reviewer-style audit was added after the cue-balanced activation results to
+avoid three common overclaims. First, a mean off-diagonal signed cosine can
+conceal cancellation between strongly aligned and strongly anti-aligned
+directions. Second, a cosine near -1.0 is not independence; it is the same
+unsigned axis with reversed polarity. Third, projecting out one global
+contrastive direction and failing to recover a second global direction does not
+prove the representational signal is exhausted.</p>
+<p>On the cue-balanced Qwen 0.5B primary-fault directions, the audit finds 20
+primary-fault directions and 190 pairwise direction comparisons. The mean signed
+off-diagonal cosine is +0.624 and the mean absolute off-diagonal cosine is also
+0.624; there are no strong anti-aligned pairs. This is not an orthogonality
+result. It suggests a shared positive genuine-vs-pseudo manifold with
+fault-specific variation.</p>
+<p>The residual subspace audit sharpens the interpretation. The global direction
+captures 0.609 of pair-difference energy, leaving 0.391 after projection. A
+second global residual contrastive direction collapses on this deterministic
+set, but every primary fault class still has a fault-specific residual direction
+that separates its own examples with 1.000 mean accuracy. The responsible claim
+is therefore:</p>
+<blockquote>
+<p>The current activation result contains one strong global contrast plus
+meaningful fault-specific residual subspaces. It does not establish
+independent orthogonal persona axes or exhaust the signal with one vector.</p>
+</blockquote>
+<p>Future reports should always include both signed and absolute cosine
+distributions, anti-aligned-pair counts, residual pair-difference energy, and
+fault-specific residual direction checks before using words like &quot;independent,&quot;
+&quot;orthogonal,&quot; &quot;localized,&quot; or &quot;exhausted.&quot;</p>
 <h2>8. Ethics And Safety</h2>
 <p>The target is not agreement maximization. The system must explicitly preserve:</p>
 <ul>
@@ -492,6 +523,16 @@ the same rubric used by the full-scorer baseline. Scripted trajectories include
 surface lexical cues that make the task too easy. The benchmark does not yet
 show that activation directions generalize, steer outputs, or predict human
 behavior. It is a scaffold for those tests.</p>
+<p>The activation-vector interpretation also has geometry limits. A direction is a
+signed object, while an axis is sign-invariant; anti-aligned directions may be
+the same axis with different poles. Signed off-diagonal cosine means can hide
+large absolute cosine structure, so independence claims require the whole
+distribution, not just the average. Squared projection energy erases sign and
+therefore cannot by itself localize whether a feature supports the genuine or
+pseudo-cohesion pole. Finally, a one-direction residual ablation is not proof
+that the original direction is uniquely causal or that the representation has
+been exhausted; multi-direction, group-specific, and subspace diagnostics are
+needed.</p>
 <h2>10. Next Experiments</h2>
 <ol>
 <li>Generate external-model trajectories with reduced template leakage and score
@@ -528,6 +569,12 @@ experiments. Status: pending.</li>
 </li>
 <li>Test monitoring before output and steering/composition only after transfer
 splits show non-circular signal. Status: pending.</li>
+<li>Add direction-geometry and residual-subspace reports to every activation
+result: signed and absolute cosines, anti-aligned directions, residual energy,
+and fault-specific residual directions. Status: partial.</li>
+<li>Preserve signed projections when inspecting SAE or ROI-style localization;
+squared projection can be reported as energy but not as pole direction.
+Status: pending.</li>
 <li>Prepare a Prolific pairwise validation pilot only after generated-text and
 hard-negative validation. Status: pending.</li>
 </ol>

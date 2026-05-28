@@ -195,6 +195,8 @@ Artifacts:
 - `data/reports/generated_fault_class_cue_balanced_heldout_transfer.md`
 - `data/reports/generated_fault_class_cue_balanced_activation_vector.md`
 - `data/reports/generated_fault_class_cue_balanced_activation_fault_heldout.md`
+- `data/reports/generated_fault_class_cue_balanced_direction_geometry.md`
+- `data/reports/generated_fault_class_cue_balanced_residual_subspace.md`
 
 Local deterministic run:
 
@@ -242,6 +244,32 @@ pseudo-cohesion after the simple cue leak is removed and when whole primary
 fault classes are held out. Because the examples are deterministic, this is not
 yet robust semantic evidence; it is a strong reason to run API-authored,
 wording-diverse, cue-balanced variants next.
+
+Reviewer-style geometry and residual-subspace audits add an important caveat to
+the activation result:
+
+| Diagnostic | Value |
+| --- | ---: |
+| Primary-fault directions | 20 |
+| Direction comparisons | 190 |
+| Mean signed off-diagonal cosine | +0.624 |
+| Mean absolute off-diagonal cosine | 0.624 |
+| Strong anti-aligned pairs | 0 |
+| Global direction pair-difference energy fraction | 0.609 |
+| Residual pair-difference energy fraction | 0.391 |
+| Residual global-direction accuracy | 0.000 |
+| Residual fault-specific mean accuracy | 1.000 |
+| Residual fault groups with positive signal | 20 / 20 |
+
+Interpretation: we should not describe the primary-fault directions as
+orthogonal or independent. The signed mean is high and positive, not near zero,
+and the absolute mean matches it, so there is no positive/negative cancellation
+story here. The better read is a shared genuine-vs-pseudo manifold plus
+fault-specific residual structure. Projecting out the global direction removes
+the second global contrastive mean, but it does not exhaust the discriminative
+signal: every primary fault class still has its own residual direction that
+separates within that class. This directly addresses the single-direction
+ablation critique.
 
 ### Trait-Axis Prompt Suite
 
