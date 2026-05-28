@@ -289,6 +289,14 @@ strongest result is Qwen 1.5B layer -2 with 1.000 best pair-LOO signed-vote
 accuracy, but only 0.750 squared-energy accuracy. Translation: the sign matters.
 Squared projection energy is not enough to say which pole a feature supports.
 
+I also added a boundary-prior framing note inspired by Sandved-Smith et al.'s
+"There is no self-evidence." This is not evidence for our activation results;
+it is a useful way to name a new failure class. Healthy cohesion uses boundaries
+flexibly and contextually. Pseudo-cohesion can fail in two opposite ways: rigid
+self/other or us/them boundary reification, and coercive boundary collapse
+where unity language removes refusal, dissent, verification, privacy, or exit.
+The pure-math version is in `docs/abstract_math_framing.md`.
+
 Run those checks with:
 
 ```bash
@@ -403,10 +411,12 @@ the task harder.
 7. Expand the autonomy stress suite with generated/API-authored variants,
    especially around the Qwen LOO misses: dialogue-style verification/proof and
    dialogue-style silence-as-consent.
-8. Add signed/absolute cosine, anti-alignment, residual-subspace, and
+8. Add boundary-prior contrasts: rigid partition, flexible contextual relation,
+   and coercive boundary collapse.
+9. Add signed/absolute cosine, anti-alignment, residual-subspace, and
    signed-vs-squared subspace audits to every activation or SAE result before
    making geometry or localization claims.
-9. Split the target into persona-vector-style trait families:
+10. Split the target into persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;

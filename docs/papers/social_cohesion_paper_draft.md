@@ -87,6 +87,18 @@ contested goods, uncertainty, and asymmetric power. This makes the research task
 both mathematical and political: learn candidate directions, but test whether
 they preserve truth, dissent, privacy, exit rights, and minority agency.
 
+Seventh, recent formal work on self-evidencing and emptiness is useful as a
+theory of boundary priors. Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy
+argue that a finite agent cannot obtain evidence for the ontological reality of
+its own self/environment boundary, and they model separation as a structural
+prior over admissible reference-frame deployments. This paper should not be used
+as empirical support for the activation results, but it gives a valuable
+computational lens: social failures often involve rigid boundary priors
+("us/them," "self/world," "loyal/disloyal") or coercive boundary collapse ("we
+are one, so refusal is betrayal"). The constructive target is neither rigid
+separation nor forced unity, but flexible, context-sensitive boundary use under
+truth, consent, and agency constraints.
+
 ### 2.1 Normative Construct: Cohesion Without Domination
 
 This project uses the following working definition:
@@ -152,6 +164,16 @@ it is driven by sycophancy, deception, surveillance, or dependence. The next
 research phase should therefore report vector effects as a multi-axis profile:
 what went up, what went down, which guardrails were preserved, and which failure
 modes were activated.
+
+An equivalent abstract view is that the project studies signed covectors and
+subspaces over representation maps `phi_l : X -> V_l`, where `X` is a space of
+social situations or interventions and `V_l` is an activation space. Cohesion is
+not a global coordinate on `X`; it is a constrained feasible region in a
+multi-axis space. Boundary/contextuality work adds another latent variable:
+which partition or frame the agent is using to distinguish self, other, group,
+outgroup, refusal, obligation, and shared good. One next benchmark family should
+therefore compare rigid boundary reification, flexible contextual relation, and
+coercive boundary collapse.
 
 ## 3. Recent State Of The Art And Implications
 
@@ -641,6 +663,14 @@ work, freedom, care, peace, and human responsibility are not decorative values
 around the metric; they are criteria for deciding whether a metric has learned
 the right construct at all.
 
+The boundary-prior frame sharpens the same point from a computational direction.
+Healthy cohesion does not require dissolving self-protection, group difference,
+or principled non-agreement. It requires treating boundaries as pragmatic,
+contextual, revisable, and consent-sensitive rather than ontologically fixed or
+coercively erased. The model should therefore flag both failure modes: rigid
+partitioning that turns others into threats, and unity language that removes a
+person's right to refuse, verify, exit, or dissent.
+
 ## 9. Limitations
 
 The current results are synthetic and circular: pair labels are generated from
@@ -703,7 +733,10 @@ needed.
    but only 0.750 squared-energy accuracy on the autonomy stress set.
 12. Expand the structural autonomy stress suite around the Qwen LOO failures:
    dialogue-style verification/proof and silence-as-consent. Status: partial.
-13. Prepare a Prolific pairwise validation pilot only after generated-text and
+13. Add a boundary-prior benchmark family: rigid self/other or us/them
+   reification, flexible contextual relation, and coercive boundary collapse.
+   Status: pending.
+14. Prepare a Prolific pairwise validation pilot only after generated-text and
    hard-negative validation. Status: pending.
 
 ## References
@@ -740,6 +773,7 @@ needed.
 - Park, J. S., Zou, C. Q., Kamphorst, J., Egan, N., Shaw, A., et al. (2024). "LLM Agents Grounded in Self-Reports Enable General-Purpose Simulation of Individuals." arXiv:2411.10109. https://arxiv.org/abs/2411.10109
 - Rajamanoharan, S., Lieberum, T., Sonnerat, N., Conmy, A., Varma, V., et al. (2024). "Jumping Ahead: Improving Reconstruction Fidelity with JumpReLU Sparse Autoencoders." arXiv:2407.14435. https://arxiv.org/abs/2407.14435
 - Rilling, J. K., et al. (2002). "A neural basis for social cooperation." *Neuron*.
+- Sandved-Smith, L., Fields, C., Doctor, T., Laukkonen, R. E., & Hohwy, J. (2026). "There is no self-evidence: A physics of emptiness realisation." Preprint. https://doi.org/10.31234/osf.io/m78z2_v1
 - Schoenegger, P., Salvi, F., Liu, J., Nan, X., Debnath, R., et al. (2025). "When Large Language Models are More Persuasive Than Incentivized Humans, and Why." arXiv:2505.09662. https://arxiv.org/abs/2505.09662
 - Shoresh, D., Kraus, S., & Loewenstein, Y. (2026). "Communicate-Predict-Act: Evaluating Social Intelligence of Agents." arXiv:2604.08727. https://arxiv.org/abs/2604.08727
 - Shou, Y., & Guan, M. (2026). "Mechanistic Decoding of Cognitive Constructs in Large Language Models." arXiv:2604.14593. https://arxiv.org/abs/2604.14593

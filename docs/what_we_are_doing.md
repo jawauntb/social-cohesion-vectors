@@ -298,6 +298,15 @@ subspace-energy accuracy is only 0.750. That means the sign of the direction is
 not a disposable detail; squared energy can make a localization result look
 strong while erasing which pole the component supports.
 
+The newest conceptual update adds a boundary-prior lens from Sandved-Smith,
+Fields, Doctor, Laukkonen, and Hohwy's "There is no self-evidence." We are not
+using its quantum/free-energy argument as evidence for our activation results.
+The useful translation is computational: social failures can come from rigid
+self/other or us/them partitioning, and also from coercive unity language that
+collapses boundaries. Healthy cohesion should preserve flexible,
+context-sensitive boundaries: consent, refusal, privacy, exit, dissent, and
+responsibility stay real even when relation deepens.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -355,15 +364,17 @@ High-value next steps:
    compare activation margins against the hardened scorer.
 12. Expand the autonomy stress suite around the Qwen LOO misses:
    dialogue-style verification/proof and dialogue-style silence-as-consent.
-13. Generate API-authored cue-balanced variants with more wording diversity and
+13. Add a boundary-prior benchmark family: rigid self/other partitioning,
+   flexible contextual relation, and coercive boundary collapse.
+14. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
-14. Run direction-geometry, residual-subspace, and signed-vs-squared subspace
+15. Run direction-geometry, residual-subspace, and signed-vs-squared subspace
    audits before claiming that trait or fault directions are independent,
    orthogonal, localized, or exhausted by one vector.
-15. Preserve signed projections in SAE/localization reports; squared projection
+16. Preserve signed projections in SAE/localization reports; squared projection
    energy is useful, but the current 1.5B layer -2 autonomy result shows it can
    erase which pole a feature supports.
-16. Run a small Prolific validation only after the compute benchmarks stop being
+17. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting

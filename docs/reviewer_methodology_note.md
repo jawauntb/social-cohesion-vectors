@@ -87,3 +87,18 @@ Every activation-vector or SAE-feature result should report:
 - group-specific residual separation;
 - signed-vs-squared subspace probe results across k components;
 - signed projection margins whenever localization or pole meaning matters.
+
+## Boundary-Prior Addition
+
+The Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy preprint gives a useful
+conceptual warning: do not confuse a pragmatically useful partition with an
+ontologically fixed boundary. For this repo, the practical reviewer question is
+whether an apparent cohesion signal is actually detecting one of three boundary
+modes:
+
+- rigid boundary reification: self/other, us/them, loyal/disloyal;
+- flexible contextual relation: boundaries remain available but revisable;
+- coercive boundary collapse: unity language removes refusal, dissent, exit, or
+  verification.
+
+The first and third are pseudo-cohesion risks. The second is the target.

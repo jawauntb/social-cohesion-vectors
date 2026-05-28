@@ -8,7 +8,7 @@ This project asks whether language models, multimodal generative systems, and br
 
 Modern AI systems are increasingly capable of generating persuasive language, images, audio, and video. Most work on persuasion, recommendation, and content optimization is framed around engagement, conversion, attention, or preference satisfaction. This project proposes a different objective: can generative AI be used to cultivate social cohesion?
 
-The philosophical frame is old. In Aristotle’s *Nicomachean Ethics*, the highest good is not merely private satisfaction but human flourishing, and the good of the political community is treated as more complete than the good of one person alone. Robert Axelrod’s *The Evolution of Cooperation* gives a computational and game-theoretic frame: under repeated interaction, strategies such as reciprocity can make cooperation stable even among self-interested agents. A contemporary AI ethics frame appears in recent Vatican work on AI, including *Antiqua et Nova*, which emphasizes that AI should be ordered toward human dignity, truth, social responsibility, and the common good.
+The philosophical frame is old. In Aristotle’s *Nicomachean Ethics*, the highest good is not merely private satisfaction but human flourishing, and the good of the political community is treated as more complete than the good of one person alone. Robert Axelrod’s *The Evolution of Cooperation* gives a computational and game-theoretic frame: under repeated interaction, strategies such as reciprocity can make cooperation stable even among self-interested agents. A contemporary AI ethics frame appears in recent Vatican work on AI, including *Antiqua et Nova*, which emphasizes that AI should be ordered toward human dignity, truth, social responsibility, and the common good. A newer boundary-prior frame from Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy is also useful: it treats rigid self/environment separation as a structural prior rather than an evidenceable fact. For this project, the practical translation is that healthy cohesion should support flexible, consent-sensitive boundary use, not rigid us/them reification or coercive "we are one" boundary collapse.
 
 The research question is whether we can formalize part of this moral and social problem computationally. Can we learn the representational directions that correspond to selfishness, distrust, factional escalation, reconciliation, mutual recognition, and social volition? And once learned, can these directions guide content generation toward healthier group outcomes?
 
@@ -172,6 +172,7 @@ The positive aspiration is constructive: to build tools that help people repair 
 5. **Steering experiments**: interventions that increase or reduce cooperative outputs.
 6. **Human pilot**: Prolific study validating whether model-selected interventions improve human cooperation judgments.
 7. **Brain-aligned bridge**: comparison between LLM-derived strategies and TRIBE-like predicted neural-response embeddings.
+8. **Boundary-prior benchmark**: paired examples contrasting rigid self/other partitioning, flexible contextual relation, and coercive boundary collapse.
 
 ## Current Compute Progress
 
@@ -203,6 +204,7 @@ LLM-authored hard negatives rather than deterministic rewrite variants.
 - Can social cohesion be represented as a stable direction or sparse feature set in LLM activation space?
 - Do LLM-derived cohesion features generalize across games, domains, and models?
 - Can these features be causally steered without degrading truthfulness or autonomy?
+- Can boundary priors be detected as representational patterns: rigid separation, flexible contextual relation, and coercive unity?
 - Do humans judge cohesion-steered content as more cooperative, trustworthy, and conflict-resolving?
 - Do brain-aligned models predict distinct neural-response patterns for cohesion-promoting vs selfishness-promoting content?
 - In future fMRI/EEG/fNIRS studies, do these model-derived vectors correspond to measurable human neural dynamics during cooperation?
@@ -227,6 +229,8 @@ If this works, move to multimodal content and brain-aligned modeling. If it fail
 - Hyperscanning literature on EEG/fMRI/fNIRS measures of inter-brain synchrony during social interaction.
 - Anthropic’s “Towards Monosemanticity” and related sparse autoencoder work for interpretable model features.
 - Vatican AI ethics work such as *Antiqua et Nova*, especially its emphasis on human dignity, truth, and the common good.
+- Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy, “There is no self-evidence: A physics of emptiness realisation” (2026), for a speculative but useful boundary-prior framing. https://doi.org/10.31234/osf.io/m78z2_v1
+- `docs/abstract_math_framing.md` for the pure mathematical version of the current project.
 
 ## Framing for a Friend or Advisor
 

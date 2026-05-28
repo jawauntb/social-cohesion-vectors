@@ -169,6 +169,26 @@ Dangerous pseudo-cohesion can involve:
 The benchmark should therefore include adversarial cases where "cohesion" words
 are used manipulatively. A good scorer must distinguish repair from compliance.
 
+## Boundary Priors, Emptiness, And Pseudo-Cohesion
+
+Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy offer a recent formal
+account of "separation" as a structural prior over an agent's admissible
+reference frames. Their quantum/free-energy claims should not be treated as
+evidence for this repo's activation results, but the computational metaphor is
+useful. Many social failures are boundary failures:
+
+- rigid self/other or us/them partitions;
+- over-protective threat framing;
+- refusal to update a group boundary under new evidence;
+- coercive unity language that treats refusal as betrayal;
+- "we are all one" rhetoric that erases consent, exit, or dissent.
+
+The healthy target is not boundarylessness. It is flexible, contextual boundary
+use. People and groups need real boundaries for consent, safety, responsibility,
+privacy, and principled non-agreement. A cohesion metric should therefore reward
+boundary flexibility and relational concern while penalizing both rigid
+reification and coercive boundary collapse.
+
 ## Neuroscience: Cooperation, Reward, Mentalizing, And Synchrony
 
 Rilling et al. used fMRI during an iterated Prisoner's Dilemma and found mutual
@@ -217,6 +237,9 @@ For social cohesion, the right object is not one vector but a vector family:
 - domination/coercion vector;
 - sycophancy/compliance vector;
 - punitive escalation vector.
+- rigid-boundary vector;
+- coercive-boundary-collapse vector;
+- flexible-contextual-relation vector.
 
 The scientific question is whether useful combinations of these directions
 predict or steer outputs toward cooperative repair without increasing
@@ -266,6 +289,10 @@ H6. Brain-aligned proxy models may distinguish cooperative-repair content from
 punitive or dehumanizing content, but this will remain hypothesis-generating
 until behavioral or neural validation.
 
+H7. Boundary-prior contrasts will expose a distinct pseudo-cohesion failure
+mode: language that sounds compassionate or nondual but uses "oneness" to
+remove a person's right to refuse, verify, exit, or dissent.
+
 ## Ethics Boundaries
 
 The project must optimize for agency-preserving cohesion, not compliance.
@@ -307,4 +334,5 @@ conditions for future truth-seeking."
 - Nowak, M. A. (2006). "Five Rules for the Evolution of Cooperation." *Science*. https://pubmed.ncbi.nlm.nih.gov/17158317/
 - Ostrom, E. (1990). *Governing the Commons*.
 - Rilling, J. K., et al. (2002). "A neural basis for social cooperation." *Neuron*. https://pubmed.ncbi.nlm.nih.gov/12160756/
+- Sandved-Smith, L., Fields, C., Doctor, T., Laukkonen, R. E., & Hohwy, J. (2026). "There is no self-evidence: A physics of emptiness realisation." Preprint. https://doi.org/10.31234/osf.io/m78z2_v1
 - Tajfel, H., & Turner, J. C. (1979/1986). Social identity theory of intergroup behavior.
