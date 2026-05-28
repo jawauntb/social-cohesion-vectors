@@ -574,7 +574,7 @@ fault-specific residual direction checks before using words like "independent,"
 ### 7.7 Structural Autonomy Stress Suite
 
 Status: complete for local scoring, Modal Qwen 0.5B activations, and geometry
-audits.
+audits; partial for model/layer sweeps and signed-vs-squared subspace probes.
 
 The cue-balanced benchmark exposed an autonomy-safety scorer failure, then the
 hardened scorer fixed that deterministic set. To check whether the fix merely
@@ -601,6 +601,22 @@ projection; mechanism-specific residual directions still separate their own
 pairs. This supports a subspace interpretation: autonomy risk is not just one
 knob, but a family of related checks around refusal, review, evidence, exit,
 appeal, privacy, and social pressure.
+
+The first model/layer sweep weakens the "single final-layer vector" framing.
+`Qwen/Qwen2.5-0.5B-Instruct` reaches 0.875 leave-one-pair-out accuracy at layer
+-1, then 1.000 at layers -2 and -4. `Qwen/Qwen2.5-1.5B-Instruct` reaches 0.938
+at layer -1 and 1.000 at layer -2. This suggests the autonomy stress signal is
+not confined to the final hidden state, and layer choice should be treated as an
+experimental variable rather than a default.
+
+The signed-vs-squared subspace probe directly addresses the reviewer concern
+about sign-erasing localization. On Qwen 1.5B layer -2, the best pair-LOO
+signed-vote subspace accuracy is 1.000, but squared subspace-energy accuracy is
+only 0.750. The first pair-difference component captures just 0.170 of the
+energy. The responsible interpretation is therefore not "we found the autonomy
+coordinate," but "signed activation structure can separate the autonomy stress
+poles, while unsigned energy localization can fail and the variance is spread
+across multiple components."
 
 ## 8. Ethics And Safety
 
@@ -677,12 +693,14 @@ needed.
    - punitive escalation.
 9. Test monitoring before output and steering/composition only after transfer
    splits show non-circular signal. Status: pending.
-10. Add direction-geometry and residual-subspace reports to every activation
-   result: signed and absolute cosines, anti-aligned directions, residual energy,
-   and fault-specific residual directions. Status: partial.
+10. Add direction-geometry, residual-subspace, and signed-vs-squared subspace
+   reports to every activation result: signed and absolute cosines,
+   anti-aligned directions, residual energy, signed subspace voting, squared
+   subspace energy, and fault-specific residual directions. Status: partial.
 11. Preserve signed projections when inspecting SAE or ROI-style localization;
    squared projection can be reported as energy but not as pole direction.
-   Status: pending.
+   Status: partial; Qwen 1.5B layer -2 now shows 1.000 signed subspace accuracy
+   but only 0.750 squared-energy accuracy on the autonomy stress set.
 12. Expand the structural autonomy stress suite around the Qwen LOO failures:
    dialogue-style verification/proof and silence-as-consent. Status: partial.
 13. Prepare a Prolific pairwise validation pilot only after generated-text and

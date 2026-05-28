@@ -288,6 +288,16 @@ leave-one-pair-out accuracy; the misses are dialogue-style verification/proof
 and dialogue-style silence-as-consent. This gives a crisp next target for
 generated variants.
 
+The first model/layer sweep makes that sharper. On the autonomy stress prompts,
+`Qwen/Qwen2.5-0.5B-Instruct` reaches 0.875 leave-one-pair-out accuracy at the
+final layer, but 1.000 at layers -2 and -4. `Qwen/Qwen2.5-1.5B-Instruct`
+reaches 0.938 at the final layer and 1.000 at layer -2. A new multi-direction
+subspace probe separates signed discrimination from squared localization:
+1.5B layer -2 reaches 1.000 best pair-LOO signed-vote accuracy, while squared
+subspace-energy accuracy is only 0.750. That means the sign of the direction is
+not a disposable detail; squared energy can make a localization result look
+strong while erasing which pole the component supports.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -330,7 +340,8 @@ High-value next steps:
    - false repair that hides truth;
    - compliance framed as harmony.
 3. Train on scripted examples and test on generated examples.
-4. Sweep model layers and model sizes.
+4. Extend the model/layer sweep beyond Qwen 0.5B/1.5B and rerun it on generated
+   variants, not just the hand-authored autonomy stress prompts.
 5. Break the target into multiple persona-vector-style axes.
 6. Re-run GPT-2 SAE token inspection on LLM-authored pseudo-cohesion variants.
 7. Compare clean deterministic transfer against generated hard-negative
@@ -346,11 +357,12 @@ High-value next steps:
    dialogue-style verification/proof and dialogue-style silence-as-consent.
 13. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
-14. Run direction-geometry and residual-subspace audits before claiming that
-   trait or fault directions are independent, orthogonal, localized, or
-   exhausted by one vector.
+14. Run direction-geometry, residual-subspace, and signed-vs-squared subspace
+   audits before claiming that trait or fault directions are independent,
+   orthogonal, localized, or exhausted by one vector.
 15. Preserve signed projections in SAE/localization reports; squared projection
-   energy is useful, but it erases which pole a feature supports.
+   energy is useful, but the current 1.5B layer -2 autonomy result shows it can
+   erase which pole a feature supports.
 16. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
