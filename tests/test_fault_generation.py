@@ -13,6 +13,9 @@ from social_cohesion_vectors.experiments.fault_generation import (
     scored_runs_from_generated_fault_examples,
     shape_generated_fault_report,
 )
+from social_cohesion_vectors.experiments.lexical_leakage import (
+    run_lexical_leakage_report,
+)
 
 
 def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
@@ -50,6 +53,29 @@ def test_generated_fault_report_summarizes_fault_coverage() -> None:
     assert report["primary_fault_counts"]["consent_bypass"] >= 1
     assert "Generated Fault-Class" in markdown
     assert "consent_bypass" in markdown
+
+
+def test_cue_balanced_generation_removes_simple_lexical_shortcut() -> None:
+    examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="cue_balanced",
+    )
+    pairs = pairwise_examples_from_generated_fault_examples(
+        examples,
+        style="cue_balanced",
+    )
+    report = shape_generated_fault_report(
+        examples,
+        variants=DEFAULT_VARIANTS[:1],
+        style="cue_balanced",
+    )
+    leakage = run_lexical_leakage_report(pairs=pairs)
+
+    assert len(examples) == 60
+    assert len(pairs) == 30
+    assert report["summary"]["style"] == "cue_balanced"
+    assert all(pair.metadata["generated_style"] == "cue_balanced" for pair in pairs)
+    assert leakage["summary"]["cue_solved_rate"] <= 0.1
 
 
 def test_export_generated_fault_dataset_writes_all_artifacts(tmp_path) -> None:

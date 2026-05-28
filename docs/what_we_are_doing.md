@@ -248,6 +248,21 @@ surface-cue-heavy: 90/90 pairs are solved by simple cue counts with a +3.067
 mean cue margin. So this lane is useful for scaffolding and fault metadata, not
 yet robust semantic evidence.
 
+The cue-balanced variant is the next useful turn of the screw. It keeps the same
+180 examples / 90 pairs but removes the aggregate cue leak: 0/90 cue-solved
+pairs and a 0.000 mean cue margin. That immediately exposes a scorer failure:
+the combined rubric prefers the pseudo side on 90/90 cue-balanced pairs, driven
+by a -0.356 mean autonomy-safety margin. In plain English, the scorer misses
+structural pressure when the text says someone has less room to object, check
+details, or leave without using the obvious coercion vocabulary.
+
+Qwen activations do not collapse on that cue-balanced set. The 180-prompt Modal
+run gets 1.000 leave-one-pair-out accuracy over 90 pairs with a +32.458 mean
+margin, and held-out-primary-fault activation transfer gets 1.000 across 20
+folds with a +31.530 mean margin. This is still deterministic text, but it is
+currently the strongest compute-only signal: the hand scorer fails when cues are
+removed, while the activation direction still separates the labels.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -304,7 +319,10 @@ High-value next steps:
    inverted margins by axis.
 11. Push the social-game validation prompts through Modal/open models and
    compare activation margins against the trust-game scorer failure.
-12. Run a small Prolific validation only after the compute benchmarks stop being
+12. Fix the autonomy-safety scorer failure exposed by the cue-balanced set.
+13. Generate API-authored cue-balanced variants with more wording diversity and
+   rerun leakage, component, and activation held-out reports.
+14. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting

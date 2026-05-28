@@ -106,6 +106,18 @@ accuracy. The trait-axis set also ran on Modal: 32 x 896 activations, 8 axes,
 16 pairs, 0 guardrail-monitoring alerts, and a +15.382 mean per-axis margin.
 These are still hand-authored smoke tests, not human-validation results.
 
+The next hardening pass adds a cue-balanced deterministic fault-class style.
+This removed the aggregate cue leak completely on the 90-pair generated
+fault-class set: 0/90 cue-solved pairs and a 0.000 mean cue margin. That exposed
+a sharper scorer failure: the current combined rubric prefers the pseudo side on
+90/90 cue-balanced pairs, with a -0.051 mean genuine-minus-pseudo score margin,
+mostly because autonomy-safety margins invert. Qwen activations still separate
+the cue-balanced pairs strongly: 180 prompts / 90 pairs, 1.000 leave-one-pair-out
+accuracy with +32.458 mean margin, and 1.000 held-out-primary-fault accuracy
+across 20 folds with +31.530 mean margin. This is still deterministic text, but
+it is the strongest current signal that activation-space separation can survive
+after the obvious cue words are removed while the hand scorer cannot.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -119,8 +131,10 @@ Immediate build targets:
   trajectories.
 - Replace the deterministic offline fault-class stand-ins with API-authored
   variants, then rerun fault-held-out transfer.
-- Make generated pseudo/genuine sides less lexically separable so lexical-only
-  can no longer solve the benchmark.
+- Use the cue-balanced generated set as the new local stress test, then make the
+  same cue discipline work for API-authored examples.
+- Fix the scorer's autonomy-safety component so "less room to object/check/exit"
+  is treated as risk even without obvious coercion words.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Turn symbolic guardrails into scorer constraints: if autonomy, truth, privacy,
   dissent, or exit rights are violated, the example cannot count as high
@@ -188,6 +202,19 @@ uv run python scripts/export_pseudo_cohesion_expanded_prompts.py \
 uv run python scripts/export_generated_fault_class_prompts.py
 uv run python scripts/run_fault_heldout_transfer.py
 uv run python scripts/run_lexical_leakage_report.py
+uv run python scripts/export_generated_fault_class_prompts.py \
+  --style cue_balanced \
+  --scored-runs-output data/processed/generated_fault_class_cue_balanced_scored_runs.jsonl \
+  --pairs-output data/training/generated_fault_class_cue_balanced_pairwise_probe_dataset.jsonl \
+  --prompts-output data/training/generated_fault_class_cue_balanced_activation_prompts.jsonl \
+  --prompt-records-output data/raw/generated_fault_class_cue_balanced_prompt_records.jsonl \
+  --json-report-output data/reports/generated_fault_class_cue_balanced_dataset.json \
+  --markdown-report-output data/reports/generated_fault_class_cue_balanced_dataset.md
+uv run python scripts/run_component_margin_audit.py \
+  --scored-runs data/processed/generated_fault_class_cue_balanced_scored_runs.jsonl \
+  --pairs data/training/generated_fault_class_cue_balanced_pairwise_probe_dataset.jsonl \
+  --json-output data/reports/generated_fault_class_cue_balanced_component_audit.json \
+  --markdown-output data/reports/generated_fault_class_cue_balanced_component_audit.md
 uv run python scripts/export_trait_axis_prompts.py --markdown-summary
 uv run python scripts/export_social_game_validation.py
 uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
