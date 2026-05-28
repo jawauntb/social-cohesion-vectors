@@ -162,6 +162,14 @@ pair-LOO signed-vote accuracy, while squared subspace-energy accuracy is only
 0.750. So signed projections are carrying pole information that squared
 localization can erase.
 
+The newest theoretical note adds a boundary-prior framing inspired by
+Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy's "There is no
+self-evidence." The repo treats it as conceptual scaffolding, not empirical
+support for the activation results. Its practical use is a new benchmark family:
+rigid self/other or us/them boundary reification, flexible contextual relation,
+and coercive boundary collapse. The pure mathematical version of this framing is
+in `docs/abstract_math_framing.md`.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -179,6 +187,8 @@ Immediate build targets:
   same cue discipline work for API-authored examples.
 - Expand the autonomy stress suite with generated/API-authored variants, focused
   especially on the dialogue-style verification and silence-as-consent misses.
+- Add a boundary-prior benchmark: rigid self/other or us/them partitioning,
+  flexible contextual relation, and coercive "we are one" boundary collapse.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.

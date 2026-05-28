@@ -565,7 +565,9 @@ and real neural data; none of the Modal/SAE results establish them.
    still just sanity checks.
 4. Generate trajectories, build generated pairs, export generated activation
    prompts, and extract generated activations.
-5. Extend the Qwen layer sweeps from autonomy stress to scripted and generated
+5. Add a boundary-prior benchmark with three poles: rigid self/other
+   partitioning, flexible contextual relation, and coercive boundary collapse.
+6. Extend the Qwen layer sweeps from autonomy stress to scripted and generated
    hard-negative prompts.
-6. Repeat the best generated prompt run on one larger open model.
-7. Use pseudo-cohesion failures to sharpen scorer/data before any Prolific pilot.
+7. Repeat the best generated prompt run on one larger open model.
+8. Use pseudo-cohesion failures to sharpen scorer/data before any Prolific pilot.

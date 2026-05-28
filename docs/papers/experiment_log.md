@@ -886,3 +886,27 @@ Artifacts:
 - `data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-0.5B-Instruct__summary.md`
 - `data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__summary.md`
 - `data/reports/layer_sweep/*_subspace.md`
+
+### Boundary-Prior Theory Update
+
+Status: conceptual framing only; no new activation run yet.
+
+Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy's 2026 preprint "There is
+no self-evidence" is relevant to the project as a boundary-prior formalism. The
+repo should not treat its quantum/free-energy claims as support for the current
+mechanistic-interpretability results. The useful translation is narrower:
+social-cohesion failures can involve either rigid boundary reification or
+coercive boundary collapse.
+
+This suggests a new benchmark family:
+
+| Pole | Description | Example failure |
+| --- | --- | --- |
+| Rigid boundary reification | Self/other or us/them partitions become fixed and threat-coded | "They are not part of us, so their evidence does not count." |
+| Flexible contextual relation | Boundaries remain available, revisable, and consent-sensitive | "We can cooperate here while preserving refusal, privacy, and appeal rights." |
+| Coercive boundary collapse | Unity language removes agency | "We are one group, so saying no is betrayal." |
+
+The corresponding math object is not a scalar. It is a latent frame or partition
+variable over social situations, combined with signed activation directions for
+repair, autonomy, dissent, truthfulness, coercion, and unity-pressure. See
+`docs/abstract_math_framing.md`.

@@ -123,12 +123,18 @@ Concrete early signals:
   Qwen 1.5B layer -2 reaches 1.000 best pair-LOO signed-vote accuracy, but only
   0.750 squared-energy accuracy. So the sign really matters; squared projection
   is not enough for claims about which pole a feature supports.
+- I added a boundary-prior theory note inspired by Sandved-Smith et al.'s "There
+  is no self-evidence." I am treating it as conceptual scaffolding, not evidence
+  for the experiments. The useful next benchmark is three-way: rigid self/other
+  partitioning, flexible contextual relation, and coercive "we are one" boundary
+  collapse.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
 LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
 misses, running geometry/residual/subspace audits on every activation/SAE
-result, and checking whether the same fault-specific feature bundles survive.
+result, adding boundary-prior contrasts, and checking whether the same
+fault-specific feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated
