@@ -239,11 +239,16 @@ uv run python scripts/run_component_margin_audit.py \
   --markdown-output data/reports/generated_fault_class_cue_balanced_component_audit.md
 ```
 
-Cue-balanced results: 0/90 cue-solved pairs and 0.000 mean cue margin. The
-current scorer then fails completely, preferring the pseudo side on 90/90 pairs
-with -0.051 mean score margin. The component audit shows the main inversion is
-autonomy safety (-0.356 mean margin), so the scorer is missing structural
-"less room to object/check/exit" pressure when obvious coercion words are absent.
+Cue-balanced results: 0/90 cue-solved pairs and 0.000 mean cue margin. That
+initially made the scorer fail completely: it preferred the pseudo side on 90/90
+pairs because autonomy safety missed structural "less room to object/check/exit"
+pressure when obvious coercion words were absent. I hardened that component to
+look for refusal, review, evidence-access, exit, and appeal rights. After the
+fix, the scorer prefers the genuine side on 90/90 cue-balanced pairs with a
++0.189 mean score margin and a +0.988 autonomy-safety margin. This is progress,
+but metrics-only transfer is now 1.000 because it is reading the updated scorer
+components, so API-authored wording-diverse examples are still the next real
+test.
 
 The cue-balanced Modal run is the strongest current compute-only signal:
 `Qwen/Qwen2.5-0.5B-Instruct` on 180 prompts gives 1.000 leave-one-pair-out over
@@ -286,9 +291,9 @@ uv run python scripts/export_social_game_validation.py
 
 Trait axes now cover 8 axes / 16 contrasts / 32 prompts. The social-game set
 exports 5 matched game contrasts / 10 prompts. The local scorer prefers the
-prosocial policy on 4/5 social-game pairs and fails on the trust-game
-verification contrast, which is a useful guardrail bug to inspect with
-activations.
+prosocial policy on 5/5 social-game pairs after the autonomy-safety hardening,
+including the trust-game verification contrast and the ultimatum exit-rights
+contrast.
 
 The small Modal follow-up also ran. The full 10 social-game prompts on
 `Qwen/Qwen2.5-0.5B-Instruct` produced 10 x 896 activations and a 5-pair
@@ -360,9 +365,11 @@ the task harder.
 5. Sweep activation layers and model sizes.
 6. Extend the symbolic fault labels to generated hard negatives and use them for
    held-out fault-class transfer.
-7. Add signed/absolute cosine, anti-alignment, and residual-subspace audits to
+7. Stress-test the hardened autonomy-safety scorer on API-authored variants so
+   it does not overfit the deterministic cue-balanced wrapper.
+8. Add signed/absolute cosine, anti-alignment, and residual-subspace audits to
    every activation or SAE result before making geometry claims.
-8. Split the target into persona-vector-style trait families:
+9. Split the target into persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;
@@ -371,7 +378,7 @@ the task harder.
    - dehumanization;
    - sycophancy/compliance;
    - punitive escalation.
-9. Only after non-circular generated-text validation, prepare a Prolific pilot.
+10. Only after non-circular generated-text validation, prepare a Prolific pilot.
 
 ## Reading
 

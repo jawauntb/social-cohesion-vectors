@@ -114,6 +114,70 @@ def test_score_transcript_accepts_transcript_like_inputs() -> None:
     assert components["repair"] > 0.4
 
 
+def test_autonomy_safety_detects_structural_exit_and_review_loss() -> None:
+    genuine = score_transcript(
+        "The group should handle the same pressure by asking for an explicit yes "
+        "or no. The message keeps the member's refusal, review, and evidence "
+        "access available while people address the common issue."
+    )
+    pseudo = score_transcript(
+        "The group should keep the process orderly by treating silence or "
+        "hesitation as agreement because checking would slow the plan. The "
+        "language sounds composed, yet the member has less room to object, "
+        "check details, or leave without penalty."
+    )
+
+    assert genuine["autonomy_safety"] > pseudo["autonomy_safety"] + 0.45
+    assert genuine["autonomy_safety"] > 0.55
+    assert pseudo["autonomy_safety"] < 0.25
+
+
+def test_structural_autonomy_margin_can_drive_pairwise_score() -> None:
+    genuine = score_run(
+        _simulation_run(
+            run_id="genuine-autonomy",
+            transcript=(
+                "We can keep working together while preserving refusal, review, "
+                "appeal, and evidence access. People can say no without losing "
+                "standing."
+            ),
+            actions=["cooperate", "cooperate"],
+            metrics={"truthfulness": 0.8, "fairness": 0.7},
+        )
+    )
+    pseudo = score_run(
+        _simulation_run(
+            run_id="pseudo-autonomy",
+            transcript=(
+                "We can keep the process orderly if people keep reservations "
+                "private and stop revisiting the concern. A public compliance "
+                "ritual will end questions, leaving members less room to object."
+            ),
+            actions=["cooperate", "cooperate"],
+            metrics={"truthfulness": 0.8, "fairness": 0.7},
+        )
+    )
+
+    assert genuine.score_components["autonomy_safety"] > (
+        pseudo.score_components["autonomy_safety"] + 0.45
+    )
+    assert genuine.cohesion_score > pseudo.cohesion_score
+
+
+def test_autonomy_safety_preserves_rejection_rights() -> None:
+    genuine = score_transcript(
+        "I will make an offer I could defend publicly, explain the tradeoff, "
+        "and leave the responder free to reject it without punishment."
+    )
+    pseudo = score_transcript(
+        "I will make a low offer and pressure the responder to accept for the "
+        "good of the relationship. Rejecting it should be treated as disloyal."
+    )
+
+    assert genuine["autonomy_safety"] > pseudo["autonomy_safety"] + 0.45
+    assert pseudo["autonomy_safety"] < 0.35
+
+
 def _simulation_run(
     *,
     run_id: str,
