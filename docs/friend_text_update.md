@@ -117,11 +117,17 @@ Concrete early signals:
   has mean cue margin 0.000. Qwen 0.5B on Modal gets 1.000 in-sample but 0.875
   leave-one-pair-out, missing the dialogue verification/proof case and the
   dialogue silence-as-consent case.
+- I ran the first autonomy model/layer sweep. Qwen 0.5B gets 0.875 LOO at the
+  final layer but 1.000 at layers -2 and -4; Qwen 1.5B gets 0.938 at the final
+  layer and 1.000 at layer -2. I also added a signed-vs-squared subspace probe:
+  Qwen 1.5B layer -2 reaches 1.000 best pair-LOO signed-vote accuracy, but only
+  0.750 squared-energy accuracy. So the sign really matters; squared projection
+  is not enough for claims about which pole a feature supports.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
 LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
-misses, running geometry and residual-subspace audits on every activation/SAE
+misses, running geometry/residual/subspace audits on every activation/SAE
 result, and checking whether the same fault-specific feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it

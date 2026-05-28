@@ -843,3 +843,46 @@ Expected artifacts:
 - steering/composition report with pending controlled-generation results
 
 All steering and monitoring claims remain pending until these artifacts exist.
+
+### Autonomy Model/Layer Sweep And Subspace Probe
+
+Status: first Modal sweep complete on the 32-prompt structural-autonomy stress
+suite.
+
+The previous autonomy result used `Qwen/Qwen2.5-0.5B-Instruct` at the final
+hidden layer only. The new sweep treats model size and layer as experimental
+variables:
+
+| Model | Layer | Prompts | Dim | In-sample acc | LOO acc | LOO margin |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen2.5-0.5B-Instruct | -1 | 32 | 896 | 1.000 | 0.875 | +5.420 |
+| Qwen2.5-0.5B-Instruct | -2 | 32 | 896 | 1.000 | 1.000 | +1.260 |
+| Qwen2.5-0.5B-Instruct | -4 | 32 | 896 | 1.000 | 1.000 | +1.112 |
+| Qwen2.5-1.5B-Instruct | -1 | 32 | 1536 | 1.000 | 0.938 | +3.064 |
+| Qwen2.5-1.5B-Instruct | -2 | 32 | 1536 | 1.000 | 1.000 | +4.878 |
+
+The final hidden state is not the best layer on this task. Both model sizes
+improve at layer -2, and the 0.5B model also separates perfectly at layer -4.
+This is still a small deterministic suite, but it turns the layer question into
+a measurable knob rather than a default choice.
+
+The new signed-vs-squared subspace probe fits k-component SVD bases over
+positive-minus-negative activation differences, then evaluates signed component
+votes separately from squared subspace energy. The most important result is
+Qwen 1.5B layer -2:
+
+- best pair-LOO signed-vote accuracy: 1.000;
+- best pair-LOO squared-energy accuracy: 0.750;
+- first pair-difference component energy: 0.170.
+
+That is the current strongest answer to Spencer's sign critique. Signed
+structure separates the poles, but unsigned energy localization can fail, so
+reports should not use squared projection as if it preserved whether a feature
+points toward autonomy preservation or autonomy risk.
+
+Artifacts:
+
+- `data/reports/layer_sweep/autonomy_stress__multi_model__summary.md`
+- `data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-0.5B-Instruct__summary.md`
+- `data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__summary.md`
+- `data/reports/layer_sweep/*_subspace.md`

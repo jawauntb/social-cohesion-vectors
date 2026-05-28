@@ -5,15 +5,18 @@ The short version: do not let beautiful vector language outrun the geometry.
 
 ## What Changed
 
-We added two reviewer-facing audits:
+We added three reviewer-facing audits:
 
 - `scripts/run_direction_geometry_audit.py`
 - `scripts/run_residual_subspace_audit.py`
+- `scripts/run_activation_subspace_probe.py`
 
 The first trains one contrastive direction per metadata group and reports signed
 and absolute cosine structure. The second projects out the global contrastive
 direction, then checks whether global or fault-specific residual directions
-still separate pairs.
+still separate pairs. The third fits k-component signed SVD bases over
+positive-minus-negative activation differences and reports signed-vote accuracy
+separately from squared subspace-energy accuracy.
 
 ## Claims We Should Avoid
 
@@ -49,6 +52,28 @@ The responsible interpretation is:
 > independent orthogonal axes, and one-vector ablation does not exhaust the
 > signal.
 
+## Current Autonomy Stress Subspace Result
+
+On the structural-autonomy stress suite, layer choice already matters:
+
+- Qwen 0.5B layer -1: 0.875 leave-one-pair-out vector accuracy;
+- Qwen 0.5B layer -2: 1.000 leave-one-pair-out vector accuracy;
+- Qwen 0.5B layer -4: 1.000 leave-one-pair-out vector accuracy;
+- Qwen 1.5B layer -1: 0.938 leave-one-pair-out vector accuracy;
+- Qwen 1.5B layer -2: 1.000 leave-one-pair-out vector accuracy.
+
+The strongest signed-vs-squared warning comes from Qwen 1.5B layer -2:
+
+- best pair-LOO signed-vote subspace accuracy: 1.000;
+- best pair-LOO squared-energy accuracy: 0.750;
+- first pair-difference component energy: 0.170.
+
+The responsible interpretation is:
+
+> Signed activation structure separates the autonomy-preserving and
+> autonomy-risk poles, but squared projection energy is not a substitute for
+> pole direction. Localization reports must preserve sign.
+
 ## Reporting Standard Going Forward
 
 Every activation-vector or SAE-feature result should report:
@@ -60,4 +85,5 @@ Every activation-vector or SAE-feature result should report:
 - global pair-difference energy captured;
 - residual pair-difference energy;
 - group-specific residual separation;
+- signed-vs-squared subspace probe results across k components;
 - signed projection margins whenever localization or pole meaning matters.

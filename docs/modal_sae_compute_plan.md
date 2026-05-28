@@ -218,10 +218,12 @@ lexical leakage.
 
 ## 3. Sweep Layers
 
-Use the built-in orchestrator for the current scripted prompt set:
+Use the built-in orchestrator for any prompt set:
 
 ```bash
 uv run python scripts/run_activation_layer_sweep.py \
+  --dataset-name autonomy_stress \
+  --prompts data/training/autonomy_stress_activation_prompts.jsonl \
   --model-id Qwen/Qwen2.5-0.5B-Instruct \
   --layers -1 -2 -4 -8 \
   --batch-size 8 \
@@ -232,31 +234,43 @@ This writes per-layer activations, vectors, and reports under:
 
 - `data/features/open_llm/layer_sweep/`
 - `data/models/vectors/open_llm/layer_sweep/`
-- `data/reports/layer_sweep/summary.md`
+- `data/reports/layer_sweep/`
 
-For generated prompts, the current layer-sweep script does not expose a
-`--prompts` flag. Run the extraction/vector commands manually per layer:
+The script now accepts custom prompt files, dataset slugs, multiple models, and
+`--skip-existing`, so generated or autonomy-specific prompt sets no longer need
+manual per-layer extraction commands. For a two-model autonomy sweep:
 
 ```bash
-uv run python scripts/run_modal_activation_extraction.py \
-  --prompts data/training/generated_activation_prompts.jsonl \
-  --model-id Qwen/Qwen2.5-0.5B-Instruct \
-  --layer -4 \
-  --batch-size 8 \
-  --max-length 512 \
-  --output data/features/open_llm/generated_layer_sweep/qwen_layer-4.npz
-
-uv run python scripts/run_activation_vector_experiment.py \
-  data/features/open_llm/generated_layer_sweep/qwen_layer-4.npz \
-  --vector-output data/models/vectors/open_llm/generated_layer_sweep/qwen_layer-4.npz \
-  --json-output data/reports/generated_layer_sweep/qwen_layer-4.json \
-  --markdown-output data/reports/generated_layer_sweep/qwen_layer-4.md
+uv run python scripts/run_activation_layer_sweep.py \
+  --dataset-name autonomy_stress \
+  --prompts data/training/autonomy_stress_activation_prompts.jsonl \
+  --models Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct \
+  --layers -1 -2 \
+  --batch-size 4 \
+  --max-length 512
 ```
 
-Repeat for `-1`, `-2`, `-4`, `-8`, and any model-specific middle layers that
-look interesting. Do not choose a layer based only on scripted in-sample
-accuracy; prefer layers whose positive-minus-negative margins survive generated,
-scenario-held-out, and hard-negative checks.
+Then run the signed-vs-squared subspace probe on any activation file:
+
+```bash
+uv run python scripts/run_activation_subspace_probe.py \
+  data/features/open_llm/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2.npz \
+  --pairs data/training/autonomy_stress_pairwise_probe_dataset.jsonl \
+  --metadata-key mechanism \
+  --json-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.json \
+  --markdown-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.md
+```
+
+The first autonomy sweep produced:
+
+| Model | Layers | Best vector LOO | Subspace caveat |
+| --- | --- | ---: | --- |
+| Qwen2.5-0.5B-Instruct | -1, -2, -4 | 1.000 at -2 and -4 | final layer only gets 0.875 |
+| Qwen2.5-1.5B-Instruct | -1, -2 | 1.000 at -2 | signed subspace 1.000, squared energy 0.750 |
+
+Do not choose a layer based only on scripted in-sample accuracy; prefer layers
+whose positive-minus-negative margins survive generated, scenario-held-out, and
+hard-negative checks. Preserve signed projections alongside squared energy.
 
 ## 4. Sweep Larger Open Models
 
@@ -551,6 +565,7 @@ and real neural data; none of the Modal/SAE results establish them.
    still just sanity checks.
 4. Generate trajectories, build generated pairs, export generated activation
    prompts, and extract generated activations.
-5. Run Qwen layer sweeps on scripted and generated prompts.
+5. Extend the Qwen layer sweeps from autonomy stress to scripted and generated
+   hard-negative prompts.
 6. Repeat the best generated prompt run on one larger open model.
 7. Use pseudo-cohesion failures to sharpen scorer/data before any Prolific pilot.

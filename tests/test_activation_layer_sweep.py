@@ -51,6 +51,7 @@ def test_summary_output_paths_are_stable(tmp_path: Path) -> None:
 
 def test_commands_reuse_existing_activation_scripts(tmp_path: Path) -> None:
     extraction = extraction_command(
+        prompts=tmp_path / "training" / "custom_prompts.jsonl",
         model_id="Qwen/Qwen2.5-0.5B-Instruct",
         layer=-2,
         limit=5,
@@ -66,6 +67,8 @@ def test_commands_reuse_existing_activation_scripts(tmp_path: Path) -> None:
     )
 
     assert extraction[1].endswith("run_modal_activation_extraction.py")
+    assert "--prompts" in extraction
+    assert str(tmp_path / "training" / "custom_prompts.jsonl") in extraction
     assert "--limit" in extraction
     assert "5" in extraction
     assert experiment[1].endswith("run_activation_vector_experiment.py")
@@ -106,6 +109,34 @@ def test_aggregate_reports_summarizes_fake_report_jsons(tmp_path: Path) -> None:
     markdown = render_summary_markdown(summary)
     assert "# Activation Layer Sweep" in markdown
     assert "| -2 | 12 | 8 | 0.667 | 0.750 | +0.200 | `layer-2.json` |" in markdown
+
+
+def test_custom_dataset_and_multi_model_paths_do_not_overwrite(tmp_path: Path) -> None:
+    paths = layer_artifact_paths(
+        model_id="Qwen/Qwen2.5-1.5B-Instruct",
+        layer=-1,
+        dataset_name="autonomy_stress",
+        features_root=tmp_path / "features",
+        vectors_root=tmp_path / "vectors",
+        reports_root=tmp_path / "reports",
+    )
+    summary_json, summary_markdown = summary_output_paths(
+        reports_root=tmp_path / "reports",
+        dataset_name="autonomy_stress",
+        model_ids=[
+            "Qwen/Qwen2.5-0.5B-Instruct",
+            "Qwen/Qwen2.5-1.5B-Instruct",
+        ],
+    )
+
+    assert paths.activation_npz.name == (
+        "autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-1.npz"
+    )
+    assert paths.json_report.name == (
+        "autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-1.json"
+    )
+    assert summary_json.name == "autonomy_stress__multi_model__summary.json"
+    assert summary_markdown.name == "autonomy_stress__multi_model__summary.md"
 
 
 def write_report(

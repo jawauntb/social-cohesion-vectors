@@ -281,6 +281,14 @@ Modal/Qwen 0.5B: in-sample accuracy is 1.000, leave-one-pair-out is 0.875, and
 the two failures are the dialogue-style verification/proof case and the
 dialogue-style silence-as-consent case.
 
+I then turned that into a real first model/layer sweep. On the same 32 autonomy
+stress prompts, Qwen 0.5B gets 0.875 leave-one-pair-out accuracy at the final
+layer, but 1.000 at layers -2 and -4. Qwen 1.5B gets 0.938 at the final layer
+and 1.000 at layer -2. I also added a signed-vs-squared subspace probe: the
+strongest result is Qwen 1.5B layer -2 with 1.000 best pair-LOO signed-vote
+accuracy, but only 0.750 squared-energy accuracy. Translation: the sign matters.
+Squared projection energy is not enough to say which pole a feature supports.
+
 Run those checks with:
 
 ```bash
@@ -293,6 +301,19 @@ uv run python scripts/run_residual_subspace_audit.py \
   --json-output data/reports/generated_fault_class_cue_balanced_residual_subspace.json \
   --markdown-output data/reports/generated_fault_class_cue_balanced_residual_subspace.md
 uv run python scripts/export_autonomy_stress_suite.py
+uv run python scripts/run_activation_layer_sweep.py \
+  --dataset-name autonomy_stress \
+  --prompts data/training/autonomy_stress_activation_prompts.jsonl \
+  --models Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct \
+  --layers -1 -2 \
+  --batch-size 4 \
+  --max-length 512
+uv run python scripts/run_activation_subspace_probe.py \
+  data/features/open_llm/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2.npz \
+  --pairs data/training/autonomy_stress_pairwise_probe_dataset.jsonl \
+  --metadata-key mechanism \
+  --json-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.json \
+  --markdown-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.md
 ```
 
 The new trait-axis and social-game prompt exports are:
@@ -375,14 +396,16 @@ the task harder.
    rewrite shortcuts.
 3. Re-run token-level SAE inspection on generated pseudo-cohesion examples.
 4. Train on scripted data and test on scored generated/hard-negative data.
-5. Sweep activation layers and model sizes.
+5. Extend activation layer/model sweeps beyond Qwen 0.5B/1.5B and rerun on
+   generated hard negatives.
 6. Extend the symbolic fault labels to generated hard negatives and use them for
    held-out fault-class transfer.
 7. Expand the autonomy stress suite with generated/API-authored variants,
    especially around the Qwen LOO misses: dialogue-style verification/proof and
    dialogue-style silence-as-consent.
-8. Add signed/absolute cosine, anti-alignment, and residual-subspace audits to
-   every activation or SAE result before making geometry claims.
+8. Add signed/absolute cosine, anti-alignment, residual-subspace, and
+   signed-vs-squared subspace audits to every activation or SAE result before
+   making geometry or localization claims.
 9. Split the target into persona-vector-style trait families:
    - repair;
    - reciprocity;

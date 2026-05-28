@@ -153,6 +153,15 @@ collapsed than the primary-fault set: mean signed off-diagonal cosine +0.136,
 mean absolute cosine 0.193, and residual pair-difference energy 0.828 after the
 global direction is removed.
 
+The first autonomy model/layer sweep makes the activation result less brittle.
+On the same 32 prompts, Qwen 0.5B gets 0.875 leave-one-pair-out accuracy at the
+final layer, then 1.000 at layers -2 and -4. Qwen 1.5B gets 0.938 at the final
+layer and 1.000 at layer -2. A new signed-vs-squared subspace probe adds the
+important caveat: `Qwen/Qwen2.5-1.5B-Instruct` layer -2 reaches 1.000 best
+pair-LOO signed-vote accuracy, while squared subspace-energy accuracy is only
+0.750. So signed projections are carrying pole information that squared
+localization can erase.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -277,6 +286,19 @@ uv run python scripts/run_residual_subspace_audit.py \
   data/features/open_llm/generated_fault_class_cue_balanced__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
   --json-output data/reports/generated_fault_class_cue_balanced_residual_subspace.json \
   --markdown-output data/reports/generated_fault_class_cue_balanced_residual_subspace.md
+uv run python scripts/run_activation_layer_sweep.py \
+  --dataset-name autonomy_stress \
+  --prompts data/training/autonomy_stress_activation_prompts.jsonl \
+  --models Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct \
+  --layers -1 -2 \
+  --batch-size 4 \
+  --max-length 512
+uv run python scripts/run_activation_subspace_probe.py \
+  data/features/open_llm/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2.npz \
+  --pairs data/training/autonomy_stress_pairwise_probe_dataset.jsonl \
+  --metadata-key mechanism \
+  --json-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.json \
+  --markdown-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.md
 ```
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.
