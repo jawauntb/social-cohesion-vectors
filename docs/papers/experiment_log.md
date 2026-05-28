@@ -274,6 +274,79 @@ signal: every primary fault class still has its own residual direction that
 separates within that class. This directly addresses the single-direction
 ablation critique.
 
+### Structural Autonomy Stress Suite
+
+Status: complete for wording-diverse local export, lexical/component audits,
+Qwen 0.5B Modal activation, activation failure analysis, direction geometry, and
+residual-subspace audit.
+
+Artifacts:
+
+- `data/processed/autonomy_stress_scored_runs.jsonl`
+- `data/training/autonomy_stress_pairwise_probe_dataset.jsonl`
+- `data/training/autonomy_stress_activation_prompts.jsonl`
+- `data/reports/autonomy_stress_suite.md`
+- `data/reports/autonomy_stress_lexical_leakage.md`
+- `data/reports/autonomy_stress_component_audit.md`
+- `data/reports/autonomy_stress_activation_vector.md`
+- `data/reports/autonomy_stress_activation_failure_analysis.md`
+- `data/reports/autonomy_stress_direction_geometry.md`
+- `data/reports/autonomy_stress_residual_subspace.md`
+
+Local deterministic run:
+
+| Measure | Value |
+| --- | ---: |
+| Mechanisms | 8 |
+| Wording styles | 2 |
+| Pairwise examples | 16 |
+| Activation prompts | 32 |
+| Scorer prefers autonomy-preserving | 16 / 16 |
+| Mean score margin | +0.134 |
+| Mean autonomy-safety margin | +0.709 |
+| Cue-solved pairs | 4 / 16 |
+| Cue-tied pairs | 9 / 16 |
+| Cue-inverted pairs | 3 / 16 |
+| Mean cue margin | +0.000 |
+
+The eight mechanisms are silence-as-consent, visible objection rights,
+verification without betrayal, safe exit rights, reversible data choice, context
+review and appeal, no social-debt coercion, and no forced forgiveness.
+
+Qwen activation results on the stress suite:
+
+| Evaluation | Pairs | Accuracy | Mean margin |
+| --- | ---: | ---: | ---: |
+| In-sample | 16 | 1.000 | +8.885 |
+| Leave-one-pair-out | 16 | 0.875 | +5.420 |
+
+The two leave-one-pair-out misses are
+`verification_receipts_dialogue` and `consent_silence_dialogue`. This is useful:
+the scorer handles those phrasings, but the small Qwen contrastive direction
+does not reliably generalize to them from the remaining 15 pairs. The next
+stress pass should add generated paraphrases around proof/verification and
+silence-as-consent dialogue.
+
+Geometry and residual diagnostics:
+
+| Diagnostic | Value |
+| --- | ---: |
+| Mechanism directions | 8 |
+| Direction comparisons | 28 |
+| Mean signed off-diagonal cosine | +0.136 |
+| Mean absolute off-diagonal cosine | 0.193 |
+| Strong anti-aligned pairs | 0 |
+| Global direction pair-difference energy fraction | 0.172 |
+| Residual pair-difference energy fraction | 0.828 |
+| Residual mechanism mean accuracy | 1.000 |
+
+Interpretation: unlike the primary-fault cue-balanced set, the structural
+autonomy mechanisms do not mostly collapse into one shared direction. A weak
+global direction exists, but most pair-difference energy remains after removing
+it, and mechanism-specific residual directions still separate. This supports
+treating autonomy as a subspace with several failure-specific directions rather
+than a single scalar.
+
 ### Trait-Axis Prompt Suite
 
 Status: complete for hand-authored prompt export and Qwen 0.5B guardrail

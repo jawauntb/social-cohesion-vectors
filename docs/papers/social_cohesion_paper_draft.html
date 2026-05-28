@@ -497,6 +497,32 @@ independent orthogonal persona axes or exhaust the signal with one vector.</p>
 distributions, anti-aligned-pair counts, residual pair-difference energy, and
 fault-specific residual direction checks before using words like &quot;independent,&quot;
 &quot;orthogonal,&quot; &quot;localized,&quot; or &quot;exhausted.&quot;</p>
+<h3>7.7 Structural Autonomy Stress Suite</h3>
+<p>Status: complete for local scoring, Modal Qwen 0.5B activations, and geometry
+audits.</p>
+<p>The cue-balanced benchmark exposed an autonomy-safety scorer failure, then the
+hardened scorer fixed that deterministic set. To check whether the fix merely
+learned the cue-balanced wrapper, the repo now includes a wording-diverse
+structural-autonomy stress suite. It covers 16 paired contrasts across 8
+mechanisms: silence-as-consent, hidden objections, verification blocking, unsafe
+exit, background data collection, no-appeal safety rules, social-debt refusal
+pressure, and forced forgiveness.</p>
+<p>The local scorer prefers the autonomy-preserving side on 16/16 pairs, with a
++0.134 mean score margin and a +0.709 mean autonomy-safety margin. The simple
+lexical leakage gate solves only 4/16 pairs, ties 9/16, and inverts 3/16, with a
+0.000 mean cue margin. A small Modal pass through <code>Qwen/Qwen2.5-0.5B-Instruct</code>
+produces 32 x 896 activations. A contrastive direction reaches 1.000 in-sample
+accuracy but only 0.875 leave-one-pair-out accuracy; the failures are the
+dialogue-style verification/proof case and the dialogue-style silence-as-consent
+case.</p>
+<p>The geometry audit suggests that structural autonomy is less collapsed than the
+primary-fault cue-balanced set. Across 8 mechanism directions, mean signed
+off-diagonal cosine is +0.136 and mean absolute cosine is 0.193. The global
+direction captures only 0.172 of pair-difference energy, leaving 0.828 after
+projection; mechanism-specific residual directions still separate their own
+pairs. This supports a subspace interpretation: autonomy risk is not just one
+knob, but a family of related checks around refusal, review, evidence, exit,
+appeal, privacy, and social pressure.</p>
 <h2>8. Ethics And Safety</h2>
 <p>The target is not agreement maximization. The system must explicitly preserve:</p>
 <ul>
@@ -575,6 +601,8 @@ and fault-specific residual directions. Status: partial.</li>
 <li>Preserve signed projections when inspecting SAE or ROI-style localization;
 squared projection can be reported as energy but not as pole direction.
 Status: pending.</li>
+<li>Expand the structural autonomy stress suite around the Qwen LOO failures:
+dialogue-style verification/proof and silence-as-consent. Status: partial.</li>
 <li>Prepare a Prolific pairwise validation pilot only after generated-text and
 hard-negative validation. Status: pending.</li>
 </ol>

@@ -108,13 +108,21 @@ Concrete early signals:
   20 fault-specific residual directions still separate their own groups. So the
   honest current claim is one strong global genuine-vs-pseudo direction plus
   meaningful fault-specific residual subspaces, not independent orthogonal axes.
+- I added a wording-diverse structural-autonomy stress suite to check whether
+  the scorer just learned the cue-balanced wrapper. It has 16 pairs / 32 prompts
+  across 8 mechanisms: silence-as-consent, hidden objections, verification
+  blocking, unsafe exit, background data collection, no-appeal safety rules,
+  social-debt pressure, and forced forgiveness. The scorer gets 16/16 with a
+  +0.709 mean autonomy-safety margin. Simple cue counting solves only 4/16 and
+  has mean cue margin 0.000. Qwen 0.5B on Modal gets 1.000 in-sample but 0.875
+  leave-one-pair-out, missing the dialogue verification/proof case and the
+  dialogue silence-as-consent case.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
-LLM-authored hard negatives, checking that the autonomy scorer did not overfit
-the deterministic wrapper, running the geometry and residual-subspace audits on
-every activation/SAE result, and checking whether the same fault-specific
-feature bundles survive.
+LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
+misses, running geometry and residual-subspace audits on every activation/SAE
+result, and checking whether the same fault-specific feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated
