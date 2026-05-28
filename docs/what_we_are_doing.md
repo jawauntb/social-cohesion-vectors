@@ -124,6 +124,13 @@ It includes:
     The repo can also create in-text rewrite variants without genre wrappers,
     normalize hyphenated words, and rerun the same SAE feature-transfer report.
 
+14. A symbolic pseudo-cohesion fault taxonomy.
+    The repo now tags each seed pseudo-cohesion contrast by specific failure
+    modes such as consent bypass, exit-rights violation, truth suppression,
+    dissent suppression, privacy bypass, social-debt coercion, false consensus,
+    and accountability laundering, then groups scorer and SAE results by those
+    classes.
+
 ## Current Results
 
 The first local run produced:
@@ -213,6 +220,15 @@ short of interpretable feature naming: 11999 transfers best on the clean batch
 but looks generic, 703 remains function-word heavy, and 3056 remains
 genuine-skewed but weak alone.
 
+The first fault-taxonomy report annotates all 30 seed contrasts with 0 missing
+labels. The most common failure classes are dissent suppression, truth
+suppression, accountability laundering, consent bypass, and exit-rights
+violation. Grouping the clean SAE reports by those labels gives a better read on
+feature 3056: it is strongly genuine-skewed for reality validation,
+social-debt, assimilation-pressure, exit-rights, and privacy-bypass contrasts,
+but pseudo-skewed for verification-blocking and scapegoating. That is meaningful
+fault-specific structure, not a single clean cohesion feature.
+
 Important caveat: this is not yet a deep scientific result. The scripted
 benchmark is too easy. Lexical and metrics-only baselines solve it, which means
 the activation result is currently a pipeline sanity check, not evidence of a
@@ -240,7 +256,9 @@ High-value next steps:
 6. Re-run GPT-2 SAE token inspection on LLM-authored pseudo-cohesion variants.
 7. Compare clean deterministic transfer against generated hard-negative
    transfer.
-8. Run a small Prolific validation only after the compute benchmarks stop being
+8. Extend the fault taxonomy to generated hard negatives and run held-out
+   fault-class transfer.
+9. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting

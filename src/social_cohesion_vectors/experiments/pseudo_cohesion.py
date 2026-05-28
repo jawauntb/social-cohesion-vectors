@@ -10,6 +10,12 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from social_cohesion_vectors.datasets import activation_prompts_from_pairs, write_jsonl
+from social_cohesion_vectors.experiments.fault_taxonomy import (
+    annotation_dict,
+    annotation_for_contrast,
+    annotation_metadata_for_pair,
+    taxonomy_summary,
+)
 from social_cohesion_vectors.schemas import (
     ActivationPrompt,
     PairwiseExample,
@@ -845,6 +851,7 @@ def shape_report(
             "current_scorer": scorer_failures,
             "lexical_only": lexical_failures,
         },
+        "fault_taxonomy": taxonomy_summary(example.contrast_id for example in examples),
         "paired_comparisons": paired_comparisons(examples),
         "examples": [_evaluated_dict(example) for example in examples],
     }
@@ -872,9 +879,13 @@ def paired_comparisons(
             lexical_margin = round(genuine.lexical_score - pseudo.lexical_score, 6)
             lexical_prefers_genuine = lexical_margin > 0.0
         scorer_margin = round(genuine.scorer_score - pseudo.scorer_score, 6)
+        annotation = annotation_for_contrast(contrast_id)
         comparisons.append(
             {
                 "contrast_id": contrast_id,
+                "fault_taxonomy": (
+                    None if annotation is None else annotation_dict(annotation)
+                ),
                 "pseudo_example_id": pseudo.example_id,
                 "genuine_example_id": genuine.example_id,
                 "pseudo_scorer_score": pseudo.scorer_score,
@@ -907,6 +918,17 @@ def pairwise_examples_from_pseudo_cohesion(
         negative = group.get("pseudo_cohesion")
         if positive is None or negative is None:
             continue
+        metadata: dict[str, str | float] = {
+            "positive_category": positive.category,
+            "negative_category": negative.category,
+            "positive_label": positive.label,
+            "negative_label": negative.label,
+            "score_margin": round(
+                positive.scorer_score - negative.scorer_score,
+                6,
+            ),
+        }
+        metadata.update(annotation_metadata_for_pair(contrast_id))
         pairs.append(
             PairwiseExample(
                 pair_id=f"pseudo-cohesion::{contrast_id}",
@@ -917,16 +939,7 @@ def pairwise_examples_from_pseudo_cohesion(
                 negative_text=negative.text,
                 positive_score=positive.scorer_score,
                 negative_score=negative.scorer_score,
-                metadata={
-                    "positive_category": positive.category,
-                    "negative_category": negative.category,
-                    "positive_label": positive.label,
-                    "negative_label": negative.label,
-                    "score_margin": round(
-                        positive.scorer_score - negative.scorer_score,
-                        6,
-                    ),
-                },
+                metadata=metadata,
             )
         )
     return pairs
@@ -979,14 +992,38 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         f"- Mean pseudo scorer score: {summary['mean_pseudo_scorer_score']:.3f}",
         f"- Mean genuine scorer score: {summary['mean_genuine_scorer_score']:.3f}",
         "",
-        "## Category Coverage",
+        "## Fault Taxonomy",
         "",
-        (
-            "| Category | Pseudo examples | Genuine examples | "
-            "Scorer failures | Lexical failures |"
-        ),
-        "| --- | ---: | ---: | ---: | ---: |",
     ]
+    taxonomy = _mapping(report.get("fault_taxonomy"))
+    fault_counts = _mapping(taxonomy.get("fault_class_counts"))
+    guardrail_counts = _mapping(taxonomy.get("guardrail_failure_counts"))
+    lines.extend(
+        [
+            f"- Annotated contrasts: {int(taxonomy.get('annotated_contrasts', 0))}",
+            f"- Missing contrasts: {len(_sequence(taxonomy.get('missing_contrasts')))}",
+            "",
+            "| Fault class | Contrasts |",
+            "| --- | ---: |",
+        ]
+    )
+    for fault_class, count in sorted(fault_counts.items()):
+        lines.append(f"| {fault_class} | {int(count)} |")
+    lines.extend(["", "| Guardrail | Contrasts |", "| --- | ---: |"])
+    for guardrail, count in sorted(guardrail_counts.items()):
+        lines.append(f"| {guardrail} | {int(count)} |")
+    lines.extend(
+        [
+            "",
+            "## Category Coverage",
+            "",
+            (
+                "| Category | Pseudo examples | Genuine examples | "
+                "Scorer failures | Lexical failures |"
+            ),
+            "| --- | ---: | ---: | ---: | ---: |",
+        ]
+    )
     category_counts = _mapping(report.get("category_counts"))
     pseudo_categories = _mapping(category_counts.get("pseudo"))
     genuine_categories = _mapping(category_counts.get("genuine"))
@@ -1014,17 +1051,19 @@ def render_markdown(report: Mapping[str, Any]) -> str:
             "## Paired Comparisons",
             "",
             (
-                "| Contrast | Pseudo | Genuine | Scorer pseudo | Scorer genuine | "
+                "| Contrast | Fault classes | Pseudo | Genuine | Scorer pseudo | Scorer genuine | "
                 "Scorer prefers genuine | Lexical pseudo | Lexical genuine | "
                 "Lexical prefers genuine |"
             ),
-            "| --- | --- | --- | ---: | ---: | --- | ---: | ---: | --- |",
+            "| --- | --- | --- | --- | ---: | ---: | --- | ---: | ---: | --- |",
         ]
     )
     for comparison in report["paired_comparisons"]:
+        annotation = _mapping(comparison.get("fault_taxonomy"))
         lines.append(
             "| "
             f"{comparison['contrast_id']} | "
+            f"{_format_string_list(annotation.get('fault_classes'))} | "
             f"{comparison['pseudo_example_id']} | "
             f"{comparison['genuine_example_id']} | "
             f"{comparison['pseudo_scorer_score']:.3f} | "
@@ -1142,6 +1181,7 @@ def _failure_case(
     return {
         "example_id": example.example_id,
         "category": example.category,
+        "contrast_id": example.contrast_id,
         "detector": detector,
         "score": None if score is None else round(score, 6),
         "expected_signal": example.expected_signal,
@@ -1180,6 +1220,15 @@ def _count_categories(examples: Iterable[EvaluatedExample]) -> dict[str, int]:
 
 def _mapping(value: object) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
+
+
+def _sequence(value: object) -> Sequence[object]:
+    return value if isinstance(value, Sequence) and not isinstance(value, str) else []
+
+
+def _format_string_list(value: object) -> str:
+    items = [str(item) for item in _sequence(value)]
+    return ", ".join(items) if items else "n/a"
 
 
 def _yes_no(value: bool) -> str:

@@ -410,6 +410,7 @@ def summarize_feature(
             key="max_activation",
             limit=top_k_examples,
         ),
+        "pair_deltas": pair_deltas,
         "largest_genuine_minus_pseudo_pairs": top_rows(
             pair_deltas,
             key="mean_delta_positive_minus_negative",

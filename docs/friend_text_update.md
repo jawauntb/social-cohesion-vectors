@@ -54,12 +54,19 @@ Concrete early signals:
   inspected SAE feature ensemble improves to 0.892 leave-one-pair-out accuracy.
   A clean-only run without the seed prompts gets 0.889, and 28005 goes fully
   inactive, which confirms the hyphen-artifact read.
+- I added a fault taxonomy for all 30 seed pseudo-cohesion contrasts and grouped
+  the clean SAE reports by fault class. The interesting read is feature 3056:
+  it is strongly genuine-skewed for reality validation, social-debt,
+  assimilation-pressure, exit-rights, and privacy-bypass contrasts, but it flips
+  pseudo-skewed for verification-blocking and scapegoating. So it looks like a
+  useful fault-specific sub-feature, not "the cohesion vector."
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
-Before Prolific or any brain-aligned story, the next step is token/example-level
-SAE inspection, LLM-authored hard negatives, and reducing deterministic rewrite
-shortcuts.
+Before Prolific or any brain-aligned story, the next step is extending the fault
+taxonomy to LLM-authored hard negatives, running held-out fault-class transfer,
+and reducing deterministic rewrite shortcuts.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
-up quickly. The highest-value next move is inspecting the GPT-2 SAE candidate
-features on specific examples and adding hard-negative-held-out transfer.
+up quickly. The highest-value next move is generating less templated
+pseudo-cohesion examples and testing whether the same fault-specific feature
+bundles survive.

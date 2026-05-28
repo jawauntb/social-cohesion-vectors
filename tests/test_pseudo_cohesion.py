@@ -96,6 +96,7 @@ def test_report_shaping_tracks_pairs_and_failure_cases() -> None:
     assert report["summary"]["contrast_count"] == 1
     assert report["summary"]["lexical_baseline_available"] is True
     assert report["summary"]["lexical_failure_count"] == 1
+    assert report["fault_taxonomy"]["annotated_contrasts"] == 0
     assert report["category_counts"]["pseudo"] == {"truth_hiding": 1}
     assert report["category_counts"]["lexical_failures"] == {"truth_hiding": 1}
     assert len(report["paired_comparisons"]) == 1
@@ -120,6 +121,7 @@ def test_write_reports_outputs_json_and_markdown(tmp_path) -> None:
     markdown = markdown_path.read_text(encoding="utf-8")
     assert payload["experiment"] == "pseudo_cohesion_hard_negatives"
     assert "Pseudo-Cohesion Hard-Negative Experiment" in markdown
+    assert "Fault Taxonomy" in markdown
     assert "Lexical-only baseline was not importable" in markdown
 
 
@@ -163,6 +165,19 @@ def test_pairwise_and_activation_prompt_exports(tmp_path) -> None:
     assert counts == {"pairwise_examples": 1, "activation_prompts": 2}
     assert len(read_jsonl(tmp_path / "pairs.jsonl")) == 1
     assert len(read_jsonl(tmp_path / "prompts.jsonl")) == 2
+
+
+def test_default_pairwise_examples_include_fault_metadata() -> None:
+    pairs = pairwise_examples_from_pseudo_cohesion(default_examples())
+    autonomy_pair = next(
+        pair
+        for pair in pairs
+        if pair.pair_id == "pseudo-cohesion::autonomy_after_conflict"
+    )
+
+    assert autonomy_pair.metadata["fault_classes"] == "consent_bypass"
+    assert "consent" in str(autonomy_pair.metadata["guardrail_failures"])
+    assert autonomy_pair.metadata["pressure_target"] == "hesitating_member"
 
 
 def _fake_lexical_score(run: ScoredRun) -> float:

@@ -17,6 +17,8 @@ social cohesion vectors before touching expensive human or neural experiments.
 - Run a matched GPT-2 SAE smoke test for sparse-feature inspection.
 - Expand pseudo-cohesion prompts into neutral genre variants and run
   token/example-level SAE feature-transfer checks.
+- Annotate pseudo-cohesion contrasts with a symbolic fault taxonomy and group
+  scorer/SAE outcomes by specific failure mode.
 
 ## Current Status Snapshot
 
@@ -50,26 +52,34 @@ goes fully inactive, confirming it was a hyphen artifact. Feature 3056 still
 skews genuine but is weak alone, so it should be treated as a sub-feature rather
 than the cohesion direction.
 
+The first symbolic fault-taxonomy pass now covers all 30 seed contrasts with 0
+missing annotations. It tags pseudo-cohesion failures by consent bypass, exit
+rights, dissent suppression, truth suppression, privacy bypass, social-debt
+coercion, false consensus, accountability laundering, and related extended
+classes. Grouped SAE reports show fault-specific structure rather than one clean
+feature: feature 3056 is strongly genuine-skewed for reality validation,
+social-debt coercion, exit-rights, privacy, and assimilation-pressure contrasts,
+but it flips pseudo-skewed for verification-blocking and scapegoating contrasts.
+That makes 3056 useful evidence for a bundle, not a standalone cohesion vector.
+
 ## Next Steps
 
-The next phase is to make pseudo-cohesion more formal and less vibe-driven.
-Instead of treating "genuine vs pseudo" as one scalar label, the repo should add
-a neuro-symbolic fault taxonomy for why a pseudo-cohesion example fails.
+The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
+repo now has a first neuro-symbolic fault taxonomy for why a pseudo-cohesion
+example fails, so the next work is to harden it against generated language and
+turn the labels into measurable guardrails.
 
 Immediate build targets:
 
-- Add formal fault labels for pseudo-cohesion contrasts:
-  `consent_bypass`, `exit_rights_violation`, `truth_suppression`,
-  `dissent_suppression`, `privacy_bypass`, `social_debt_coercion`,
-  `dehumanizing_solidarity`, `punitive_accountability`,
-  `sycophantic_truth_hiding`, `forced_forgiveness`, `false_consensus`, and
-  `accountability_laundering`.
-- Encode symbolic guardrails: if autonomy, truth, privacy, dissent, or exit
-  rights are violated, the example cannot count as high cohesion just because it
-  sounds warm or group-oriented.
-- Extract role/asymmetry metadata: who pressures whom, who controls information,
-  who bears the cost, who can exit, and whether refusal remains safe.
-- Group activation and SAE reports by fault class so candidate features can be
+- Extend the seed fault labels to LLM-authored hard negatives and generated
+  trajectories.
+- Turn symbolic guardrails into scorer constraints: if autonomy, truth, privacy,
+  dissent, or exit rights are violated, the example cannot count as high
+  cohesion just because it sounds warm or group-oriented.
+- Use role/asymmetry metadata as generation controls: who pressures whom, who
+  controls information, who bears the cost, who can exit, and whether refusal
+  remains safe.
+- Compare activation and SAE reports by fault class so candidate features are
   tested against specific failures, not just one positive-vs-negative aggregate.
 - Add cultural and dialect/context stress tests so the model does not learn
   "institutional therapy voice" as a proxy for cohesion.
@@ -120,6 +130,8 @@ uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
   --prompts data/training/pseudo_cohesion_expanded_activation_prompts.jsonl \
   --json-output data/reports/gpt2_sae_token_feature_inspection_expanded.json \
   --markdown-output data/reports/gpt2_sae_token_feature_inspection_expanded.md
+uv run python scripts/run_fault_taxonomy_report.py \
+  --sae-report data/reports/gpt2_sae_token_feature_inspection_expanded.json
 ```
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.
