@@ -19,6 +19,8 @@ social cohesion vectors before touching expensive human or neural experiments.
   token/example-level SAE feature-transfer checks.
 - Annotate pseudo-cohesion contrasts with a symbolic fault taxonomy and group
   scorer/SAE outcomes by specific failure mode.
+- Generate fault-class pseudo-cohesion stand-ins, export scored runs/pairs/
+  activation prompts, and run fault-held-out transfer folds.
 
 ## Current Status Snapshot
 
@@ -69,6 +71,15 @@ It also adds a *Magnifica Humanitas* grounding: cohesion means truthful,
 dignity-preserving, agency-respecting relation, not optimized agreement,
 dependence, or conformity.
 
+The generated fault-class lane now exports 180 deterministic offline stand-ins
+for LLM-authored hard negatives: 30 seed contrasts x 3 social settings x
+pseudo/genuine sides. It produces 90 pairwise examples across 20 primary fault
+classes. The scorer prefers the genuine side on 87/90 pairs. Fault-held-out
+transfer now controls strategy metadata, so the strategy prior falls to chance
+at 0.500. Lexical-only still reaches 1.000 and metrics-only reaches 0.983, which
+means the next generation pass has to remove obvious lexical/rubric cues rather
+than count this as robust generalization.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -80,6 +91,10 @@ Immediate build targets:
 
 - Extend the seed fault labels to LLM-authored hard negatives and generated
   trajectories.
+- Replace the deterministic offline fault-class stand-ins with API-authored
+  variants, then rerun fault-held-out transfer.
+- Make generated pseudo/genuine sides less lexically separable so lexical-only
+  can no longer solve the benchmark.
 - Turn symbolic guardrails into scorer constraints: if autonomy, truth, privacy,
   dissent, or exit rights are violated, the example cannot count as high
   cohesion just because it sounds warm or group-oriented.
@@ -139,6 +154,8 @@ uv run python scripts/export_pseudo_cohesion_expanded_prompts.py \
   --variant-set clean \
   --pairs-output data/training/pseudo_cohesion_clean_pairwise_probe_dataset.jsonl \
   --prompts-output data/training/pseudo_cohesion_clean_activation_prompts.jsonl
+uv run python scripts/export_generated_fault_class_prompts.py
+uv run python scripts/run_fault_heldout_transfer.py
 uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
   --prompts data/training/pseudo_cohesion_expanded_activation_prompts.jsonl \
   --json-output data/reports/gpt2_sae_token_feature_inspection_expanded.json \

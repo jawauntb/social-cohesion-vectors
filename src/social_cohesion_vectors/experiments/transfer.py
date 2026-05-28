@@ -246,6 +246,28 @@ def evaluate_pair_set_transfer(
     )
 
 
+def evaluate_metadata_transfer(
+    *,
+    pairs: Sequence[PairwiseExample],
+    run_index: Mapping[str, ScoredRun],
+    metadata_key: str,
+    split_name: str | None = None,
+) -> list[dict[str, Any]]:
+    """Train text baselines while holding out values from pair metadata.
+
+    Metadata values may be scalar strings or comma-separated strings. If a pair
+    has multiple values, it appears in each corresponding held-out fold so that
+    multi-label fault annotations can be stress-tested one label at a time.
+    """
+
+    folds = _make_multilabel_metadata_folds(
+        pairs,
+        metadata_key=metadata_key,
+        split=split_name or metadata_key,
+    )
+    return _evaluate_text_folds(folds=folds, run_index=run_index)
+
+
 def evaluate_pair_scores(
     pairs: Sequence[PairwiseExample],
     *,
@@ -539,6 +561,38 @@ def _make_folds(
         _fold(split, held_out, test_pairs, grouped_pairs)
         for held_out, test_pairs in sorted(grouped.items())
     ]
+
+
+def _make_multilabel_metadata_folds(
+    pairs: Sequence[PairwiseExample],
+    *,
+    split: str,
+    metadata_key: str,
+) -> list[dict[str, Any]]:
+    grouped: dict[str, list[PairwiseExample]] = defaultdict(list)
+    for pair in pairs:
+        for value in _metadata_values(pair.metadata.get(metadata_key)):
+            grouped[value].append(pair)
+    if len(grouped) < 2:
+        return []
+    all_pairs = list({pair.pair_id: pair for pair in pairs}.values())
+    return [
+        _fold(split, held_out, test_pairs, all_pairs)
+        for held_out, test_pairs in sorted(grouped.items())
+    ]
+
+
+def _metadata_values(raw_value: object) -> tuple[str, ...]:
+    if raw_value is None:
+        return ()
+    if isinstance(raw_value, int | float):
+        return (str(raw_value),)
+    values = [
+        part.strip()
+        for part in str(raw_value).split(",")
+        if part.strip()
+    ]
+    return tuple(dict.fromkeys(values))
 
 
 def _fold(
