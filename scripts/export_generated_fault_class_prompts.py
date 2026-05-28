@@ -30,10 +30,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         json_report_output=args.json_report_output,
         markdown_report_output=args.markdown_report_output,
         variants=variants,
+        style=args.style,
     )
     print(
         "exported generated fault-class benchmark: "
         f"variants={','.join(variant.name for variant in variants)} "
+        f"style={args.style} "
         f"scored_runs={counts['scored_runs']} "
         f"pairs={counts['pairwise_examples']} "
         f"prompts={counts['activation_prompts']} "
@@ -87,6 +89,13 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         choices=variant_names,
         default=None,
         help="Optional subset of generation variants.",
+    )
+    parser.add_argument(
+        "--style",
+        choices=["template", "cue_balanced"],
+        default="template",
+        type=str,
+        help="Deterministic text style to export.",
     )
     return parser.parse_args(argv)
 

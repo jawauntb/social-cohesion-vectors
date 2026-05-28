@@ -87,6 +87,17 @@ Concrete early signals:
   with +8.548 mean margin. The 32-prompt trait-axis set gives 32 x 896
   activations; guardrail monitoring reports 8 axes, 16 pairs, 0 alerts, and a
   +15.382 mean margin. Still hand-authored smoke tests, but the GPU path works.
+- I added a cue-balanced fault-class stress test. It keeps the same 180 examples
+  / 90 pairs but removes the obvious positive-minus-negative cue leak: 0/90
+  cue-solved pairs, mean cue margin 0.000. That revealed a sharper scorer bug:
+  the current rubric prefers the pseudo side on 90/90 cue-balanced pairs because
+  the autonomy-safety component misses structural "less room to object/check/exit"
+  language when it lacks explicit coercion words.
+- The interesting bit: Qwen activations still separate the cue-balanced set.
+  Full 180-prompt extraction gives 1.000 leave-one-pair-out accuracy over 90
+  pairs with +32.458 mean margin, and 1.000 held-out-primary-fault accuracy
+  across 20 folds with +31.530 mean margin. Still deterministic, but it is a
+  much better next signal than the fully cue-leaky version.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating

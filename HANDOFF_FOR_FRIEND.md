@@ -215,6 +215,40 @@ strategy prior is now 0.500 in fault-held-out transfer. But the lexical leakage
 gate currently reports 90/90 cue-solved pairs, so this is a scaffold, not a
 semantic benchmark yet.
 
+The next hardening pass adds a cue-balanced deterministic style:
+
+```bash
+uv run python scripts/export_generated_fault_class_prompts.py \
+  --style cue_balanced \
+  --scored-runs-output data/processed/generated_fault_class_cue_balanced_scored_runs.jsonl \
+  --pairs-output data/training/generated_fault_class_cue_balanced_pairwise_probe_dataset.jsonl \
+  --prompts-output data/training/generated_fault_class_cue_balanced_activation_prompts.jsonl \
+  --prompt-records-output data/raw/generated_fault_class_cue_balanced_prompt_records.jsonl \
+  --json-report-output data/reports/generated_fault_class_cue_balanced_dataset.json \
+  --markdown-report-output data/reports/generated_fault_class_cue_balanced_dataset.md
+uv run python scripts/run_lexical_leakage_report.py \
+  --pairs data/training/generated_fault_class_cue_balanced_pairwise_probe_dataset.jsonl \
+  --json-output data/reports/generated_fault_class_cue_balanced_lexical_leakage.json \
+  --markdown-output data/reports/generated_fault_class_cue_balanced_lexical_leakage.md
+uv run python scripts/run_component_margin_audit.py \
+  --scored-runs data/processed/generated_fault_class_cue_balanced_scored_runs.jsonl \
+  --pairs data/training/generated_fault_class_cue_balanced_pairwise_probe_dataset.jsonl \
+  --json-output data/reports/generated_fault_class_cue_balanced_component_audit.json \
+  --markdown-output data/reports/generated_fault_class_cue_balanced_component_audit.md
+```
+
+Cue-balanced results: 0/90 cue-solved pairs and 0.000 mean cue margin. The
+current scorer then fails completely, preferring the pseudo side on 90/90 pairs
+with -0.051 mean score margin. The component audit shows the main inversion is
+autonomy safety (-0.356 mean margin), so the scorer is missing structural
+"less room to object/check/exit" pressure when obvious coercion words are absent.
+
+The cue-balanced Modal run is the strongest current compute-only signal:
+`Qwen/Qwen2.5-0.5B-Instruct` on 180 prompts gives 1.000 leave-one-pair-out over
+90 pairs with +32.458 mean margin, and 1.000 held-out-primary-fault transfer
+across 20 folds with +31.530 mean margin. Still deterministic, but much more
+interesting than the cue-leaky version.
+
 The new trait-axis and social-game prompt exports are:
 
 ```bash

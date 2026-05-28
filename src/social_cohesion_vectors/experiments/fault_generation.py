@@ -7,7 +7,7 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -26,6 +26,8 @@ from social_cohesion_vectors.experiments.pseudo_cohesion import (
     evaluate_example,
 )
 from social_cohesion_vectors.schemas import ActivationPrompt, PairwiseExample, ScoredRun
+
+FaultGenerationStyle = Literal["template", "cue_balanced"]
 
 
 @dataclass(frozen=True)
@@ -168,11 +170,99 @@ FAULT_TEXT: dict[str, tuple[str, str]] = {
     ),
 }
 
+CUE_BALANCED_FAULT_TEXT: dict[str, tuple[str, str]] = {
+    "accountability_laundering": (
+        "moves to a polished update and asks people to stop revisiting the complaint so the group can look settled",
+        "names the complaint, the visible next steps, and how people can verify that obligations happened",
+    ),
+    "assimilation_pressure": (
+        "welcomes newcomers while asking them to drop customs and language that unsettle longtime members",
+        "teaches common norms while making room for difference and asking which customs exclude people",
+    ),
+    "consent_bypass": (
+        "treats silence or hesitation as agreement because checking would slow the plan",
+        "asks for an explicit yes or no, keeps refusal socially safe, and offers a slower route when needed",
+    ),
+    "dehumanizing_solidarity": (
+        "builds unity by describing outsiders as a contaminating danger that decent people should reject",
+        "sets firm boundaries around concrete harms without stripping the other side of personhood",
+    ),
+    "deliberation_bypass": (
+        "frames objections as morale damage and pushes the decision through before hard questions surface",
+        "sets a short review window, states the criteria, and gives objections a real place in the decision",
+    ),
+    "dissent_suppression": (
+        "asks people to keep reservations private so the group can appear calm and aligned",
+        "records support, reservations, and unresolved risks separately so objections remain visible",
+    ),
+    "emotional_blackmail": (
+        "tells a member that care for the group requires dropping a boundary and staying emotionally available",
+        "acknowledges the group's anxiety while keeping the boundary real and non-penalized",
+    ),
+    "exit_rights_violation": (
+        "casts leaving as betrayal after everything invested, making departure feel disloyal",
+        "keeps the relationship intact where possible while making departure clear, safe, and non-penalized",
+    ),
+    "fairness_bypass": (
+        "asks quieter people to carry a lopsided burden because debating the split would create tension",
+        "checks who carries the burden, invites quieter voices, and revises the split when it is lopsided",
+    ),
+    "false_consensus": (
+        "describes a contested decision as unanimous so the group can feel stronger",
+        "states the majority view accurately while preserving the minority objection in the record",
+    ),
+    "forced_forgiveness": (
+        "presses the harmed person to forgive on the group's timeline so everyone else can feel healed",
+        "allows obligations after harm without making forgiveness or closure the price of belonging",
+    ),
+    "opaque_resource_control": (
+        "keeps criteria and allocation inside a core circle because visibility might create competition",
+        "publishes criteria, protects emergency reserves, and gives people a way to challenge decisions",
+    ),
+    "overbroad_safety": (
+        "uses safety language to justify a blanket restriction with no context review or appeal",
+        "acts quickly on clear harm while preserving context review, proportionality, and appeal",
+    ),
+    "privacy_bypass": (
+        "collects information quietly in the background so the experience feels seamless and safe",
+        "explains what data is needed, minimizes collection, asks plainly, and makes reversal easy",
+    ),
+    "punitive_accountability": (
+        "uses a harsh penalty and public compliance ritual to prove unity and end questions",
+        "names harm and obligations while preserving proportionality, personhood, and a path back",
+    ),
+    "reality_denial": (
+        "soothes the conflict by minimizing a person's account and asking everyone to say it was not serious",
+        "takes the account seriously, checks memories and evidence, and starts from what happened",
+    ),
+    "scapegoating_unity": (
+        "assigns one person as the problem so everyone else can feel fixed faster",
+        "separates individual mistakes from system conditions and changes the setup that enabled harm",
+    ),
+    "social_debt_coercion": (
+        "turns past help into a debt that makes refusal look ungrateful and anti-community",
+        "names the request and possible reciprocity while preserving the ability to say no without losing standing",
+    ),
+    "sycophantic_truth_hiding": (
+        "flatters the leader and hides edge cases so confidence and morale stay high",
+        "addresses the leader directly while separating what is known, what is uncertain, and what could fail",
+    ),
+    "truth_suppression": (
+        "delays material facts until people are already committed to the plan",
+        "gives material facts before commitment so people can revise the plan with accurate information",
+    ),
+    "verification_blocking": (
+        "treats requests for proof as suspicion that divides the group and weakens confidence",
+        "builds confidence through commitments people can check without treating verification as betrayal",
+    ),
+}
+
 
 def generated_fault_examples(
     examples: Sequence[PseudoCohesionExample] | None = None,
     *,
     variants: Sequence[FaultGenerationVariant] = DEFAULT_VARIANTS,
+    style: FaultGenerationStyle = "template",
 ) -> list[PseudoCohesionExample]:
     """Generate synthetic fault-class variants from the annotated seed suite."""
 
@@ -195,6 +285,7 @@ def generated_fault_examples(
                     annotation=annotation,
                     variant=variant,
                     label="pseudo_cohesion",
+                    style=style,
                 )
             )
             generated.append(
@@ -203,6 +294,7 @@ def generated_fault_examples(
                     annotation=annotation,
                     variant=variant,
                     label="genuine_cohesion",
+                    style=style,
                 )
             )
     return generated
@@ -271,6 +363,7 @@ def pairwise_examples_from_generated_fault_examples(
     examples: Sequence[PseudoCohesionExample],
     *,
     source: str = "generated_fault_class_offline",
+    style: FaultGenerationStyle | None = None,
 ) -> list[PairwiseExample]:
     """Create pairwise genuine-over-pseudo examples with fault metadata."""
 
@@ -290,6 +383,7 @@ def pairwise_examples_from_generated_fault_examples(
             "source": source,
             "base_contrast_id": base_contrast_id(contrast_id),
             "generated_variant": _variant_from_contrast_id(contrast_id),
+            "generated_style": style or _style_from_contrast_id(contrast_id),
             "primary_fault_class": _primary_fault_class(contrast_id),
             "positive_category": positive.category,
             "negative_category": negative.category,
@@ -356,11 +450,13 @@ def fault_examples_from_prompt_outputs(
 
 def activation_prompts_from_generated_fault_examples(
     examples: Sequence[PseudoCohesionExample],
+    *,
+    style: FaultGenerationStyle | None = None,
 ) -> list[ActivationPrompt]:
     """Create activation prompts for generated fault examples."""
 
     return activation_prompts_from_pairs(
-        pairwise_examples_from_generated_fault_examples(examples)
+        pairwise_examples_from_generated_fault_examples(examples, style=style)
     )
 
 
@@ -368,10 +464,11 @@ def shape_generated_fault_report(
     examples: Sequence[PseudoCohesionExample],
     *,
     variants: Sequence[FaultGenerationVariant] = DEFAULT_VARIANTS,
+    style: FaultGenerationStyle = "template",
 ) -> dict[str, Any]:
     """Summarize generated fault-class examples and pair coverage."""
 
-    pairs = pairwise_examples_from_generated_fault_examples(examples)
+    pairs = pairwise_examples_from_generated_fault_examples(examples, style=style)
     scored_runs = scored_runs_from_generated_fault_examples(examples)
     fault_counts: dict[str, int] = defaultdict(int)
     primary_counts: dict[str, int] = defaultdict(int)
@@ -391,6 +488,7 @@ def shape_generated_fault_report(
         ),
         "summary": {
             "variants": [variant.name for variant in variants],
+            "style": style,
             "examples": len(examples),
             "scored_runs": len(scored_runs),
             "pairs": len(pairs),
@@ -422,6 +520,7 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
         "## Summary",
         "",
         f"- Variants: {', '.join(_sequence(summary.get('variants')))}",
+        f"- Style: {summary.get('style', 'template')}",
         f"- Examples: {int(summary.get('examples', 0))}",
         f"- Scored runs: {int(summary.get('scored_runs', 0))}",
         f"- Pairwise examples: {int(summary.get('pairs', 0))}",
@@ -461,15 +560,16 @@ def export_generated_fault_dataset(
     markdown_report_output: str | Path,
     examples: Sequence[PseudoCohesionExample] | None = None,
     variants: Sequence[FaultGenerationVariant] = DEFAULT_VARIANTS,
+    style: FaultGenerationStyle = "template",
 ) -> dict[str, int]:
     """Write generated fault dataset artifacts and a coverage report."""
 
-    generated = generated_fault_examples(examples, variants=variants)
+    generated = generated_fault_examples(examples, variants=variants, style=style)
     scored_runs = scored_runs_from_generated_fault_examples(generated)
-    pairs = pairwise_examples_from_generated_fault_examples(generated)
+    pairs = pairwise_examples_from_generated_fault_examples(generated, style=style)
     prompts = activation_prompts_from_pairs(pairs)
     prompt_records = build_fault_prompt_records(examples, variants=variants)
-    report = shape_generated_fault_report(generated, variants=variants)
+    report = shape_generated_fault_report(generated, variants=variants, style=style)
 
     counts = {
         "scored_runs": write_jsonl(scored_runs, scored_runs_output),
@@ -501,17 +601,19 @@ def _generated_example(
     annotation: FaultAnnotation,
     variant: FaultGenerationVariant,
     label: ExampleLabel,
+    style: FaultGenerationStyle,
 ) -> PseudoCohesionExample:
-    text = _generated_text(annotation, variant=variant, label=label)
+    text = _generated_text(annotation, variant=variant, label=label, style=style)
+    style_suffix = "" if style == "template" else f"__{style}"
     return PseudoCohesionExample(
-        example_id=f"generated_{seed.example_id}__{variant.name}",
+        example_id=f"generated_{seed.example_id}__{variant.name}{style_suffix}",
         label=label,
-        category=f"{seed.category}__generated",
-        contrast_id=f"{annotation.contrast_id}__generated_{variant.name}",
+        category=f"{seed.category}__generated{style_suffix}",
+        contrast_id=f"{annotation.contrast_id}__generated_{variant.name}{style_suffix}",
         text=text,
         expected_signal=(
-            f"Generated {label} variant for {annotation.fault_classes[0]} in "
-            f"{variant.name}."
+            f"Generated {style} {label} variant for "
+            f"{annotation.fault_classes[0]} in {variant.name}."
         ),
     )
 
@@ -521,9 +623,26 @@ def _generated_text(
     *,
     variant: FaultGenerationVariant,
     label: ExampleLabel,
+    style: FaultGenerationStyle,
 ) -> str:
     role = annotation.role_asymmetry
     primary_fault = annotation.fault_classes[0]
+    if style == "cue_balanced":
+        pseudo_clause, genuine_clause = CUE_BALANCED_FAULT_TEXT[primary_fault]
+        target = _humanize(role.pressure_target)
+        if label == "pseudo_cohesion":
+            return (
+                f"In {variant.setting}, {variant.speaker} says {variant.group} "
+                f"should keep the process orderly by {pseudo_clause}. The "
+                f"language sounds composed, yet {target} has less room to "
+                f"object, check details, or leave without penalty."
+            )
+        return (
+            f"In {variant.setting}, {variant.speaker} says {variant.group} "
+            f"should handle the same pressure by {genuine_clause}. The message "
+            f"keeps {target}'s refusal, review, and evidence access available "
+            f"while the group still addresses the common issue."
+        )
     pseudo_clause, genuine_clause = FAULT_TEXT[primary_fault]
     target = _humanize(role.pressure_target)
     source = _humanize(role.pressure_source)
@@ -608,6 +727,10 @@ def _variant_from_contrast_id(contrast_id: str) -> str:
     if marker not in contrast_id:
         return "seed"
     return contrast_id.split(marker, 1)[1]
+
+
+def _style_from_contrast_id(contrast_id: str) -> FaultGenerationStyle:
+    return "cue_balanced" if contrast_id.endswith("__cue_balanced") else "template"
 
 
 def _humanize(value: str) -> str:

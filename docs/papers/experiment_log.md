@@ -173,6 +173,76 @@ Interpretation: the offline generated fault-class dataset is good for plumbing,
 fault metadata, and report contracts, but it is not a semantic benchmark yet.
 Every pair is separable by simple positive-minus-negative cue counts.
 
+### Cue-Balanced Fault-Class Stress Test
+
+Status: complete for deterministic cue-balanced export, local audits, and Qwen
+0.5B activation transfer.
+
+This pass uses the same 30 seed contrasts and 3 settings, but rewrites the
+deterministic text to avoid the obvious benchmark cue words used by the simple
+positive-minus-negative leakage counter. It is still deterministic and still not
+human validation, but it is a harder local stress test than the first
+fault-class export.
+
+Artifacts:
+
+- `data/processed/generated_fault_class_cue_balanced_scored_runs.jsonl`
+- `data/training/generated_fault_class_cue_balanced_pairwise_probe_dataset.jsonl`
+- `data/training/generated_fault_class_cue_balanced_activation_prompts.jsonl`
+- `data/reports/generated_fault_class_cue_balanced_dataset.md`
+- `data/reports/generated_fault_class_cue_balanced_lexical_leakage.md`
+- `data/reports/generated_fault_class_cue_balanced_component_audit.md`
+- `data/reports/generated_fault_class_cue_balanced_heldout_transfer.md`
+- `data/reports/generated_fault_class_cue_balanced_activation_vector.md`
+- `data/reports/generated_fault_class_cue_balanced_activation_fault_heldout.md`
+
+Local deterministic run:
+
+| Measure | Value |
+| --- | ---: |
+| Generated examples | 180 |
+| Pairwise examples | 90 |
+| Primary fault classes | 20 |
+| Cue-solved pairs | 0 / 90 |
+| Mean cue margin | +0.000 |
+| Scorer prefers genuine | 0 / 90 |
+| Mean scorer margin | -0.051 |
+| Mean truthfulness component margin | +0.139 |
+| Mean autonomy-safety component margin | -0.356 |
+
+Interpretation: removing the obvious cue words does exactly what we wanted for
+the leakage gate, but it also reveals that the current scorer misses structural
+autonomy violations unless they use explicit pressure/coercion words. The
+cue-balanced pseudo side repeatedly says the affected person has less room to
+object, check details, or leave, yet the current autonomy component treats that
+as safer than the genuine side. This is now a concrete scorer bug.
+
+Held-out transfer on the cue-balanced text:
+
+| Baseline | Folds | Test pairs | Mean test accuracy | Mean test margin |
+| --- | ---: | ---: | ---: | ---: |
+| strategy prior | 20 | 90 | 0.500 | +0.000 |
+| lexical-only | 20 | 90 | 0.767 | +0.048 |
+| metrics-only | 20 | 90 | 1.000 | +0.051 |
+
+The aggregate leakage report is zero, but the trainable lexical feature vector
+still recovers some residual repeated wording. That means the next cue-balanced
+generation pass should diversify wording, not merely balance the cue counter.
+
+Qwen activation results on the cue-balanced set:
+
+| Evaluation | Pairs | Accuracy | Mean margin |
+| --- | ---: | ---: | ---: |
+| Leave-one-pair-out | 90 | 1.000 | +32.458 |
+| Held-out primary fault class | 90 | 1.000 | +31.530 |
+
+Interpretation: this is the strongest current compute-only signal, with the
+right caveats. Qwen activation directions still separate genuine vs
+pseudo-cohesion after the simple cue leak is removed and when whole primary
+fault classes are held out. Because the examples are deterministic, this is not
+yet robust semantic evidence; it is a strong reason to run API-authored,
+wording-diverse, cue-balanced variants next.
+
 ### Trait-Axis Prompt Suite
 
 Status: complete for hand-authored prompt export and Qwen 0.5B guardrail
