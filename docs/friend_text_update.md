@@ -74,9 +74,9 @@ Concrete early signals:
   is also a guardrail-monitoring script ready to run once those prompts have
   activation files.
 - I added a small social-game validation set across dictator, public goods,
-  ultimatum, trust, and restorative repair games. The scorer prefers the
-  prosocial side on 4/5; the failure is interesting because verification-blocking
-  language in the trust game still scores too high.
+  ultimatum, trust, and restorative repair games. After hardening autonomy
+  scoring, the scorer now prefers the prosocial side on 5/5, including the trust
+  verification and ultimatum exit-rights cases.
 - I wired an API-authored fault-class generation script for Anthropic and
   OpenAI. The code path is ready, but the copied provider keys both returned
   401 invalid-key errors on tiny smoke tests, so we need a fresh key before
@@ -90,9 +90,11 @@ Concrete early signals:
 - I added a cue-balanced fault-class stress test. It keeps the same 180 examples
   / 90 pairs but removes the obvious positive-minus-negative cue leak: 0/90
   cue-solved pairs, mean cue margin 0.000. That revealed a sharper scorer bug:
-  the current rubric prefers the pseudo side on 90/90 cue-balanced pairs because
-  the autonomy-safety component misses structural "less room to object/check/exit"
-  language when it lacks explicit coercion words.
+  the old rubric preferred the pseudo side on 90/90 cue-balanced pairs because
+  autonomy safety missed structural "less room to object/check/exit" language
+  when it lacked explicit coercion words. I hardened that component; now the
+  scorer prefers the genuine side on 90/90 cue-balanced pairs with a +0.189 mean
+  score margin and a +0.988 autonomy-safety margin.
 - The interesting bit: Qwen activations still separate the cue-balanced set.
   Full 180-prompt extraction gives 1.000 leave-one-pair-out accuracy over 90
   pairs with +32.458 mean margin, and 1.000 held-out-primary-fault accuracy
@@ -109,9 +111,10 @@ Concrete early signals:
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
-LLM-authored hard negatives, forcing lexical leakage down, running the geometry
-and residual-subspace audits on every activation/SAE result, and checking
-whether the same fault-specific feature bundles survive.
+LLM-authored hard negatives, checking that the autonomy scorer did not overfit
+the deterministic wrapper, running the geometry and residual-subspace audits on
+every activation/SAE result, and checking whether the same fault-specific
+feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated

@@ -172,7 +172,7 @@ Current local results:
 | Fault-held-out lexical-only | 1.000 | Still surface-cue solved |
 | Fault-class lexical cue-solved rate | 1.000 | Needs API-authored/lexical-adversarial generation |
 | Trait-axis prompts | 32 | Ready for per-axis activation monitoring |
-| Social-game scorer accuracy | 0.800 | Trust-game verification is the local scorer failure |
+| Social-game scorer accuracy | 1.000 | Hardened autonomy scoring fixes trust verification and ultimatum exit-rights |
 
 Once trait-axis activations exist, run:
 

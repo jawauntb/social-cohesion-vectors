@@ -24,7 +24,7 @@ def test_social_game_scaffold_exports_schema_valid_pairs() -> None:
     scorer_failures = [
         pair for pair in pairs if pair.positive_score <= pair.negative_score
     ]
-    assert [pair.metadata["game_kind"] for pair in scorer_failures] == ["trust_game"]
+    assert scorer_failures == []
 
 
 def test_social_game_report_and_export(tmp_path) -> None:
@@ -32,7 +32,7 @@ def test_social_game_report_and_export(tmp_path) -> None:
     markdown = render_social_game_markdown(report)
 
     assert report["summary"]["game_kinds"] == 5
-    assert report["summary"]["scorer_pairwise_accuracy"] == 0.8
+    assert report["summary"]["scorer_pairwise_accuracy"] == 1.0
     assert "dictator_game" in markdown
 
     counts = export_social_game_artifacts(

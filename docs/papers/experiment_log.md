@@ -207,17 +207,20 @@ Local deterministic run:
 | Primary fault classes | 20 |
 | Cue-solved pairs | 0 / 90 |
 | Mean cue margin | +0.000 |
-| Scorer prefers genuine | 0 / 90 |
-| Mean scorer margin | -0.051 |
+| Scorer prefers genuine | 90 / 90 |
+| Mean scorer margin | +0.189 |
 | Mean truthfulness component margin | +0.139 |
-| Mean autonomy-safety component margin | -0.356 |
+| Mean autonomy-safety component margin | +0.988 |
 
-Interpretation: removing the obvious cue words does exactly what we wanted for
-the leakage gate, but it also reveals that the current scorer misses structural
-autonomy violations unless they use explicit pressure/coercion words. The
-cue-balanced pseudo side repeatedly says the affected person has less room to
-object, check details, or leave, yet the current autonomy component treats that
-as safer than the genuine side. This is now a concrete scorer bug.
+Interpretation: removing the obvious cue words did exactly what we wanted for
+the leakage gate, and it initially exposed that the old scorer missed structural
+autonomy violations unless they used explicit pressure/coercion words. The
+hardened autonomy scorer now recognizes refusal, review, evidence-access, exit,
+and appeal rights. On this deterministic cue-balanced set, the scorer now
+prefers the genuine side on every pair. This fixes the immediate local bug, but
+it also makes metrics-only transfer circular again because the metrics are
+derived from the updated scorer components. API-authored wording-diverse variants
+remain the next real test.
 
 Held-out transfer on the cue-balanced text:
 
@@ -225,7 +228,7 @@ Held-out transfer on the cue-balanced text:
 | --- | ---: | ---: | ---: | ---: |
 | strategy prior | 20 | 90 | 0.500 | +0.000 |
 | lexical-only | 20 | 90 | 0.767 | +0.048 |
-| metrics-only | 20 | 90 | 1.000 | +0.051 |
+| metrics-only | 20 | 90 | 1.000 | +0.189 |
 
 The aggregate leakage report is zero, but the trainable lexical feature vector
 still recovers some residual repeated wording. That means the next cue-balanced
@@ -322,13 +325,13 @@ Local deterministic run:
 | Pairwise examples | 5 |
 | Activation prompts | 10 |
 | Game kinds | 5 |
-| Scorer prefers prosocial | 4 / 5 |
-| Scorer pairwise accuracy | 0.800 |
+| Scorer prefers prosocial | 5 / 5 |
+| Scorer pairwise accuracy | 1.000 |
 
-The one local scorer failure is the trust-game verification contrast: the
-positive evidence-preserving trust policy scores 0.549, while the negative
-"stop checking" verification-blocking policy scores 0.583. That is a useful
-guardrail failure before any activation result is trusted.
+The previous local scorer failure was the trust-game verification contrast,
+where "stop checking" scored too high. The hardened autonomy-safety scorer now
+prefers the evidence-preserving trust policy, and it also separates the ultimatum
+exit-rights contrast that was previously tied.
 
 Full small Modal/vector smoke:
 
@@ -344,10 +347,9 @@ Full small Modal/vector smoke:
 | Mean leave-one-pair-out margin | +8.548 |
 
 Interpretation: this proves the full social-game validation lane reaches Modal
-activation extraction and contrastive-vector reporting. It remains
-hand-authored and tiny; the important next check is whether the trust-game
-scorer failure also appears as a weak activation margin under generated
-variants.
+activation extraction and contrastive-vector reporting. It remains hand-authored
+and tiny; the important next check is whether generated social-game variants
+keep the same scorer and activation-margin behavior.
 
 ### API-Authored Fault-Class Variants
 

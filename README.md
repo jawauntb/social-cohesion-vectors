@@ -95,11 +95,12 @@ than count this as robust generalization.
 
 The current sprint adds three more gates around that result. The trait-axis
 export now covers 8 axes / 16 contrasts / 32 activation prompts. The social-game
-validation scaffold exports 5 matched game contrasts / 10 prompts; the rubric
-prefers the prosocial side on 4/5 and fails on the trust-game verification
-contrast, where the negative "stop checking" text still scores too high. The
-lexical leakage report confirms the deterministic fault-class dataset is fully
-cue-solvable: 90/90 cue-solved pairs with a +3.067 mean cue margin. Anthropic
+validation scaffold exports 5 matched game contrasts / 10 prompts. After the
+autonomy-safety scorer hardening, the rubric now prefers the prosocial side on
+5/5, including the trust-game verification contrast and the ultimatum
+exit-rights contrast. The lexical leakage report confirms the deterministic
+fault-class dataset is fully cue-solvable: 90/90 cue-solved pairs with a +3.067
+mean cue margin. Anthropic
 and OpenAI API smokes were attempted for API-authored variants, but both copied
 local keys returned 401 invalid-key errors, so the wrapper is ready and the run
 is blocked on fresh provider keys rather than code. The small Modal follow-up
@@ -113,14 +114,17 @@ These are still hand-authored smoke tests, not human-validation results.
 The next hardening pass adds a cue-balanced deterministic fault-class style.
 This removed the aggregate cue leak completely on the 90-pair generated
 fault-class set: 0/90 cue-solved pairs and a 0.000 mean cue margin. That exposed
-a sharper scorer failure: the current combined rubric prefers the pseudo side on
-90/90 cue-balanced pairs, with a -0.051 mean genuine-minus-pseudo score margin,
-mostly because autonomy-safety margins invert. Qwen activations still separate
-the cue-balanced pairs strongly: 180 prompts / 90 pairs, 1.000 leave-one-pair-out
-accuracy with +32.458 mean margin, and 1.000 held-out-primary-fault accuracy
-across 20 folds with +31.530 mean margin. This is still deterministic text, but
-it is the strongest current signal that activation-space separation can survive
-after the obvious cue words are removed while the hand scorer cannot.
+a sharper scorer failure: the old combined rubric preferred the pseudo side on
+90/90 cue-balanced pairs because autonomy-safety missed structural "less room to
+object/check/exit" language. The scorer now detects structural refusal, review,
+evidence-access, exit, and appeal rights. On the same cue-balanced set it prefers
+the genuine side on 90/90 pairs, with a +0.189 mean genuine-minus-pseudo score
+margin and a +0.988 mean autonomy-safety margin. Qwen activations still separate
+the cue-balanced pairs strongly: 180 prompts / 90 pairs, 1.000
+leave-one-pair-out accuracy with +32.458 mean margin, and 1.000
+held-out-primary-fault accuracy across 20 folds with +31.530 mean margin. This
+is still deterministic text, but it is the strongest current signal that
+activation-space separation can survive after the obvious cue words are removed.
 
 The reviewer-style geometry audit changes the claim we should make about those
 directions. The 20 primary-fault directions are not near-orthogonal: their mean
@@ -149,8 +153,8 @@ Immediate build targets:
   variants, then rerun fault-held-out transfer.
 - Use the cue-balanced generated set as the new local stress test, then make the
   same cue discipline work for API-authored examples.
-- Fix the scorer's autonomy-safety component so "less room to object/check/exit"
-  is treated as risk even without obvious coercion words.
+- Stress-test the hardened autonomy-safety scorer against API-authored variants
+  so it does not merely learn the deterministic wrapper.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.
@@ -159,8 +163,8 @@ Immediate build targets:
   cohesion just because it sounds warm or group-oriented.
 - Run trait-axis activations through the new guardrail monitor so each axis has
   its own positive-minus-negative margin and alert list.
-- Push the social-game prompts through Modal/open models, then compare activation
-  margins against the local scorer's trust-game failure.
+- Push more social-game variants through Modal/open models, then compare
+  activation margins against the hardened local scorer.
 - Use role/asymmetry metadata as generation controls: who pressures whom, who
   controls information, who bears the cost, who can exit, and whether refusal
   remains safe.

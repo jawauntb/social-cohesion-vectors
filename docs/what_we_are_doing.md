@@ -250,11 +250,14 @@ yet robust semantic evidence.
 
 The cue-balanced variant is the next useful turn of the screw. It keeps the same
 180 examples / 90 pairs but removes the aggregate cue leak: 0/90 cue-solved
-pairs and a 0.000 mean cue margin. That immediately exposes a scorer failure:
-the combined rubric prefers the pseudo side on 90/90 cue-balanced pairs, driven
-by a -0.356 mean autonomy-safety margin. In plain English, the scorer misses
-structural pressure when the text says someone has less room to object, check
-details, or leave without using the obvious coercion vocabulary.
+pairs and a 0.000 mean cue margin. That immediately exposed a scorer failure:
+the old combined rubric preferred the pseudo side on 90/90 cue-balanced pairs,
+driven by an inverted autonomy-safety margin. In plain English, the scorer missed
+structural pressure when the text said someone had less room to object, check
+details, or leave without using the obvious coercion vocabulary. The hardened
+autonomy scorer now detects refusal, review, evidence-access, exit, and appeal
+rights. On the same cue-balanced set it prefers the genuine side on 90/90 pairs,
+with a +0.189 mean score margin and a +0.988 mean autonomy-safety margin.
 
 Qwen activations do not collapse on that cue-balanced set. The 180-prompt Modal
 run gets 1.000 leave-one-pair-out accuracy over 90 pairs with a +32.458 mean
@@ -276,10 +279,8 @@ fault-specific residual subspaces," not "independent orthogonal axes."
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
-prosocial side on 4/5. The failure is meaningful: in the trust-game contrast,
-the verification-blocking text scores higher than the evidence-preserving trust
-text, which tells us the scorer still underweights "trust should remain
-checkable."
+prosocial side on 5/5 after the autonomy-safety hardening, including the trust
+verification case and the ultimatum exit-rights case.
 
 The trait-axis export now covers 8 axes / 16 contrasts / 32 prompts. New axes
 include constructive dissent vs conformity, manipulation resistance vs
@@ -327,11 +328,12 @@ High-value next steps:
 9. Require lexical leakage reports for every generated pairwise dataset.
 10. Run trait-axis activations through the guardrail monitor and inspect weak or
    inverted margins by axis.
-11. Push the social-game validation prompts through Modal/open models and
-   compare activation margins against the trust-game scorer failure.
-12. Fix the autonomy-safety scorer failure exposed by the cue-balanced set.
-13. Generate API-authored cue-balanced variants with more wording diversity and
+11. Push more social-game validation variants through Modal/open models and
+   compare activation margins against the hardened scorer.
+12. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
+13. Stress-test the hardened autonomy-safety scorer so it does not overfit the
+   deterministic cue-balanced wrapper.
 14. Run direction-geometry and residual-subspace audits before claiming that
    trait or fault directions are independent, orthogonal, localized, or
    exhausted by one vector.
