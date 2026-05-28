@@ -50,6 +50,43 @@ goes fully inactive, confirming it was a hyphen artifact. Feature 3056 still
 skews genuine but is weak alone, so it should be treated as a sub-feature rather
 than the cohesion direction.
 
+## Next Steps
+
+The next phase is to make pseudo-cohesion more formal and less vibe-driven.
+Instead of treating "genuine vs pseudo" as one scalar label, the repo should add
+a neuro-symbolic fault taxonomy for why a pseudo-cohesion example fails.
+
+Immediate build targets:
+
+- Add formal fault labels for pseudo-cohesion contrasts:
+  `consent_bypass`, `exit_rights_violation`, `truth_suppression`,
+  `dissent_suppression`, `privacy_bypass`, `social_debt_coercion`,
+  `dehumanizing_solidarity`, `punitive_accountability`,
+  `sycophantic_truth_hiding`, `forced_forgiveness`, `false_consensus`, and
+  `accountability_laundering`.
+- Encode symbolic guardrails: if autonomy, truth, privacy, dissent, or exit
+  rights are violated, the example cannot count as high cohesion just because it
+  sounds warm or group-oriented.
+- Extract role/asymmetry metadata: who pressures whom, who controls information,
+  who bears the cost, who can exit, and whether refusal remains safe.
+- Group activation and SAE reports by fault class so candidate features can be
+  tested against specific failures, not just one positive-vs-negative aggregate.
+- Add cultural and dialect/context stress tests so the model does not learn
+  "institutional therapy voice" as a proxy for cohesion.
+- Use the clean deterministic results as a baseline, then generate LLM-authored
+  hard negatives to test whether the same feature ensemble survives less
+  templated language.
+
+The meaningful research question for the next sprint is:
+
+> Do specific activation directions or SAE feature bundles track specific
+> social-reasoning fault classes such as consent bypass, dissent suppression, or
+> social-debt coercion?
+
+If that survives generated examples, then the project has something stronger
+than a benchmark: a representational map from social failure modes to model
+features.
+
 ## What Waits For Later
 
 - Claims about real human cooperation effects need Prolific or in-person pilots.
