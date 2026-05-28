@@ -138,6 +138,21 @@ fault-specific residual directions still separate their own groups. So the
 responsible claim is not "independent orthogonal axes"; it is "one strong global
 direction plus meaningful fault-specific residual subspaces."
 
+The next local stress test checks whether the hardened autonomy scorer merely
+learned the cue-balanced wrapper. It exports 16 paired contrasts / 32 prompts
+across 8 mechanisms: silence-as-consent, hidden objections, verification
+blocking, unsafe exit, background data collection, no-appeal safety rules,
+social-debt pressure, and forced forgiveness. The scorer prefers the
+autonomy-preserving side on 16/16 pairs, with a +0.134 mean score margin and a
++0.709 mean autonomy-safety margin. The simple lexical leakage gate solves only
+4/16 pairs, ties 9/16, and inverts 3/16, with a 0.000 mean cue margin. A small
+Modal Qwen pass on the 32 prompts reaches 1.000 in-sample accuracy but 0.875
+leave-one-pair-out accuracy, missing the dialogue-style verification/proof case
+and the dialogue-style silence-as-consent case. Direction geometry is much less
+collapsed than the primary-fault set: mean signed off-diagonal cosine +0.136,
+mean absolute cosine 0.193, and residual pair-difference energy 0.828 after the
+global direction is removed.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -153,8 +168,8 @@ Immediate build targets:
   variants, then rerun fault-held-out transfer.
 - Use the cue-balanced generated set as the new local stress test, then make the
   same cue discipline work for API-authored examples.
-- Stress-test the hardened autonomy-safety scorer against API-authored variants
-  so it does not merely learn the deterministic wrapper.
+- Expand the autonomy stress suite with generated/API-authored variants, focused
+  especially on the dialogue-style verification and silence-as-consent misses.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.
@@ -248,6 +263,12 @@ uv run python scripts/inspect_gpt2_sae_feature_tokens.py \
   --markdown-output data/reports/gpt2_sae_token_feature_inspection_expanded.md
 uv run python scripts/run_fault_taxonomy_report.py \
   --sae-report data/reports/gpt2_sae_token_feature_inspection_expanded.json
+uv run python scripts/export_autonomy_stress_suite.py
+uv run python scripts/run_lexical_leakage_report.py \
+  --pairs data/training/autonomy_stress_pairwise_probe_dataset.jsonl \
+  --group-metadata-key mechanism \
+  --json-output data/reports/autonomy_stress_lexical_leakage.json \
+  --markdown-output data/reports/autonomy_stress_lexical_leakage.md
 uv run python scripts/run_direction_geometry_audit.py \
   data/features/open_llm/generated_fault_class_cue_balanced__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
   --json-output data/reports/generated_fault_class_cue_balanced_direction_geometry.json \

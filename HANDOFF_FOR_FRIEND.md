@@ -269,6 +269,18 @@ direction collapses, but all 20 fault-specific residual directions still
 separate their own groups. That makes the current result more nuanced and more
 defensible.
 
+I added a structural-autonomy stress suite to check whether the scorer just
+learned the deterministic cue-balanced wrapper. It has 16 paired contrasts / 32
+prompts across 8 mechanisms: silence-as-consent, hidden objections, verification
+blocking, unsafe exit, background data collection, no-appeal safety rules,
+social-debt pressure, and forced forgiveness. The scorer prefers the
+autonomy-preserving side on 16/16 pairs with +0.134 mean score margin and +0.709
+mean autonomy-safety margin. The simple cue counter only solves 4/16, ties 9/16,
+and inverts 3/16, with mean cue margin 0.000. I also ran the 32 prompts through
+Modal/Qwen 0.5B: in-sample accuracy is 1.000, leave-one-pair-out is 0.875, and
+the two failures are the dialogue-style verification/proof case and the
+dialogue-style silence-as-consent case.
+
 Run those checks with:
 
 ```bash
@@ -280,6 +292,7 @@ uv run python scripts/run_residual_subspace_audit.py \
   data/features/open_llm/generated_fault_class_cue_balanced__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
   --json-output data/reports/generated_fault_class_cue_balanced_residual_subspace.json \
   --markdown-output data/reports/generated_fault_class_cue_balanced_residual_subspace.md
+uv run python scripts/export_autonomy_stress_suite.py
 ```
 
 The new trait-axis and social-game prompt exports are:
@@ -365,8 +378,9 @@ the task harder.
 5. Sweep activation layers and model sizes.
 6. Extend the symbolic fault labels to generated hard negatives and use them for
    held-out fault-class transfer.
-7. Stress-test the hardened autonomy-safety scorer on API-authored variants so
-   it does not overfit the deterministic cue-balanced wrapper.
+7. Expand the autonomy stress suite with generated/API-authored variants,
+   especially around the Qwen LOO misses: dialogue-style verification/proof and
+   dialogue-style silence-as-consent.
 8. Add signed/absolute cosine, anti-alignment, and residual-subspace audits to
    every activation or SAE result before making geometry claims.
 9. Split the target into persona-vector-style trait families:

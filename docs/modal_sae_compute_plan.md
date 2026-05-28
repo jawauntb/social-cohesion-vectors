@@ -173,6 +173,7 @@ Current local results:
 | Fault-class lexical cue-solved rate | 1.000 | Needs API-authored/lexical-adversarial generation |
 | Trait-axis prompts | 32 | Ready for per-axis activation monitoring |
 | Social-game scorer accuracy | 1.000 | Hardened autonomy scoring fixes trust verification and ultimatum exit-rights |
+| Autonomy stress Qwen LOO | 0.875 | Misses dialogue verification/proof and silence-as-consent |
 
 Once trait-axis activations exist, run:
 

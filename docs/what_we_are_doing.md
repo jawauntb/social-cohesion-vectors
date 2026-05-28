@@ -276,6 +276,18 @@ but all 20 fault-specific residual directions still separate their own examples.
 So the current claim is "one strong global pseudo-vs-genuine direction plus
 fault-specific residual subspaces," not "independent orthogonal axes."
 
+The next autonomy-specific stress suite checks whether that scorer hardening
+overfit the cue-balanced wrapper. It uses 16 paired contrasts / 32 prompts across
+8 mechanisms: silence-as-consent, hidden objections, verification blocking,
+unsafe exit, background data collection, no-appeal safety rules, social-debt
+pressure, and forced forgiveness. The scorer gets 16/16, with +0.134 mean score
+margin and +0.709 mean autonomy-safety margin. The simple lexical leakage gate
+solves only 4/16 pairs, ties 9/16, and inverts 3/16, with mean cue margin 0.000.
+The small Modal Qwen pass gets 1.000 in-sample accuracy but 0.875
+leave-one-pair-out accuracy; the misses are dialogue-style verification/proof
+and dialogue-style silence-as-consent. This gives a crisp next target for
+generated variants.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -330,10 +342,10 @@ High-value next steps:
    inverted margins by axis.
 11. Push more social-game validation variants through Modal/open models and
    compare activation margins against the hardened scorer.
-12. Generate API-authored cue-balanced variants with more wording diversity and
+12. Expand the autonomy stress suite around the Qwen LOO misses:
+   dialogue-style verification/proof and dialogue-style silence-as-consent.
+13. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
-13. Stress-test the hardened autonomy-safety scorer so it does not overfit the
-   deterministic cue-balanced wrapper.
 14. Run direction-geometry and residual-subspace audits before claiming that
    trait or fault directions are independent, orthogonal, localized, or
    exhausted by one vector.
