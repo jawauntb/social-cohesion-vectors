@@ -93,6 +93,7 @@ def test_summarize_feature_returns_token_example_and_pair_views() -> None:
     assert summary["summary"]["token_mean_pos_minus_neg"] == -0.5
     assert summary["top_tokens"][0]["token"] == "unity"
     assert summary["top_negative_examples"][0]["sample_id"] == "p:negative"
+    assert summary["pair_deltas"][0]["mean_delta_positive_minus_negative"] == -0.5
     assert summary["largest_pseudo_minus_genuine_pairs"][0][
         "mean_delta_negative_minus_positive"
     ] == 0.5

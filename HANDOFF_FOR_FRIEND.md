@@ -24,6 +24,8 @@ The current local pipeline can:
 12. Run a first matched GPT-2 SAE probe on pseudo-cohesion prompts.
 13. Expand pseudo-cohesion prompts into neutral genre variants and run
     token-level SAE feature-transfer checks.
+14. Annotate pseudo-cohesion contrasts with a symbolic fault taxonomy and group
+    scorer/SAE reports by fault class.
 
 ## Setup
 
@@ -198,6 +200,22 @@ reaches 0.967 leave-one-pair-out accuracy and +28.6866 mean margin. Its one
 failure is `resource_request`, where the pseudo social-debt pressure example and
 genuine reciprocal request currently receive the same rubric score.
 
+There is now a fault-taxonomy report:
+
+```bash
+uv run python scripts/run_fault_taxonomy_report.py \
+  --sae-report data/reports/gpt2_sae_token_feature_inspection_clean.json \
+  --sae-report data/reports/gpt2_sae_token_feature_inspection_clean_only.json
+```
+
+That report covers all 30 seed pseudo-cohesion contrasts with 0 missing
+annotations. The main read is that candidate SAE features are fault-specific.
+Feature 3056 is strongly genuine-skewed for reality-denial, social-debt,
+assimilation-pressure, exit-rights, and privacy-bypass contrasts, but it flips
+pseudo-skewed for verification-blocking and scapegoating. So the honest claim is
+not "3056 is the cohesion feature"; it is "3056 is a useful sub-feature in a
+fault-specific bundle."
+
 ## Current Interpretation
 
 The scaffold works. The science is not done.
@@ -220,7 +238,9 @@ the task harder.
 3. Re-run token-level SAE inspection on generated pseudo-cohesion examples.
 4. Train on scripted data and test on scored generated/hard-negative data.
 5. Sweep activation layers and model sizes.
-6. Split the target into persona-vector-style trait families:
+6. Extend the symbolic fault labels to generated hard negatives and use them for
+   held-out fault-class transfer.
+7. Split the target into persona-vector-style trait families:
    - repair;
    - reciprocity;
    - truthfulness;
@@ -229,7 +249,7 @@ the task harder.
    - dehumanization;
    - sycophancy/compliance;
    - punitive escalation.
-7. Only after non-circular generated-text validation, prepare a Prolific pilot.
+8. Only after non-circular generated-text validation, prepare a Prolific pilot.
 
 ## Reading
 

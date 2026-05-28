@@ -1,6 +1,6 @@
 # Social Cohesion Vector Experiment Log
 
-Last updated: 2026-05-27
+Last updated: 2026-05-28
 
 This log records completed local experiments and expected next artifacts. It is
 intentionally conservative: items that have not produced a local report are
@@ -288,6 +288,54 @@ genuine-skewed in token mean (+0.2423), with large positive deltas on privacy,
 reality validation, and exit/autonomy-related contrasts, but it remains weak as
 a standalone held-out classifier. In the clean-only run, 28005 is completely
 inactive, confirming the hyphen-artifact diagnosis; 20249 remains inactive.
+
+### Fault Taxonomy And Grouped SAE Report
+
+Status: complete for seed pseudo-cohesion contrasts and clean GPT-2 SAE reports.
+
+Report: `data/reports/pseudo_cohesion_fault_taxonomy.md`
+
+The pseudo-cohesion suite now has a neuro-symbolic fault taxonomy with 30/30
+seed contrasts annotated and 0 missing contrasts. The report includes canonical
+classes such as consent bypass, exit-rights violation, truth suppression,
+dissent suppression, privacy bypass, social-debt coercion, dehumanizing
+solidarity, punitive accountability, sycophantic truth hiding, forced
+forgiveness, false consensus, and accountability laundering, plus a few extended
+classes where the seed set needed more specific names.
+
+Most frequent labels in the seed set:
+
+| Fault class | Contrasts |
+| --- | ---: |
+| dissent_suppression | 9 |
+| truth_suppression | 7 |
+| accountability_laundering | 6 |
+| consent_bypass | 6 |
+| exit_rights_violation | 5 |
+| privacy_bypass | 3 |
+| social_debt_coercion | 3 |
+| punitive_accountability | 3 |
+
+The grouped clean SAE readout is the first fault-specific view of the inspected
+GPT-2 features. Feature 3056 is not a generic cohesion feature, but it has a
+stable fault-specific pattern across clean + seed and clean-only reports:
+
+| Feature | Fault class | Clean + seed mean delta | Clean-only mean delta | Direction |
+| ---: | --- | ---: | ---: | --- |
+| 3056 | reality_denial | +1.2887 | +1.2926 | genuine higher |
+| 3056 | social_debt_coercion | +0.8236 | +0.8056 | genuine higher |
+| 3056 | assimilation_pressure | +0.7599 | +0.7772 | genuine higher |
+| 3056 | exit_rights_violation | +0.6113 | +0.5943 | genuine higher |
+| 3056 | privacy_bypass | +0.5531 | +0.5599 | genuine higher |
+| 3056 | verification_blocking | -1.0690 | -1.0383 | pseudo higher |
+| 3056 | scapegoating_unity | -0.6141 | -0.5999 | pseudo higher |
+
+Interpretation: this is more meaningful than the earlier aggregate feature list.
+It suggests 3056 participates in several agency/truth-preserving contrasts but
+does not encode "cohesion" as a single clean semantic direction. The fact that it
+flips on verification-blocking and scapegoating is exactly why the project
+should analyze feature bundles by fault class instead of naming one feature too
+early.
 
 ### Transfer Splits
 
