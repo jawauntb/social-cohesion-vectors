@@ -60,11 +60,39 @@ Concrete early signals:
   assimilation-pressure, exit-rights, and privacy-bypass contrasts, but it flips
   pseudo-skewed for verification-blocking and scapegoating. So it looks like a
   useful fault-specific sub-feature, not "the cohesion vector."
+- I added a generated fault-class benchmark lane: 180 deterministic examples,
+  90 matched pairs, 20 primary fault classes, prompt records for API authorship,
+  and a fault-held-out transfer report. The strategy-prior leak is fixed
+  now: that baseline is at chance.
+- The big caveat is lexical leakage. A new leakage report shows the generated
+  fault-class dataset is still 90/90 cue-solvable by simple word counts, with a
+  +3.067 mean cue margin. So this is a useful scaffold, not a robust semantic
+  benchmark yet.
+- I added 8 trait axes / 16 contrasts / 32 prompts for persona-vector-style
+  decomposition: repair, reciprocity, truth, autonomy, principled respect,
+  constructive dissent, manipulation resistance, and privacy/exit rights. There
+  is also a guardrail-monitoring script ready to run once those prompts have
+  activation files.
+- I added a small social-game validation set across dictator, public goods,
+  ultimatum, trust, and restorative repair games. The scorer prefers the
+  prosocial side on 4/5; the failure is interesting because verification-blocking
+  language in the trust game still scores too high.
+- I wired an API-authored fault-class generation script for Anthropic and
+  OpenAI. The code path is ready, but the copied provider keys both returned
+  401 invalid-key errors on tiny smoke tests, so we need a fresh key before
+  calling that a result.
+- I also ran the new small validation lanes on Modal. The full 10-prompt
+  social-game set through `Qwen/Qwen2.5-0.5B-Instruct` gives 10 x 896
+  activations and a 5-pair contrastive-vector smoke at 1.000 leave-one-pair-out
+  with +8.548 mean margin. The 32-prompt trait-axis set gives 32 x 896
+  activations; guardrail monitoring reports 8 axes, 16 pairs, 0 alerts, and a
+  +15.382 mean margin. Still hand-authored smoke tests, but the GPU path works.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
-Before Prolific or any brain-aligned story, the next step is extending the fault
-taxonomy to LLM-authored hard negatives, running held-out fault-class transfer,
-and reducing deterministic rewrite shortcuts.
+Before Prolific or any brain-aligned story, the next step is generating
+LLM-authored hard negatives, forcing lexical leakage down, running trait-axis
+and social-game activations, and checking whether the same fault-specific
+feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated

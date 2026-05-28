@@ -129,6 +129,7 @@ Artifacts:
 - `data/raw/generated_fault_class_prompt_records.jsonl`
 - `data/reports/generated_fault_class_dataset.md`
 - `data/reports/generated_fault_class_heldout_transfer.md`
+- `data/reports/generated_fault_class_lexical_leakage.md`
 
 Local deterministic run:
 
@@ -158,6 +159,110 @@ offline text, and metrics-only remains almost circular because the generated
 examples are scored by the current rubric. The next generation pass should use
 API-authored variants and explicit lexical-adversarial constraints so the
 surface cue baseline drops before activation or SAE results are trusted.
+
+The explicit lexical leakage gate makes the failure sharper:
+
+| Leakage measure | Value |
+| --- | ---: |
+| Pairs checked | 90 |
+| Cue-solved pairs | 90 |
+| Cue-solved rate | 1.000 |
+| Mean cue margin | +3.067 |
+
+Interpretation: the offline generated fault-class dataset is good for plumbing,
+fault metadata, and report contracts, but it is not a semantic benchmark yet.
+Every pair is separable by simple positive-minus-negative cue counts.
+
+### Trait-Axis Prompt Suite
+
+Status: complete for hand-authored prompt export and Qwen 0.5B guardrail
+monitoring smoke.
+
+Artifacts:
+
+- `data/training/trait_axis_activation_prompts.jsonl`
+- `data/reports/trait_axis_prompt_summary.md`
+
+Local deterministic export:
+
+| Measure | Value |
+| --- | ---: |
+| Axes | 8 |
+| Contrasts | 16 |
+| Activation prompts | 32 |
+| Modal activation shape | 32 x 896 |
+| Guardrail-monitor axes | 8 |
+| Guardrail-monitor pairs | 16 |
+| Guardrail-monitor alerts | 0 |
+| Mean per-axis margin | +15.382 |
+
+The axis set now covers repair, reciprocity, truthfulness, autonomy, principled
+respect, constructive dissent, manipulation resistance, and privacy/exit rights.
+The guardrail-monitoring script trains one direction per axis from a trait-axis
+activation file and flags weak or inverted margins. On this small hand-authored
+Qwen smoke, all axis margins are positive. The weakest pair margin is
+`manipulation_resistance_vs_persuasion_capture::moving_story` at +8.424.
+
+### Social-Game Validation Scaffold
+
+Status: complete for local scored prompts, pairwise export, and full 10-prompt
+Qwen 0.5B activation/vector smoke.
+
+Artifacts:
+
+- `data/processed/social_game_validation_scored_runs.jsonl`
+- `data/training/social_game_validation_pairwise_probe_dataset.jsonl`
+- `data/training/social_game_validation_activation_prompts.jsonl`
+- `data/reports/social_game_validation.md`
+
+Local deterministic run:
+
+| Measure | Value |
+| --- | ---: |
+| Game contrasts | 5 |
+| Scored runs | 10 |
+| Pairwise examples | 5 |
+| Activation prompts | 10 |
+| Game kinds | 5 |
+| Scorer prefers prosocial | 4 / 5 |
+| Scorer pairwise accuracy | 0.800 |
+
+The one local scorer failure is the trust-game verification contrast: the
+positive evidence-preserving trust policy scores 0.549, while the negative
+"stop checking" verification-blocking policy scores 0.583. That is a useful
+guardrail failure before any activation result is trusted.
+
+Full small Modal/vector smoke:
+
+| Measure | Value |
+| --- | ---: |
+| Model | `Qwen/Qwen2.5-0.5B-Instruct` |
+| Layer | -1 |
+| Prompts | 10 |
+| Pairs | 5 |
+| Activation shape | 10 x 896 |
+| In-sample accuracy | 1.000 |
+| Leave-one-pair-out accuracy | 1.000 |
+| Mean leave-one-pair-out margin | +8.548 |
+
+Interpretation: this proves the full social-game validation lane reaches Modal
+activation extraction and contrastive-vector reporting. It remains
+hand-authored and tiny; the important next check is whether the trust-game
+scorer failure also appears as a weak activation margin under generated
+variants.
+
+### API-Authored Fault-Class Variants
+
+Status: Anthropic and OpenAI code paths complete; provider runs blocked by
+credentials.
+
+The new API wrapper uses the same prompt-record contract exported by the
+deterministic fault-class generator, then wraps returned text into
+`PseudoCohesionExample`, `ScoredRun`, `PairwiseExample`, and activation-prompt
+artifacts. A 2-prompt Anthropic smoke and a 1-prompt OpenAI smoke were attempted
+on 2026-05-28, but both copied local keys returned 401 invalid-key errors. The
+code path is ready; a fresh provider key is needed before this becomes an
+experiment result.
 
 ## Pending Experiments
 

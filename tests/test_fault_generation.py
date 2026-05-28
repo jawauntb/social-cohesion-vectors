@@ -6,6 +6,7 @@ from social_cohesion_vectors.experiments.fault_generation import (
     activation_prompts_from_generated_fault_examples,
     build_fault_prompt_records,
     export_generated_fault_dataset,
+    fault_examples_from_prompt_outputs,
     generated_fault_examples,
     pairwise_examples_from_generated_fault_examples,
     render_generated_fault_markdown,
@@ -72,3 +73,33 @@ def test_export_generated_fault_dataset_writes_all_artifacts(tmp_path) -> None:
     assert len(read_jsonl(tmp_path / "pairs.jsonl")) == 30
     assert len(read_jsonl(tmp_path / "prompts.jsonl")) == 60
     assert (tmp_path / "report.md").read_text(encoding="utf-8").startswith("#")
+
+
+def test_fault_examples_from_prompt_outputs_preserve_api_provenance() -> None:
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:2]
+    outputs = {
+        record.prompt_id: f"API-authored {record.label} example."
+        for record in records
+    }
+
+    examples = fault_examples_from_prompt_outputs(
+        records,
+        outputs,
+        provider="anthropic",
+        model="test-model",
+    )
+    pairs = pairwise_examples_from_generated_fault_examples(
+        examples,
+        source="generated_fault_class_anthropic",
+    )
+
+    assert len(examples) == 2
+    assert len(pairs) == 1
+    assert {example.label for example in examples} == {
+        "pseudo_cohesion",
+        "genuine_cohesion",
+    }
+    assert all("__generated_" in example.contrast_id for example in examples)
+    assert all(example.category.endswith("__anthropic") for example in examples)
+    assert pairs[0].metadata["source"] == "generated_fault_class_anthropic"
+    assert str(pairs[0].metadata["generated_variant"]).endswith("_anthropic")

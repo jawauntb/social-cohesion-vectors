@@ -151,6 +151,70 @@ The pass condition is not "accuracy is high on generated pairs." The pass
 condition is that generated/hard-negative transfer remains useful after checking
 lexical-only and metrics-only baselines.
 
+## 2.5. Run Fault-Class And Social-Game Gates
+
+Before spending larger GPU time, rebuild the current hard-negative gates:
+
+```bash
+uv run python scripts/export_generated_fault_class_prompts.py
+uv run python scripts/run_fault_heldout_transfer.py
+uv run python scripts/run_lexical_leakage_report.py
+uv run python scripts/export_trait_axis_prompts.py --markdown-summary
+uv run python scripts/export_social_game_validation.py
+```
+
+Current local results:
+
+| Gate | Current result | Interpretation |
+| --- | ---: | --- |
+| Generated fault-class pairs | 90 | Good metadata/report scaffold |
+| Fault-held-out strategy prior | 0.500 | Old strategy leak is closed |
+| Fault-held-out lexical-only | 1.000 | Still surface-cue solved |
+| Fault-class lexical cue-solved rate | 1.000 | Needs API-authored/lexical-adversarial generation |
+| Trait-axis prompts | 32 | Ready for per-axis activation monitoring |
+| Social-game scorer accuracy | 0.800 | Trust-game verification is the local scorer failure |
+
+Once trait-axis activations exist, run:
+
+```bash
+uv run python scripts/run_guardrail_monitoring.py \
+  data/features/open_llm/trait_axis_activation_prompts__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz
+```
+
+For the social-game lane, start with a tiny smoke:
+
+```bash
+uv run python scripts/run_modal_activation_extraction.py \
+  --prompts data/training/social_game_validation_activation_prompts.jsonl \
+  --limit 4 \
+  --batch-size 2 \
+  --max-length 192 \
+  --output data/features/open_llm/social_game_validation_smoke__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz
+```
+
+Then train/evaluate the smoke direction:
+
+```bash
+uv run python scripts/run_activation_vector_experiment.py \
+  data/features/open_llm/social_game_validation_smoke__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --vector-output data/models/vectors/open_llm/social_game_validation_smoke__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --json-output data/reports/social_game_validation_smoke_activation_vector.json \
+  --markdown-output data/reports/social_game_validation_smoke_activation_vector.md
+```
+
+The next high-value full GPU run is the full 10-prompt social-game file plus
+the 32-prompt trait-axis file, then a guardrail-monitoring report over the
+trait-axis activations.
+
+Current small-run result: the full 10 social-game prompts ran successfully on
+`Qwen/Qwen2.5-0.5B-Instruct` layer -1, producing a 10 x 896 activation matrix.
+The 5-pair vector smoke reports 1.000 leave-one-pair-out accuracy with a +8.548
+mean margin. The 32 trait-axis prompts also ran on the same model/layer,
+producing a 32 x 896 activation matrix; guardrail monitoring reports 8 axes, 16
+pairs, 0 alerts, and a +15.382 mean margin. Treat these as hand-authored smoke
+tests; the next full run should use API-authored variants and compare against
+lexical leakage.
+
 ## 3. Sweep Layers
 
 Use the built-in orchestrator for the current scripted prompt set:

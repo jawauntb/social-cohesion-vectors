@@ -131,6 +131,17 @@ It includes:
     and accountability laundering, then groups scorer and SAE results by those
     classes.
 
+15. A generated fault-class benchmark lane.
+    The repo expands each annotated pseudo-cohesion contrast across three social
+    settings, exports prompt records for API authorship, and runs fault-held-out
+    transfer plus lexical leakage reports.
+
+16. A trait-axis and social-game validation lane.
+    The repo now exports 8 persona-vector-style trait axes and 5 local
+    social-game contrasts, giving us small targeted probes for guardrails like
+    constructive dissent, manipulation resistance, privacy/exit rights, public
+    goods, trust, ultimatum fairness, and restorative repair.
+
 ## Current Results
 
 The first local run produced:
@@ -229,6 +240,36 @@ social-debt, assimilation-pressure, exit-rights, and privacy-bypass contrasts,
 but pseudo-skewed for verification-blocking and scapegoating. That is meaningful
 fault-specific structure, not a single clean cohesion feature.
 
+The generated fault-class lane now has 180 deterministic examples / 90 matched
+pairs across 20 primary fault classes. The scorer prefers the genuine side on
+87/90 pairs, and the held-out strategy prior is at chance after removing the
+old metadata leak. But the lexical leakage gate shows the dataset is still too
+surface-cue-heavy: 90/90 pairs are solved by simple cue counts with a +3.067
+mean cue margin. So this lane is useful for scaffolding and fault metadata, not
+yet robust semantic evidence.
+
+The social-game validation scaffold adds five small game-theoretic probes:
+dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
+with verification, and restorative repair. The local scorer prefers the
+prosocial side on 4/5. The failure is meaningful: in the trust-game contrast,
+the verification-blocking text scores higher than the evidence-preserving trust
+text, which tells us the scorer still underweights "trust should remain
+checkable."
+
+The trait-axis export now covers 8 axes / 16 contrasts / 32 prompts. New axes
+include constructive dissent vs conformity, manipulation resistance vs
+persuasion capture, and privacy/exit rights vs surveillance lock-in. A guardrail
+monitoring script is now ready to train one direction per axis once the
+trait-axis prompts have a Modal activation file.
+
+Those two small validation lanes have now reached Modal on
+`Qwen/Qwen2.5-0.5B-Instruct`. The social-game file produced 10 x 896 activations
+and a 5-pair contrastive-vector smoke with 1.000 leave-one-pair-out accuracy and
++8.548 mean margin. The trait-axis file produced 32 x 896 activations; guardrail
+monitoring reports 8 axes, 16 pairs, 0 alerts, and +15.382 mean margin. These
+are still hand-authored smoke tests, but they show the new validation paths are
+not just documents.
+
 Important caveat: this is not yet a deep scientific result. The scripted
 benchmark is too easy. Lexical and metrics-only baselines solve it, which means
 the activation result is currently a pipeline sanity check, not evidence of a
@@ -258,7 +299,12 @@ High-value next steps:
    transfer.
 8. Extend the fault taxonomy to generated hard negatives and run held-out
    fault-class transfer.
-9. Run a small Prolific validation only after the compute benchmarks stop being
+9. Require lexical leakage reports for every generated pairwise dataset.
+10. Run trait-axis activations through the guardrail monitor and inspect weak or
+   inverted margins by axis.
+11. Push the social-game validation prompts through Modal/open models and
+   compare activation margins against the trust-game scorer failure.
+12. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting
