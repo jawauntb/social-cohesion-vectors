@@ -643,8 +643,10 @@ across multiple components."
 ### 7.8 Boundary-Prior Benchmark
 
 Status: complete for local scored export, lexical leakage, Qwen 0.5B activation
-sweep, activation failure analysis, direction geometry, residual-subspace audit,
-and signed-vs-squared subspace probe; pending paraphrase hardening.
+sweep, cue-balanced Qwen 0.5B/1.5B activation sweeps, controlled
+cue-balanced expansion, activation failure analysis, direction geometry,
+residual-subspace audit, and signed-vs-squared subspace probe; pending
+generated paraphrase hardening.
 
 The boundary-prior theory note is now operationalized as a first local
 benchmark. The suite contrasts flexible contextual relation against two failure
@@ -704,6 +706,32 @@ model-sensitive: 0.583, 0.500, 1.000, 0.667, and 0.583. This strengthens the
 boundary-prior result as a compute-only smoke test while preserving the main
 caveat: deterministic hand-authored examples are not enough for a semantic or
 human behavioral claim.
+
+A controlled expansion now triples the cue-balanced boundary-prior batch by
+placing each contrast inside three neutral record genres: case note, meeting
+log, and implementation memo. This produces 36 matched pairs / 72 activation
+prompts. The simple cue counter remains fully tied: 0/36 cue-solved pairs,
+36/36 tied pairs, and 0.000 mean cue margin. The local scorer still prefers the
+contextual-relation side on 36/36 pairs, with a +0.123 mean score margin and
++0.605 mean autonomy-safety margin.
+
+The expanded set again separates in open-model activations. Qwen 0.5B reaches
+1.000 leave-one-pair-out accuracy at layers -1, -2, and -4; Qwen 1.5B reaches
+1.000 at layers -1 and -2. Mean LOO margins are +14.183, +2.732, +2.309,
++8.357, and +10.976. Mean mechanism-direction signed/absolute cosines are
++0.515, +0.371, +0.391, +0.600, and +0.495, with no high-absolute anti-aligned
+pairs. Residual mechanism directions again separate all six groups after the
+global direction is removed. Squared-energy classification remains less stable
+than signed classification: best pair-LOO squared-energy accuracy ranges from
+0.583 to 0.944 across the five runs, while signed voting remains 1.000.
+
+This result is a stronger compute-only smoke test, but it should not be
+overstated. The expansion is controlled genre wrapping rather than independent
+semantic paraphrase generation. The claim supported here is that the
+boundary-prior activation signal survives larger cue-balanced deterministic
+coverage. The next claim threshold is generated/API-authored paraphrase
+diversity with leakage, geometry, residual, and signed-vs-squared audits
+rerun from scratch.
 
 ## 8. Ethics And Safety
 
@@ -798,10 +826,10 @@ needed.
    but only 0.750 squared-energy accuracy on the autonomy stress set.
 12. Expand the structural autonomy stress suite around the Qwen LOO failures:
    dialogue-style verification/proof and silence-as-consent. Status: partial.
-13. Expand the cue-balanced boundary-prior benchmark with generated/API-authored
-   paraphrases, then rerun leakage, activation, geometry, residual, and
-   signed-vs-squared reports. Status: partial for deterministic cue-balanced
-   export plus Qwen 0.5B/1.5B smoke.
+13. Replace the controlled cue-balanced boundary-prior expansion with
+   generated/API-authored paraphrases, then rerun leakage, activation, geometry,
+   residual, and signed-vs-squared reports. Status: partial for deterministic
+   cue-balanced export, controlled 36-pair expansion, and Qwen 0.5B/1.5B smoke.
 14. Prepare a Prolific pairwise validation pilot only after generated-text and
    hard-negative validation. Status: pending.
 

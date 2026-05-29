@@ -39,7 +39,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--variant-set",
-        choices=("default", "cue_balanced"),
+        choices=("default", "cue_balanced", "cue_balanced_expanded"),
         default="default",
     )
     parser.add_argument(
