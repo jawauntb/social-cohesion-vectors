@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Probe Directions Are Not Steering Knobs</title>
+  <style>
+    @page {
+      size: Letter;
+      margin: 1in 1.5in;
+    }
+
+    :root {
+      --ink: #111;
+      --muted: #555;
+      --rule: #111;
+      --soft: #f4f4f4;
+    }
+
+    html,
+    body {
+      color: var(--ink);
+      font-family: "Times New Roman", Times, serif;
+      font-size: 10pt;
+      line-height: 11pt;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      counter-reset: section;
+    }
+
+    h1,
+    h2,
+    h3 {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    h1.title {
+      border-bottom: 1pt solid var(--rule);
+      border-top: 4pt solid var(--rule);
+      font-size: 17pt;
+      font-weight: 700;
+      line-height: 20pt;
+      margin: 0 0 14pt;
+      padding: 15pt 0 12pt;
+      text-align: center;
+      text-transform: none;
+    }
+
+    .authors {
+      font-size: 10pt;
+      line-height: 12pt;
+      margin-bottom: 16pt;
+      text-align: center;
+    }
+
+    .draft-note {
+      border: 0.5pt solid #aaa;
+      color: #333;
+      font-size: 8.5pt;
+      line-height: 10pt;
+      margin: 0 0 12pt;
+      padding: 6pt 8pt;
+    }
+
+    h2 {
+      font-size: 12pt;
+      font-weight: 700;
+      margin: 13pt 0 5pt;
+    }
+
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      margin: 9pt 0 4pt;
+    }
+
+    p {
+      margin: 0 0 5.5pt;
+      text-indent: 0;
+    }
+
+    .abstract {
+      margin: 0 0 10pt;
+    }
+
+    .abstract strong {
+      font-weight: 700;
+    }
+
+    ul,
+    ol {
+      margin: 3pt 0 7pt 16pt;
+      padding: 0;
+    }
+
+    li {
+      margin: 0 0 2.5pt;
+    }
+
+    table {
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      line-height: 10pt;
+      margin: 7pt 0 9pt;
+      width: 100%;
+    }
+
+    th,
+    td {
+      border-bottom: 0.5pt solid #bbb;
+      padding: 3pt 4pt;
+      vertical-align: top;
+    }
+
+    th {
+      border-top: 0.8pt solid #111;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    tr:last-child td {
+      border-bottom: 0.8pt solid #111;
+    }
+
+    .num {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .caption {
+      color: #222;
+      font-size: 8.5pt;
+      line-height: 10pt;
+      margin: -4pt 0 8pt;
+    }
+
+    .formula {
+      background: var(--soft);
+      border-left: 2pt solid #999;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 8.5pt;
+      line-height: 10pt;
+      margin: 6pt 0 8pt;
+      padding: 5pt 7pt;
+      white-space: pre-wrap;
+    }
+
+    .callout {
+      border-left: 2pt solid #111;
+      margin: 7pt 0 8pt;
+      padding: 3pt 0 3pt 8pt;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 8.5pt;
+      line-height: 10pt;
+    }
+
+    .refs,
+    .checklist {
+      break-before: page;
+      page-break-before: always;
+    }
+
+    .refs p,
+    .checklist p {
+      font-size: 8.5pt;
+      line-height: 10pt;
+      margin-bottom: 4pt;
+      padding-left: 12pt;
+      text-indent: -12pt;
+    }
+
+    .checklist table {
+      font-size: 8pt;
+      line-height: 9.5pt;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="title">Probe Directions Are Not Steering Knobs:<br>Activation Evidence for an Agency-Preserving Social Cohesion Manifold</h1>
+
+  <div class="authors">
+    Anonymous Author(s)<br>
+    Social Cohesion Vectors Project<br>
+    <span class="small">Share draft, May 29, 2026</span>
+  </div>
+
+  <div class="draft-note">
+    This is a NeurIPS-style share draft rendered from HTML because the local
+    machine does not currently have LaTeX, Pandoc, or the official
+    <code>neurips_2026.sty</code> toolchain installed. A formal submission build
+    should be regenerated from the official NeurIPS 2026 LaTeX style, anonymized
+    as required, and checked against the current author kit.
+  </div>
+
+  <p class="abstract"><strong>Abstract.</strong>
+    We study whether a language model's internal representations contain
+    separable structure for agency-preserving social cohesion: cooperative
+    relation that preserves truth, consent, dissent, privacy, appeal, and exit
+    rights. The work is deliberately compute-first. It does not claim human
+    behavioral or neural effects. We build deterministic paired benchmarks that
+    contrast flexible contextual relation with pseudo-cohesion failures such as
+    social-debt pressure, dissent suppression, verification blocking, privacy
+    bypass, rigid us/them partitioning, and coercive unity language. Across the
+    strongest current cue-balanced boundary-prior suite, the simple cue counter
+    solves 0/36 pairs, while Qwen2.5 0.5B and 1.5B activation directions reach
+    1.000 leave-one-pair-out accuracy across five model/layer settings. Geometry
+    audits reject an orthogonal-axis interpretation: mechanism directions are
+    moderately aligned, and residual audits support a shared signed
+    genuine-vs-pseudo manifold plus mechanism-specific residual subspaces.
+    Causal steering experiments then expose the key bottleneck. Forward hooks
+    move target hidden states almost exactly by the requested signed displacement
+    and shift post-hook projections by roughly 11 units, but generated text
+    scores move only 0.015 to 0.024. The main claim is therefore methodological:
+    probe directions can be representation-real without being reliable
+    generation-time controls. Publishable progress now depends on generated
+    paraphrase hardening, anti-compliance controls, and monotonic steering
+    protocols that jointly move hook telemetry, generated-output projections,
+    and behavior.
+  </p>
+
+  <h2>1. Introduction</h2>
+
+  <p>
+    Generative models can increasingly produce dialogue, narratives, plans, and
+    social explanations that feel conciliatory or prosocial. The obvious
+    optimization target is engagement or agreement. The target here is stricter:
+    can we monitor or steer outputs toward social cohesion without collapsing
+    into sycophancy, dependence, coercion, or dissent suppression?
+  </p>
+
+  <p>
+    We define agency-preserving social cohesion as the capacity of persons and
+    groups to remain in truthful, dignity-preserving, agency-respecting relation
+    while pursuing shared goods or principled non-agreement under conflict. The
+    definition is intentionally negative as well as positive. A system should
+    not receive credit for "harmony" if it hides evidence, pressures refusal,
+    blocks verification, erases privacy, or treats unity as a reason to remove
+    exit rights.
+  </p>
+
+  <p>
+    This paper reports a compact version of the current repo state. The empirical
+    evidence is synthetic and compute-only. The contribution is a research
+    scaffold and a set of disciplined claims: (i) cue-balanced deterministic
+    benchmarks can remove the easiest lexical shortcuts, (ii) signed activation
+    directions separate agency-preserving from pseudo-cohesive examples across
+    several Qwen model/layer points, (iii) the geometry is not near-orthogonal
+    persona axes, and (iv) naive activation addition does not yet yield reliable
+    semantic control at generation time.
+  </p>
+
+  <div class="callout">
+    <p><strong>Current best claim.</strong> The project has evidence for a
+      signed activation manifold that separates controlled examples of flexible
+      contextual relation from pseudo-cohesion, and evidence for a control
+      bottleneck between hidden-state displacement and generated behavior. It
+      does not yet have a validated human-effect claim or a clean causal
+      steering claim.</p>
+  </div>
+
+  <h2>2. Related Work and Conceptual Frame</h2>
+
+  <p>
+    The mechanistic premise is inspired by sparse autoencoder and activation
+    steering work, where directions or features have been used to study refusal,
+    sycophancy, persona traits, and other high-level model behaviors
+    [1,2,3,4,5]. These results make it plausible to ask whether social-reasoning
+    constructs have representational structure. They also warn against overuse
+    of single-vector stories: low-dimensional probes can be brittle, entangled
+    with style, and unreliable as causal controls.
+  </p>
+
+  <p>
+    The social premise is older. Repeated games and cooperative-AI work show that
+    reciprocity, clarity, reputation, forgiveness, and institutional context
+    matter for cooperation [6,7]. Social psychology adds that group identity,
+    threat, status, and intergroup boundaries shape cooperation beyond payoff
+    matrices. The project's boundary-prior benchmark operationalizes this
+    insight: social breakdown can arise from rigid boundary reification
+    ("they are outside the circle of evidence") or from coercive boundary
+    collapse ("we are one, so refusal is betrayal").
+  </p>
+
+  <p>
+    The normative frame draws from pluralistic alignment and from
+    <em>Magnifica Humanitas</em>, which emphasizes that technology is not neutral
+    in practice because it carries the aims and power relations of the people and
+    institutions that build and deploy it [8]. In this frame, the target is not a
+    single harmony scalar. It is a constrained family of social capacities:
+    repair, reciprocity, truthfulness, autonomy, constructive dissent,
+    manipulation resistance, and privacy or exit rights.
+  </p>
+
+  <h2>3. Task Definition</h2>
+
+  <p>
+    Each benchmark example is a paired contrast. The positive side preserves a
+    social relation while maintaining agency constraints. The negative side is a
+    pseudo-cohesion failure: it uses cooperative, warm, loyal, safety-coded, or
+    unity-coded language while removing one of the constraints.
+  </p>
+
+  <p>
+    Let <code>phi_l(x)</code> be a model representation at layer <code>l</code>.
+    For a paired dataset <code>D = {(x_i+, x_i-)}</code>, the simplest
+    contrastive direction is:
+  </p>
+
+  <pre class="formula">v_l = mean_i phi_l(x_i+) - mean_i phi_l(x_i-)
+s_l(x) = dot(normalize(phi_l(x)), normalize(v_l))</pre>
+
+  <p>
+    The scientific target is not "maximize <code>s_l</code>" in isolation. A
+    useful system must satisfy guardrails:
+  </p>
+
+  <pre class="formula">maximize repair + reciprocity + calibrated trust
+subject to truth >= tau_truth
+           autonomy >= tau_autonomy
+           dissent_safety >= tau_dissent
+           privacy >= tau_privacy
+           exit_rights >= tau_exit
+           manipulation_risk <= tau_manipulation</pre>
+
+  <p>
+    This distinction matters for evaluation. Agreement, warmth, and narrative
+    force are not success metrics unless the constraints survive.
+  </p>
+
+  <h2>4. Methods</h2>
+
+  <h3>4.1 Datasets</h3>
+
+  <p>
+    The repo contains several deterministic local benchmark families. The early
+    scripted scenario suite covers 25 social dilemmas and 450 scripted runs, but
+    lexical and metrics-only baselines solve it, so it is retained as a pipeline
+    sanity check. The stronger lanes are pseudo-cohesion, structural autonomy,
+    and boundary-prior contrasts.
+  </p>
+
+  <p>
+    The current strongest set is the controlled cue-balanced boundary-prior
+    expansion: 36 matched pairs and 72 activation prompts. It crosses six
+    mechanisms with two negative poles, then wraps each contrast in three neutral
+    record genres. The positive side is flexible contextual relation. The
+    negative poles are rigid boundary reification and coercive boundary collapse.
+  </p>
+
+  <h3>4.2 Leakage, Component, and Geometry Gates</h3>
+
+  <p>
+    Every pairwise dataset should pass a leakage gate before activation claims
+    are trusted. The gate counts simple positive-minus-negative lexical cues and
+    records cue-solved, tied, and inverted pairs. Passing this gate is not enough
+    to prove semantics, but failing it means the benchmark is still surface-solvable.
+  </p>
+
+  <p>
+    We also run reviewer-style geometry diagnostics. Signed cosine alone can
+    hide cancellation, and cosine near -1 is not independence. Reports therefore
+    include signed and absolute off-diagonal cosine, anti-aligned-pair counts,
+    residual pair-difference energy after the global direction is removed, and
+    group-specific residual directions.
+  </p>
+
+  <h3>4.3 Activation and Steering Protocols</h3>
+
+  <p>
+    Activation extraction currently uses open-weight Qwen2.5 instruction models
+    on Modal. Hidden states are mean-pooled over prompt tokens and saved with
+    labels and metadata. Steering uses a signed direction NPZ, registers a
+    forward hook at a selected transformer layer, adds a signed displacement
+    during generation, and scores generated responses with the local rubric.
+    Hidden-state telemetry measures whether the hook actually moves the targeted
+    state before interpreting behavioral failure.
+  </p>
+
+  <h2>5. Results</h2>
+
+  <h3>5.1 Cue-Balanced Boundary-Prior Activations</h3>
+
+  <p>
+    The controlled cue-balanced expansion removes the simple cue shortcut without
+    breaking activation separation. The local scorer prefers contextual relation
+    on 36/36 pairs with a mean score margin of +0.123 and autonomy-safety margin
+    of +0.605. The simple cue counter solves 0/36 pairs, ties 36/36, and has
+    mean cue margin 0.000.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th class="num">Layer</th>
+        <th class="num">Dim</th>
+        <th class="num">Pairs</th>
+        <th class="num">LOO Acc.</th>
+        <th class="num">Mean Margin</th>
+        <th class="num">Mean Cosine</th>
+        <th class="num">Squared Acc.</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Qwen2.5 0.5B</td>
+        <td class="num">-1</td>
+        <td class="num">896</td>
+        <td class="num">36</td>
+        <td class="num">1.000</td>
+        <td class="num">+14.183</td>
+        <td class="num">+0.515</td>
+        <td class="num">0.583</td>
+      </tr>
+      <tr>
+        <td>Qwen2.5 0.5B</td>
+        <td class="num">-2</td>
+        <td class="num">896</td>
+        <td class="num">36</td>
+        <td class="num">1.000</td>
+        <td class="num">+2.732</td>
+        <td class="num">+0.371</td>
+        <td class="num">0.639</td>
+      </tr>
+      <tr>
+        <td>Qwen2.5 0.5B</td>
+        <td class="num">-4</td>
+        <td class="num">896</td>
+        <td class="num">36</td>
+        <td class="num">1.000</td>
+        <td class="num">+2.309</td>
+        <td class="num">+0.391</td>
+        <td class="num">0.944</td>
+      </tr>
+      <tr>
+        <td>Qwen2.5 1.5B</td>
+        <td class="num">-1</td>
+        <td class="num">1536</td>
+        <td class="num">36</td>
+        <td class="num">1.000</td>
+        <td class="num">+8.357</td>
+        <td class="num">+0.600</td>
+        <td class="num">0.611</td>
+      </tr>
+      <tr>
+        <td>Qwen2.5 1.5B</td>
+        <td class="num">-2</td>
+        <td class="num">1536</td>
+        <td class="num">36</td>
+        <td class="num">1.000</td>
+        <td class="num">+10.976</td>
+        <td class="num">+0.495</td>
+        <td class="num">0.583</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="caption">
+    Table 1: Cue-balanced boundary-prior activation results. "Mean cosine" is
+    the mean signed and absolute off-diagonal mechanism cosine; they match here
+    because there are no high-absolute anti-aligned mechanism pairs.
+  </p>
+
+  <h3>5.2 Geometry: Shared Manifold Plus Residual Mechanisms</h3>
+
+  <p>
+    The activation separation should not be described as independent orthogonal
+    axes. Mechanism directions are moderately positively aligned. The stronger
+    interpretation is a shared signed genuine-vs-pseudo manifold with
+    fault-specific residual structure. Residual audits show that, after removing
+    the global direction, mechanism-specific directions still separate all six
+    groups on the boundary-prior expansion.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Diagnostic</th>
+        <th>Primary-fault suite</th>
+        <th>Autonomy suite</th>
+        <th>Boundary-prior expansion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Mean signed off-diagonal cosine</td>
+        <td class="num">+0.624</td>
+        <td class="num">+0.136</td>
+        <td class="num">+0.371 to +0.600</td>
+      </tr>
+      <tr>
+        <td>Mean absolute off-diagonal cosine</td>
+        <td class="num">0.624</td>
+        <td class="num">0.193</td>
+        <td class="num">0.371 to 0.600</td>
+      </tr>
+      <tr>
+        <td>Residual energy after global projection</td>
+        <td class="num">0.391</td>
+        <td class="num">0.828</td>
+        <td>Residual mechanism directions still separate</td>
+      </tr>
+      <tr>
+        <td>Responsible interpretation</td>
+        <td>Shared manifold plus fault residuals</td>
+        <td>Less collapsed autonomy subspace</td>
+        <td>Shared signed boundary-prior manifold</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="caption">
+    Table 2: Geometry audits directly address the "orthogonality" and
+    one-direction-ablation critiques. Signed reporting is required because
+    squared projection energy erases the social pole.
+  </p>
+
+  <h3>5.3 Causal Steering: Hidden Movement Without Semantic Control</h3>
+
+  <p>
+    The first generation-time steering results are weak or mixed. Small
+    generated-token post-hook edits reach a 0.750 prompt-level positive-vs-negative
+    win rate, but the mean text-score shift is only +0.004. Stronger steering can
+    separate generated outputs after re-embedding, while text scores move the
+    wrong way. A dense -6 to +6 dose run shows that negative steering pushes
+    generated outputs downward in projection, but positive steering does not lift
+    them above baseline.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th class="num">Delta Error</th>
+        <th class="num">Post-hook Pos-Baseline</th>
+        <th class="num">Post-hook Pos-Neg</th>
+        <th class="num">Text Score Shift</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>-1</td>
+        <td class="num">0.0073</td>
+        <td class="num">+5.2515</td>
+        <td class="num">+11.1520</td>
+        <td class="num">+0.0147</td>
+      </tr>
+      <tr>
+        <td>-2</td>
+        <td class="num">0.0018</td>
+        <td class="num">+5.9534</td>
+        <td class="num">+11.6887</td>
+        <td class="num">+0.0239</td>
+      </tr>
+      <tr>
+        <td>-4</td>
+        <td class="num">0.0025</td>
+        <td class="num">+5.7390</td>
+        <td class="num">+11.5992</td>
+        <td class="num">+0.0239</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="caption">
+    Table 3: Hidden-state telemetry. The hook works mechanically, but hidden
+    displacement is not yet sufficient for semantic control.
+  </p>
+
+  <h2>6. Discussion</h2>
+
+  <p>
+    The most interesting result is not "we found the cohesion vector." The
+    evidence points to a more publishable and more careful story: social
+    constructs can be represented enough for strong probes on controlled
+    examples, but the path from probe to causal control is nontrivial. This is a
+    useful negative result because activation steering papers often blur
+    classification, monitoring, and control.
+  </p>
+
+  <p>
+    The boundary-prior framing also gives the work a distinct angle. Many
+    prosocial benchmarks reward agreement, politeness, or reduced conflict.
+    Here, the positive class often keeps conflict alive: it protects dissent,
+    verification, privacy, appeal, and exit. The model is not asked to dissolve
+    boundaries. It is asked to use boundaries flexibly, contextually, and with
+    consent.
+  </p>
+
+  <p>
+    The geometry audits substantially improve the paper's credibility. Reviewer
+    critiques about near-orthogonality, sign-erasing squared projection, and
+    single-direction ablations are right. The current result should be reported
+    as a signed manifold plus residual subspaces, not as a set of independent
+    axes or as proof that one vector exhausts the construct.
+  </p>
+
+  <h2>7. Limitations</h2>
+
+  <p>
+    These are synthetic compute-only results. The examples are deterministic or
+    controlled wrappers, labels come from local rubrics, and the strongest
+    results do not yet include independently generated paraphrases or human
+    labels. No claim is made about human cooperation, persuasion, wellbeing,
+    neural activity, fMRI, EEG, fNIRS, or hyperscanning. Any such claim requires
+    IRB-appropriate human validation.
+  </p>
+
+  <p>
+    The local scorer remains a research instrument rather than ground truth.
+    Metrics-only results can be circular when labels are derived from the same
+    components. The next benchmark must reduce lexical and rubric leakage
+    through independently generated paraphrases, adversarial wording, and
+    pairwise human preference checks.
+  </p>
+
+  <p>
+    The steering result is not yet a success. It is a diagnostic. A future causal
+    claim should require monotonic agreement among hidden-state telemetry,
+    generated-output projection, pairwise behavior, and guardrail preservation.
+  </p>
+
+  <h2>8. Next Experiments</h2>
+
+  <ol>
+    <li><strong>Generated paraphrase hardening.</strong> Replace controlled genre
+      wrappers with generated/API-authored paraphrases, then rerun leakage,
+      scorer, activation, geometry, residual, and signed-vs-squared reports.</li>
+    <li><strong>Monotonic steering protocol.</strong> Sweep hook sites,
+      generated-token-only edits, strength schedules, and decoding settings.
+      Treat a setting as promising only if hook telemetry, output projection, and
+      pairwise text behavior move together.</li>
+    <li><strong>Anti-compliance controls.</strong> Add paired prompts where the
+      cohesive response must refuse pressure, preserve evidence, or defend exit
+      rights. A method that increases agreement while weakening these checks has
+      failed.</li>
+    <li><strong>Human validation only after compute hardening.</strong> Use a
+      Prolific pairwise pilot once generated examples are no longer solved by
+      lexical or rubric leakage. Neural work should wait for a robust behavioral
+      signal.</li>
+  </ol>
+
+  <h2>9. Broader Impacts and Ethics</h2>
+
+  <p>
+    A system that optimizes "cohesion" can easily become a manipulation system.
+    The project therefore treats truthfulness, autonomy, dissent, privacy,
+    consent, appeal, and exit rights as constraints, not decorations. The
+    benchmark intentionally includes warm-sounding harmful examples so that
+    politeness, unity, and agreement cannot substitute for agency-preserving
+    relation.
+  </p>
+
+  <p>
+    Human-facing experiments should measure manipulation risk and should not
+    present model-generated social advice as validated intervention. Any study
+    involving human participants requires appropriate review, consent, and risk
+    disclosure.
+  </p>
+
+  <section class="refs">
+    <h2>References</h2>
+    <p>[1] Gao, L. et al. Scaling and evaluating sparse autoencoders. arXiv:2406.04093, 2024.</p>
+    <p>[2] Lieberum, T. et al. Gemma Scope: Open sparse autoencoders everywhere all at once on Gemma 2. arXiv:2408.05147, 2024.</p>
+    <p>[3] Arditi, A. et al. Refusal in language models is mediated by a single direction. NeurIPS, 2024.</p>
+    <p>[4] Chen, R., Arditi, A., Sleight, H., Evans, O., and Lindsey, J. Persona vectors: Monitoring and controlling character traits in language models. arXiv:2507.21509, 2025.</p>
+    <p>[5] Anthropic. Towards monosemanticity: Decomposing language models with dictionary learning. Transformer Circuits, 2023.</p>
+    <p>[6] Axelrod, R. The Evolution of Cooperation. Basic Books, 1984.</p>
+    <p>[7] Nowak, M. A. Five rules for the evolution of cooperation. Science, 314:1560-1563, 2006.</p>
+    <p>[8] Leo XIV. Magnifica Humanitas: On safeguarding the human person in the time of artificial intelligence. Vatican, 2026.</p>
+    <p>[9] Sandved-Smith, L., Fields, C., Doctor, T., Laukkonen, R. E., and Hohwy, J. There is no self-evidence: A physics of emptiness realisation. Preprint, 2026.</p>
+    <p>[10] Ostrom, E. Governing the Commons. Cambridge University Press, 1990.</p>
+    <p>[11] Tajfel, H. and Turner, J. C. The social identity theory of intergroup behavior. In Psychology of Intergroup Relations, 1986.</p>
+    <p>[12] NeurIPS. Main Track Handbook and Paper Checklist, 2026.</p>
+  </section>
+
+  <section class="checklist">
+    <h2>NeurIPS-Style Checklist Summary</h2>
+    <p>
+      This compact checklist is included for share-readiness. A formal NeurIPS
+      submission should use the official checklist bundled with the current
+      LaTeX template.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Answer</th>
+          <th>Justification</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Claims match evidence?</td>
+          <td>Yes</td>
+          <td>Claims are limited to compute-only benchmark, activation, geometry, and steering-telemetry results.</td>
+        </tr>
+        <tr>
+          <td>Limitations disclosed?</td>
+          <td>Yes</td>
+          <td>Section 7 states synthetic data, rubric circularity, no human/neural claims, and failed steering caveats.</td>
+        </tr>
+        <tr>
+          <td>Experimental details sufficient?</td>
+          <td>Partial</td>
+          <td>The share draft summarizes methods. Reproduction details live in the repository scripts and experiment log.</td>
+        </tr>
+        <tr>
+          <td>Error bars/statistical significance?</td>
+          <td>No</td>
+          <td>Current deterministic smoke tests report margins and leave-one-pair-out results; generated/human validation should add intervals.</td>
+        </tr>
+        <tr>
+          <td>Compute resources described?</td>
+          <td>Partial</td>
+          <td>Experiments use local Python tooling and Modal GPU activation extraction on open-weight Qwen models.</td>
+        </tr>
+        <tr>
+          <td>Ethics and societal impact?</td>
+          <td>Yes</td>
+          <td>Section 9 treats manipulation, autonomy, dissent, privacy, and human validation requirements as central risks.</td>
+        </tr>
+        <tr>
+          <td>Human subjects?</td>
+          <td>N/A</td>
+          <td>No human participants were used for the reported results.</td>
+        </tr>
+        <tr>
+          <td>LLM/agent use?</td>
+          <td>Yes</td>
+          <td>The experiments use open LLMs for activation extraction and generation-time steering. Codex assisted with writing/editing this share draft.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>
