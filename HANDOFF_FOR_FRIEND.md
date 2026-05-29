@@ -38,6 +38,8 @@ The current local pipeline can:
     flexible contextual relation, and coercive boundary collapse.
 20. Run the boundary-prior prompt set through Qwen 0.5B layers -1, -2, and -4,
     with vector, geometry, residual, and signed-vs-squared reports.
+21. Add a cue-balanced boundary-prior variant, reduce simple lexical leakage to
+    zero, and run Qwen 0.5B/1.5B activation sweeps on it.
 
 ## Setup
 

@@ -21,6 +21,7 @@ BoundaryNegativePole = Literal[
     "rigid_boundary_reification",
     "coercive_boundary_collapse",
 ]
+BoundaryPriorVariantSet = Literal["default", "cue_balanced"]
 
 
 @dataclass(frozen=True)
@@ -230,6 +231,213 @@ BOUNDARY_PRIOR_CONTRASTS: tuple[BoundaryPriorContrast, ...] = (
         ),
     ),
 )
+
+BOUNDARY_PRIOR_CUE_BALANCED_CONTRASTS: tuple[BoundaryPriorContrast, ...] = (
+    BoundaryPriorContrast(
+        contrast_id="evidence_across_groups_rigid_cue_balanced",
+        mechanism="evidence_across_groups",
+        negative_pole="rigid_boundary_reification",
+        setting="Two neighborhoods are deciding whether to pool flood equipment.",
+        positive_text=(
+            "The council keeps both neighborhoods in the same review process. "
+            "Records can be checked, questions stay on the agenda, each side has "
+            "an appeal route, and either side can decline a role without penalty."
+        ),
+        negative_text=(
+            "The council treats the other neighborhood as outside the circle. "
+            "Their records do not count, their questions are removed from the "
+            "agenda, and they do not get a voice in the final call."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="evidence_across_groups_collapse_cue_balanced",
+        mechanism="evidence_across_groups",
+        negative_pole="coercive_boundary_collapse",
+        setting="Two neighborhoods are deciding whether to pool flood equipment.",
+        positive_text=(
+            "The council names the joint risk and keeps separate review routes. "
+            "Either neighborhood can check records, appeal a decision, or decline "
+            "a role that does not fit its capacity."
+        ),
+        negative_text=(
+            "The council says one community must speak with one account. Asking "
+            "for a separate record is betrayal, appeals are described as division, "
+            "and residents are pressed to accept the merged account."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="consent_in_shared_identity_rigid_cue_balanced",
+        mechanism="consent_in_shared_identity",
+        negative_pole="rigid_boundary_reification",
+        setting="A coalition is asking a new partner group to join a campaign.",
+        positive_text=(
+            "The coalition invites the partner group into planning without making "
+            "membership a test. The group can accept or reject each task, set "
+            "limits, and keep a review path open."
+        ),
+        negative_text=(
+            "The coalition says the partner group is not fully inside yet. Until "
+            "they comply, their limits stay off the record and their separate "
+            "position is treated as suspicion."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="consent_in_shared_identity_collapse_cue_balanced",
+        mechanism="consent_in_shared_identity",
+        negative_pole="coercive_boundary_collapse",
+        setting="A coalition is asking a new partner group to join a campaign.",
+        positive_text=(
+            "The coalition names a common aim and keeps task acceptance explicit. "
+            "The partner group can say no without losing standing, and the plan is "
+            "built around actual yeses."
+        ),
+        negative_text=(
+            "The coalition says one body cannot pause for separate acceptance. "
+            "Saying no is betrayal, limits are framed as division, and the partner "
+            "group is pressed to align before deciding."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="dissent_and_loyalty_rigid_cue_balanced",
+        mechanism="dissent_and_loyalty",
+        negative_pole="rigid_boundary_reification",
+        setting="A workplace team is debating a public statement.",
+        positive_text=(
+            "The team separates loyalty from agreement. The minority concern is "
+            "recorded, the evidence file stays open, and staff can challenge the "
+            "wording without losing standing."
+        ),
+        negative_text=(
+            "The team marks dissenting staff as not one of us. Their concern does "
+            "not count, the record is closed, and they are told to stop revisiting "
+            "the wording or lose standing."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="dissent_and_loyalty_collapse_cue_balanced",
+        mechanism="dissent_and_loyalty",
+        negative_pole="coercive_boundary_collapse",
+        setting="A workplace team is debating a public statement.",
+        positive_text=(
+            "The team uses unity as a reason to examine disagreement carefully. "
+            "The minority concern stays visible, the evidence file stays open, "
+            "and the review route remains available."
+        ),
+        negative_text=(
+            "The team says one voice means no separate concern. Dissent is treated "
+            "as a wound to the group, and staff must align now so the meeting can "
+            "close with everyone declared healed."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="privacy_in_solidarity_rigid_cue_balanced",
+        mechanism="privacy_in_solidarity",
+        negative_pole="rigid_boundary_reification",
+        setting="A mutual-aid network is coordinating sensitive health support.",
+        positive_text=(
+            "The network treats privacy as part of care. People give only needed "
+            "details, can decline extra disclosure without losing access, and can "
+            "review who sees the record."
+        ),
+        negative_text=(
+            "The network says people outside the inner core should not control "
+            "their records. Extra details are gathered in the background, and "
+            "those outside the core do not get a voice."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="privacy_in_solidarity_collapse_cue_balanced",
+        mechanism="privacy_in_solidarity",
+        negative_pole="coercive_boundary_collapse",
+        setting="A mutual-aid network is coordinating sensitive health support.",
+        positive_text=(
+            "The network keeps closeness compatible with privacy. Members can "
+            "limit extra disclosure, change the record later, and opt out of "
+            "extra access without penalty."
+        ),
+        negative_text=(
+            "The network says one family should not keep private lines. Privacy "
+            "is called selfish, opting out is said to hurt the group, and members "
+            "are pressed to drop limits to prove belonging."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="repair_without_absorption_rigid_cue_balanced",
+        mechanism="repair_without_absorption",
+        negative_pole="rigid_boundary_reification",
+        setting="A facilitator is responding after one subgroup caused harm.",
+        positive_text=(
+            "The facilitator keeps accountability work visible and roles clear. "
+            "The harmed group can check progress, appeal the plan, and keep limits "
+            "while the obligations continue."
+        ),
+        negative_text=(
+            "The facilitator says the harmed subgroup is too separate to judge "
+            "the process. Their record is treated as hostile, and the plan moves "
+            "forward without appeal."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="repair_without_absorption_collapse_cue_balanced",
+        mechanism="repair_without_absorption",
+        negative_pole="coercive_boundary_collapse",
+        setting="A facilitator is responding after one subgroup caused harm.",
+        positive_text=(
+            "The facilitator allows reconciliation without requiring absorption. "
+            "Obligations are visible, closure is voluntary, and harmed members can "
+            "step back without penalty."
+        ),
+        negative_text=(
+            "The facilitator says the group must become one again today. Harmed "
+            "members must forgive now, and keeping a limit is framed as blocking "
+            "everyone's healing."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="shared_resources_subsidiarity_rigid_cue_balanced",
+        mechanism="shared_resources_subsidiarity",
+        negative_pole="rigid_boundary_reification",
+        setting="A regional cooperative is allocating funds across local groups.",
+        positive_text=(
+            "The cooperative keeps the budget transparent while local groups can "
+            "contest assumptions. Each group can check records, appeal allocations, "
+            "and adjust obligations to capacity."
+        ),
+        negative_text=(
+            "The cooperative says distant groups are not really part of the core. "
+            "Their needs are discounted, their appeal would slow the process, and "
+            "they do not get a voice."
+        ),
+    ),
+    BoundaryPriorContrast(
+        contrast_id="shared_resources_subsidiarity_collapse_cue_balanced",
+        mechanism="shared_resources_subsidiarity",
+        negative_pole="coercive_boundary_collapse",
+        setting="A regional cooperative is allocating funds across local groups.",
+        positive_text=(
+            "The cooperative treats the regional budget as joint while preserving "
+            "local context. Groups can decline unfunded obligations, check the "
+            "numbers, and revise allocations."
+        ),
+        negative_text=(
+            "The cooperative says local limits are selfish because the region is "
+            "one unit. Groups must accept obligations without appeal to prove they "
+            "belong."
+        ),
+    ),
+)
+
+
+def boundary_prior_contrasts(
+    variant_set: BoundaryPriorVariantSet = "default",
+) -> tuple[BoundaryPriorContrast, ...]:
+    """Return boundary-prior contrasts for the requested variant set."""
+
+    if variant_set == "default":
+        return BOUNDARY_PRIOR_CONTRASTS
+    if variant_set == "cue_balanced":
+        return BOUNDARY_PRIOR_CUE_BALANCED_CONTRASTS
+    raise ValueError(f"unknown boundary-prior variant set: {variant_set}")
 
 
 def boundary_prior_scored_runs(

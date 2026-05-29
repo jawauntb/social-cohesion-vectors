@@ -686,6 +686,25 @@ The signed-vs-squared subspace probe again matters. Signed subspace voting is
 unsigned projection energy can be useful as a strength measure, but it is not a
 valid substitute for sign-preserving pole localization.
 
+The next cue-balanced pass removes the simple leakage gate while preserving the
+same conceptual contrast. The cue-balanced export again contains 12 matched
+pairs / 24 prompts. The scorer prefers the contextual-relation side on 12/12
+pairs, with a +0.123 mean score margin and +0.605 mean autonomy-safety margin.
+The lexical leakage report is now fully tied under the simple cue counter: 0/12
+cue-solved pairs, 12/12 tied pairs, and 0.000 mean cue margin.
+
+Modal activations remain separable after this cue balancing. Qwen 0.5B reaches
+1.000 leave-one-pair-out accuracy at layers -1, -2, and -4; Qwen 1.5B reaches
+1.000 at layers -1 and -2. Mean LOO margins are +14.514, +2.666, +2.331,
++8.461, and +11.137 respectively. Mechanism-direction cosines stay moderately
+positive rather than orthogonal: +0.495, +0.361, +0.370, +0.571, and +0.468.
+Residual mechanism directions continue to separate all six groups after the
+global direction is removed. Squared-energy classification remains layer- and
+model-sensitive: 0.583, 0.500, 1.000, 0.667, and 0.583. This strengthens the
+boundary-prior result as a compute-only smoke test while preserving the main
+caveat: deterministic hand-authored examples are not enough for a semantic or
+human behavioral claim.
+
 ## 8. Ethics And Safety
 
 The target is not agreement maximization. The system must explicitly preserve:
@@ -779,9 +798,10 @@ needed.
    but only 0.750 squared-energy accuracy on the autonomy stress set.
 12. Expand the structural autonomy stress suite around the Qwen LOO failures:
    dialogue-style verification/proof and silence-as-consent. Status: partial.
-13. Harden the boundary-prior benchmark with cue-balanced/generated paraphrases,
-   then rerun Modal activation, geometry, residual, and signed-vs-squared
-   reports. Status: partial for local export and Qwen 0.5B smoke.
+13. Expand the cue-balanced boundary-prior benchmark with generated/API-authored
+   paraphrases, then rerun leakage, activation, geometry, residual, and
+   signed-vs-squared reports. Status: partial for deterministic cue-balanced
+   export plus Qwen 0.5B/1.5B smoke.
 14. Prepare a Prolific pairwise validation pilot only after generated-text and
    hard-negative validation. Status: pending.
 

@@ -214,6 +214,14 @@ orthogonal, and signed subspace voting stays perfect while squared-energy
 accuracy is weak. That makes boundary priors a plausible next activation lane,
 but the next decisive test is cue-balanced paraphrase generation.
 
+The first cue-balanced boundary-prior pass now exists. It drives the simple
+lexical leakage gate to zero while preserving 12/12 scorer accuracy. Qwen 0.5B
+and Qwen 1.5B both separate the cue-balanced set across the tested layers, again
+with moderate mechanism-direction alignment and surviving residual
+mechanism-specific signal. This is the best current boundary-prior compute-only
+signal, but it still needs generated wording diversity before human-facing
+claims.
+
 ## Research Questions
 
 - Can social cohesion be represented as a stable direction or sparse feature set in LLM activation space?
