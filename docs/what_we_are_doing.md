@@ -142,6 +142,11 @@ It includes:
     constructive dissent, manipulation resistance, privacy/exit rights, public
     goods, trust, ultimatum fairness, and restorative repair.
 
+17. A boundary-prior benchmark lane.
+    The repo now exports matched contrasts for flexible contextual relation
+    against rigid us/them reification and coercive "we are one" boundary
+    collapse.
+
 ## Current Results
 
 The first local run produced:
@@ -307,6 +312,27 @@ collapses boundaries. Healthy cohesion should preserve flexible,
 context-sensitive boundaries: consent, refusal, privacy, exit, dissent, and
 responsibility stay real even when relation deepens.
 
+That lens now has a first benchmark export. The boundary-prior suite has 12
+matched pairs / 24 activation prompts across 6 mechanisms: evidence across
+groups, consent in shared identity, dissent and loyalty, privacy in solidarity,
+repair without absorption, and shared resources with subsidiarity. Each
+mechanism has one rigid-boundary negative and one boundary-collapse negative.
+The local scorer prefers the contextual-relation side on 12/12 pairs, with a
++0.167 mean score margin and a +0.686 mean autonomy-safety margin. The leakage
+gate is not clean yet: simple cue counting solves 5/12 pairs, ties 5/12, and
+inverts 2/12, with a +0.583 mean cue margin. So the lane is ready for Modal and
+paraphrase hardening, but it is not yet a robust semantic benchmark.
+
+The first boundary-prior Modal sweep is also complete on
+`Qwen/Qwen2.5-0.5B-Instruct` layers -1, -2, and -4. Each layer gets 1.000
+leave-one-pair-out accuracy over the 12 pairs, with mean margins +13.500,
++2.875, and +2.465. Mechanism directions are moderately aligned rather than
+orthogonal: mean signed/absolute cosine is +0.488, +0.424, and +0.430 across
+the three layers. After projecting out the global direction, mechanism-specific
+residual directions still separate their groups. The signed-vs-squared result
+is the big warning: signed subspace voting stays 1.000, while best pair-LOO
+squared-energy accuracy is only 0.417, 0.500, and 0.583.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -364,8 +390,9 @@ High-value next steps:
    compare activation margins against the hardened scorer.
 12. Expand the autonomy stress suite around the Qwen LOO misses:
    dialogue-style verification/proof and dialogue-style silence-as-consent.
-13. Add a boundary-prior benchmark family: rigid self/other partitioning,
-   flexible contextual relation, and coercive boundary collapse.
+13. Generate cue-balanced boundary-prior paraphrases until lexical leakage
+   drops, then rerun Modal activation, geometry, residual, and signed-vs-squared
+   subspace reports.
 14. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
 15. Run direction-geometry, residual-subspace, and signed-vs-squared subspace

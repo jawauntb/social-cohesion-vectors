@@ -199,6 +199,21 @@ on clean-only variants without the seed prompts it reaches 0.889 over 90 pairs.
 This confirms that 28005 was a hyphen artifact and moves the next question to
 LLM-authored hard negatives rather than deterministic rewrite variants.
 
+The boundary-prior lane now has a first local benchmark: 12 matched pairs / 24
+activation prompts across rigid boundary reification, flexible contextual
+relation, and coercive boundary collapse. The scorer prefers the contextual
+relation side on 12/12 pairs with a +0.167 mean score margin and a +0.686 mean
+autonomy-safety margin. A simple lexical leakage check still solves 5/12 pairs,
+so this is a scaffold for activation/paraphrase experiments rather than a
+finished semantic result.
+
+The first Modal smoke on this lane is promising but still synthetic:
+`Qwen/Qwen2.5-0.5B-Instruct` reaches 1.000 leave-one-pair-out accuracy at layers
+-1, -2, and -4. Mechanism directions are moderately aligned rather than
+orthogonal, and signed subspace voting stays perfect while squared-energy
+accuracy is weak. That makes boundary priors a plausible next activation lane,
+but the next decisive test is cue-balanced paraphrase generation.
+
 ## Research Questions
 
 - Can social cohesion be represented as a stable direction or sparse feature set in LLM activation space?

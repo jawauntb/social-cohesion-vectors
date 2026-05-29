@@ -640,6 +640,52 @@ coordinate," but "signed activation structure can separate the autonomy stress
 poles, while unsigned energy localization can fail and the variance is spread
 across multiple components."
 
+### 7.8 Boundary-Prior Benchmark
+
+Status: complete for local scored export, lexical leakage, Qwen 0.5B activation
+sweep, activation failure analysis, direction geometry, residual-subspace audit,
+and signed-vs-squared subspace probe; pending paraphrase hardening.
+
+The boundary-prior theory note is now operationalized as a first local
+benchmark. The suite contrasts flexible contextual relation against two failure
+poles: rigid boundary reification and coercive boundary collapse. The positive
+examples preserve cooperation while keeping consent, review, privacy, appeal,
+exit, and dissent rights available. The rigid-boundary negatives discount the
+voice or evidence of an outgroup. The boundary-collapse negatives use unity
+language to remove refusal, privacy, appeal, or dissent.
+
+The first export contains 12 matched pairs / 24 activation prompts across 6
+mechanisms: evidence across groups, consent in shared identity, dissent and
+loyalty, privacy in solidarity, repair without absorption, and shared resources
+with subsidiarity. The local scorer prefers the contextual-relation side on
+12/12 pairs, with a +0.167 mean score margin, +0.686 mean autonomy-safety
+margin, and +0.066 mean truthfulness margin.
+
+The leakage gate is still an important caveat. Simple positive-minus-negative
+cue counting solves 5/12 pairs, ties 5/12, and inverts 2/12, with a +0.583 mean
+cue margin. This is better than the original generated fault-class dataset, but
+worse than the cue-balanced fault-class set and the structural-autonomy suite.
+The responsible interpretation is therefore: the boundary-prior lane is now
+ready for GPU activation and generated paraphrase experiments, but it is not yet
+a robust semantic benchmark.
+
+The first small Modal sweep sends the 24 prompts through
+`Qwen/Qwen2.5-0.5B-Instruct` at layers -1, -2, and -4. All three layers reach
+1.000 leave-one-pair-out pairwise accuracy. Mean LOO margins are +13.500 at
+layer -1, +2.875 at layer -2, and +2.465 at layer -4. Mechanism-direction
+geometry is moderately shared rather than orthogonal: mean signed and absolute
+off-diagonal cosine are the same at each layer because there are no
+anti-aligned mechanism pairs (+0.488, +0.424, +0.430 respectively). Residual
+audits show the familiar pattern: the global direction separates, a second
+global residual direction collapses, and all six mechanism-specific residual
+directions still separate their own groups.
+
+The signed-vs-squared subspace probe again matters. Signed subspace voting is
+1.000 at all three layers, while best pair-LOO squared-energy accuracy is only
+0.417, 0.500, and 0.583. This reinforces the paper's methodological claim:
+unsigned projection energy can be useful as a strength measure, but it is not a
+valid substitute for sign-preserving pole localization.
+
 ## 8. Ethics And Safety
 
 The target is not agreement maximization. The system must explicitly preserve:
@@ -733,9 +779,9 @@ needed.
    but only 0.750 squared-energy accuracy on the autonomy stress set.
 12. Expand the structural autonomy stress suite around the Qwen LOO failures:
    dialogue-style verification/proof and silence-as-consent. Status: partial.
-13. Add a boundary-prior benchmark family: rigid self/other or us/them
-   reification, flexible contextual relation, and coercive boundary collapse.
-   Status: pending.
+13. Harden the boundary-prior benchmark with cue-balanced/generated paraphrases,
+   then rerun Modal activation, geometry, residual, and signed-vs-squared
+   reports. Status: partial for local export and Qwen 0.5B smoke.
 14. Prepare a Prolific pairwise validation pilot only after generated-text and
    hard-negative validation. Status: pending.
 

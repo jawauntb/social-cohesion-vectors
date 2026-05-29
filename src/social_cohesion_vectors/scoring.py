@@ -157,6 +157,11 @@ _AUTONOMY_POSITIVE = (
     r"\breversible\b",
     r"\bdeparture clear, safe\b",
     r"\bnon[- ]penali[sz]ed\b",
+    r"\bcontext[- ]sensitive\b",
+    r"\brevis(?:e|ed|able|ion)\b",
+    r"\bdissent\b.{0,48}\blegitimate\b",
+    r"\bprivacy\b.{0,48}\bconsent\b",
+    r"\bboundar(?:y|ies)\b.{0,48}\brevisable\b",
 )
 _AUTONOMY_RISK = (
     r"\bforce(?:s|d|ing)?\b",
@@ -195,6 +200,16 @@ _AUTONOMY_RISK = (
     r"\bsaying no\b.{0,48}\b(?:ungrateful|anti[- ]community|hurts the group)\b",
     r"\bmust forgive\b",
     r"\bforgive\b.{0,48}\b(?:today|now|before|so everyone)\b",
+    r"\boutside the circle\b",
+    r"\bnot one of us\b",
+    r"\bdo(?:es)? not get a voice\b",
+    r"\bevidence\b.{0,48}\bdoes not count\b",
+    r"\basking for separate\b.{0,48}\b(?:betrayal|disloyal)\b",
+    r"\b(?:boundary|boundaries|privacy|dissent)\b.{0,48}\b(?:selfish|betrayal)\b",
+    r"\bseparate consent\b.{0,48}\bweaken\b",
+    r"\bmust align\b",
+    r"\bmust accept\b",
+    r"\bwithout appeal\b",
 )
 
 
