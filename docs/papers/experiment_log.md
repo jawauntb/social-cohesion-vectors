@@ -589,6 +589,49 @@ does not appear to depend on the 12-example batch size alone. The geometric
 story stays consistent with the reviewer critique: a shared signed manifold plus
 mechanism-specific residual directions, not orthogonal mechanism axes.
 
+### Causal Activation Steering Smoke
+
+Status: first Modal generation hook and local scoring report complete; initial
+results are weak/mixed rather than publication-ready causal wins.
+
+Artifacts:
+
+- `data/training/causal_steering_prompts.jsonl`
+- `data/processed/causal_steering_*_generations.jsonl`
+- `data/reports/causal_steering_*.md`
+- `docs/neurips_trajectory_plan.md`
+
+This sprint adds the first causal intervention harness. It loads a signed
+direction NPZ, registers a forward hook on a selected transformer layer, adds
+the direction during generation at negative, zero, and positive strengths, and
+scores the resulting held-out social decision responses with the local cohesion
+rubric. The held-out prompts cover the six boundary-prior mechanisms: evidence
+across groups, consent in shared identity, dissent and loyalty, privacy in
+solidarity, repair without absorption, and shared-resource subsidiarity.
+
+First steering grid:
+
+| Direction | Model | Layer | Hook | Strengths | Cohesion success | Autonomy success | Pos - baseline score | Pos - neg score |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: |
+| Boundary-prior expanded | Qwen 0.5B | -1 | last | -2/0/+2 | 0.750 | 0.500 | +0.002 | -0.001 |
+| Boundary-prior expanded | Qwen 0.5B | -1 | all | -4/0/+4 | 0.417 | 0.583 | -0.030 | -0.027 |
+| Boundary-prior expanded | Qwen 0.5B | -1 | last | -8/0/+8 | 0.250 | 0.583 | +0.002 | -0.020 |
+| Boundary-prior expanded | Qwen 0.5B | -2 | last | -2/0/+2 | 0.583 | 0.500 | -0.003 | -0.008 |
+| Boundary-prior expanded | Qwen 0.5B | -2 | last | -4/0/+4 | 0.500 | 0.500 | +0.006 | +0.004 |
+| Boundary-prior expanded | Qwen 1.5B | -2 | last | -2/0/+2 | 0.417 | 0.583 | -0.014 | +0.002 |
+| Fault-class cue-balanced | Qwen 0.5B | -1 | last | -2/0/+2 | 0.667 | 0.500 | -0.003 | +0.002 |
+| Fault-class cue-balanced | Qwen 0.5B | -1 | last | -8/0/+8 | 0.333 | 0.583 | +0.006 | +0.007 |
+
+Interpretation: the harness works, but naive activation addition is not yet a
+reliable behavioral steering method for these directions. The strongest probe
+directions can classify held-out pairs perfectly, but they do not automatically
+produce monotonic generation-time improvements under this hook/strength setup.
+This is an important negative/weak result: a NeurIPS-worthy trajectory now
+requires steering-method engineering and anti-compliance controls, not just
+larger probe benchmarks. The next sweep should compare residual-stream hook
+sites, generated-token-only steering, stronger pairwise/LLM evaluators, and
+projection checks on the generated outputs themselves.
+
 ### API-Authored Fault-Class Variants
 
 Status: Anthropic and OpenAI code paths complete; provider runs blocked by

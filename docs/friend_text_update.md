@@ -152,14 +152,21 @@ Concrete early signals:
   scorer still gets 36/36, and the same five Qwen model/layer checks are all
   1.000 leave-one-pair-out. So the signal survives a bigger controlled batch,
   but the next real threshold is generated wording diversity.
+- I started the NeurIPS-shaped causal step: a Modal hook that injects signed
+  activation directions during generation and scores held-out social decision
+  responses. The first steering smokes are weak/mixed, not a clean win. That is
+  useful because it tells us the 1.000 probe directions are not automatically
+  behavioral controls; the next serious work is a steering-method sweep with
+  better hook sites, strength schedules, anti-compliance controls, and stronger
+  pairwise evaluation.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
 LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
 misses, running geometry/residual/subspace audits on every activation/SAE
 result, replacing the controlled boundary-prior expansion with generated/API
-wording diversity, and checking whether the same fault-specific feature bundles
-survive.
+wording diversity, running the causal steering-method sweep, and checking
+whether the same fault-specific feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated

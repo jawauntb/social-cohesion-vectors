@@ -215,6 +215,17 @@ residual mechanism directions still separate all six groups after the global
 direction is removed. This is a stronger compute-only smoke test, not a human
 or neural claim.
 
+The first causal activation-steering harness now exists. It runs held-out social
+decision prompts through Modal while adding a signed direction at negative,
+zero, and positive strengths, then scores the generated responses locally. The
+first Qwen smokes are weak/mixed rather than a clean causal win: the best small
+boundary-prior setting gets 0.750 positive-vs-negative cohesion success but a
+near-zero mean score delta, and stronger/all-position interventions get worse.
+The lesson is important for publication strategy: probe directions are not
+automatically reliable generation-time controls. The NeurIPS-shaped next step
+is a steering-method sweep with better hook sites, generated-token-only edits,
+anti-compliance controls, and stronger pairwise evaluation.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -235,6 +246,10 @@ Immediate build targets:
 - Replace the controlled cue-balanced boundary-prior expansion with genuinely
   generated/API-authored paraphrases, then rerun leakage, activation, geometry,
   residual, and signed-vs-squared reports.
+- Run the causal steering-method sweep from `docs/neurips_trajectory_plan.md`:
+  residual-stream hook sites, strength schedules, generated-token-only edits,
+  pairwise evaluators, projection checks on generated outputs, and
+  anti-compliance regressions.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.

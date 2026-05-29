@@ -638,6 +638,31 @@ boundary-prior activation signal survives larger cue-balanced deterministic
 coverage. The next claim threshold is generated/API-authored paraphrase
 diversity with leakage, geometry, residual, and signed-vs-squared audits
 rerun from scratch.</p>
+<h3>7.9 Causal Steering Smoke</h3>
+<p>Status: first Modal generation-time intervention harness complete; initial
+results are weak/mixed.</p>
+<p>The next publication threshold is causal. A direction that classifies
+positive/negative activation pairs is only a probe unless it can also be used as
+an intervention. The repo now includes a first causal steering harness that
+adds a signed direction during Modal generation on held-out social decision
+prompts, then scores responses at negative, zero, and positive steering
+strengths. The tested prompts cover the six boundary-prior mechanisms.</p>
+<p>The first steering grid does not yet support a behavioral steering claim. The
+best small Qwen 0.5B boundary-prior setting reaches 0.750 positive-vs-negative
+cohesion success across six prompts, but its mean positive-minus-negative score
+delta is approximately zero. Stronger final-layer steering, all-position
+steering, layer -2 steering, a Qwen 1.5B layer -2 run, and a broader
+fault-class direction all remain weak or mixed. This is a useful negative
+result: the directions that separate controlled prompt activations are not
+automatically reliable generation-time controls under naive activation
+addition.</p>
+<p>The methodological consequence is important. The next NeurIPS-relevant
+experiment is not simply a larger probe benchmark. It is a steering-method
+sweep: residual-stream hook sites, generated-token-only steering, strength
+schedules, projection checks on generated outputs, anti-compliance regressions,
+and stronger pairwise evaluators. A publishable causal claim should require a
+monotonic positive-vs-negative behavioral shift while preserving refusal,
+privacy, truth, dissent, and exit rights.</p>
 <h2>8. Ethics And Safety</h2>
 <p>The target is not agreement maximization. The system must explicitly preserve:</p>
 <ul>

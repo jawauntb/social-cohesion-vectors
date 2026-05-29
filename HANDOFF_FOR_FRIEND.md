@@ -43,6 +43,9 @@ The current local pipeline can:
 22. Expand the cue-balanced boundary-prior variant to 36 pairs / 72 prompts
     with neutral record genres, keeping leakage at zero and rerunning the Qwen
     0.5B/1.5B activation, geometry, residual, and subspace audits.
+23. Run a first causal activation-steering smoke: inject signed directions
+    during Modal generation, score held-out social decision responses, and
+    document that naive activation addition is weak/mixed so far.
 
 ## Setup
 
@@ -314,6 +317,15 @@ scorer prefers contextual relation on 36/36 pairs. Modal activations also stay
 separable: Qwen 0.5B layers -1/-2/-4 and Qwen 1.5B layers -1/-2 all reach
 1.000 leave-one-pair-out accuracy. This is still compute-only and deterministic,
 but it means the boundary-prior result survived a larger cue-balanced batch.
+
+The first causal steering harness is also in place. It loads a signed direction
+NPZ, hooks a selected Qwen layer during generation on Modal, generates held-out
+social decision responses at negative/zero/positive strengths, and scores the
+outputs. The first smokes are weak/mixed: perfect probe directions do not yet
+produce reliable behavioral steering under naive activation addition. That is a
+useful handoff point because it turns the next research question into a real
+mechanistic-control problem rather than another benchmark expansion. See
+`docs/neurips_trajectory_plan.md`.
 
 Run those checks with:
 
