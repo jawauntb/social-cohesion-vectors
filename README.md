@@ -403,8 +403,14 @@ For a quick human handoff, start with:
 
 - `HANDOFF_FOR_FRIEND.md`
 - `docs/friend_text_update.md`
+- `docs/papers/neurips_social_cohesion_control_bottleneck.pdf`
 - `docs/papers/experiment_log.md`
 - `docs/modal_sae_compute_plan.md`
+
+The NeurIPS-style share draft is also tracked as editable HTML at
+`docs/papers/neurips_social_cohesion_control_bottleneck.html`. It should be
+rebuilt with the official NeurIPS LaTeX style before any formal submission, but
+the PDF is ready for collaborator reading.
 
 ## Modal Activation Lane
 
