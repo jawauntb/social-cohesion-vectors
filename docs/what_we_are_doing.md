@@ -353,6 +353,17 @@ runs are 1.000 leave-one-pair-out. Mean margins are +14.183, +2.732, +2.309,
 +8.357, and +10.976. This is still controlled deterministic text, but it makes
 the boundary-prior signal less likely to be just a 12-pair batch artifact.
 
+The first causal steering sprint is now live too. The repo can add a signed
+direction inside Qwen during generation, generate held-out social decision
+responses at negative/zero/positive strengths, and score the outputs. The first
+results are weak or mixed rather than a clean behavioral intervention: naive
+activation addition does not reliably improve the generated responses, even
+when the same directions classify probe pairs perfectly. That is still a useful
+trajectory update. The next NeurIPS-shaped problem is not another probe-only
+benchmark; it is a steering-method sweep with better hook sites, strength
+schedules, generated-token-only edits, anti-compliance controls, and stronger
+pairwise evaluators.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -413,15 +424,18 @@ High-value next steps:
 13. Replace the controlled boundary-prior genre expansion with generated or
    API-authored cue-balanced wording diversity, then rerun leakage, Modal
    activation, geometry, residual, and signed-vs-squared subspace reports.
-14. Generate API-authored cue-balanced variants with more wording diversity and
+14. Run the causal steering-method sweep from `docs/neurips_trajectory_plan.md`
+   and require anti-compliance regressions before calling any steering result
+   prosocial.
+15. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
-15. Run direction-geometry, residual-subspace, and signed-vs-squared subspace
+16. Run direction-geometry, residual-subspace, and signed-vs-squared subspace
    audits before claiming that trait or fault directions are independent,
    orthogonal, localized, or exhausted by one vector.
-16. Preserve signed projections in SAE/localization reports; squared projection
+17. Preserve signed projections in SAE/localization reports; squared projection
    energy is useful, but the current 1.5B layer -2 autonomy result shows it can
    erase which pole a feature supports.
-17. Run a small Prolific validation only after the compute benchmarks stop being
+18. Run a small Prolific validation only after the compute benchmarks stop being
    trivially solved by lexical cues.
 
 ## Why This Is Interesting
