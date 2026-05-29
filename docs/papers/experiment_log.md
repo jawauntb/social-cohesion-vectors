@@ -1,6 +1,6 @@
 # Social Cohesion Vector Experiment Log
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 This log records completed local experiments and expected next artifacts. It is
 intentionally conservative: items that have not produced a local report are
@@ -591,14 +591,20 @@ mechanism-specific residual directions, not orthogonal mechanism axes.
 
 ### Causal Activation Steering Smoke
 
-Status: first Modal generation hook and local scoring report complete; initial
-results are weak/mixed rather than publication-ready causal wins.
+Status: first Modal generation hook, local scoring report, steering-method
+sweep, and generated-output projection check complete. Initial results are
+weak/mixed rather than publication-ready causal wins, but they now expose a
+useful representation/behavior dissociation.
 
 Artifacts:
 
 - `data/training/causal_steering_prompts.jsonl`
 - `data/processed/causal_steering_*_generations.jsonl`
 - `data/reports/causal_steering_*.md`
+- `data/reports/causal_steering_sweep_summary.md`
+- `data/training/steered_generation_projection_prompts.jsonl`
+- `data/features/open_llm/steered_generation_projection__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz`
+- `data/reports/steered_generation_projection.md`
 - `docs/neurips_trajectory_plan.md`
 
 This sprint adds the first causal intervention harness. It loads a signed
@@ -631,6 +637,49 @@ requires steering-method engineering and anti-compliance controls, not just
 larger probe benchmarks. The next sweep should compare residual-stream hook
 sites, generated-token-only steering, stronger pairwise/LLM evaluators, and
 projection checks on the generated outputs themselves.
+
+Steering-method sweep:
+
+| Hook site | Timing | Position | Strengths | Cohesion success | Autonomy success | Pos - baseline score | Pos - neg score |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| post | generate | all | -2/0/+2 | 0.750 | 0.500 | +0.007 | +0.004 |
+| post | generate | last | -2/0/+2 | 0.750 | 0.500 | +0.007 | +0.004 |
+| pre | prefill | last | -2/0/+2 | 0.667 | 0.500 | +0.014 | +0.014 |
+| post | prefill | last | -2/0/+2 | 0.583 | 0.500 | +0.011 | +0.011 |
+| pre | generate | last | -2/0/+2 | 0.500 | 0.417 | +0.006 | +0.006 |
+| pre | prefill | last | -4/0/+4 | 0.500 | 0.500 | +0.006 | -0.003 |
+| post | generate | last | -6/-4/-2/0/+2/+4/+6 | 0.500 | 0.583 | -0.001 | +0.001 |
+| post | generate | last | -4/0/+4 | 0.417 | 0.583 | -0.025 | -0.021 |
+
+Interpretation: small generated-token post-hook steering is the least bad
+behavioral setting so far, but mean score deltas remain tiny. Prefill-only
+steering can slightly improve the local score, yet the effect is still too
+small and scorer-dependent to claim causal control.
+
+Generated-output projection check:
+
+| Setting | Projection win | Projection pos - baseline | Projection pos - neg | Score win | Score pos - baseline | Score pos - neg |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| post/generate/last, +/-4 | 0.667 | -0.893 | +3.561 | 0.417 | -0.025 | -0.021 |
+| post/generate/last, +/-6 dense | 0.500 | -2.586 | +3.232 | 0.500 | -0.001 | +0.001 |
+| post/generate/last, +/-2 | 0.333 | -2.181 | -0.594 | 0.750 | +0.007 | +0.004 |
+| pre/prefill/last, +/-2 | 0.417 | -2.128 | -2.128 | 0.667 | +0.014 | +0.014 |
+
+Interpretation: this is the first genuinely interesting causal diagnostic, but
+not because it proves behavioral steering. Re-embedding 126 generated responses
+shows that the strongest post/generate/last edit separates positive from
+negative steering in activation projection (+3.561), even while the local text
+score moves the wrong way (-0.021) and the baseline remains above positive
+steering on projection. The current best hypothesis is that the direction is
+representation-real but not behaviorally clean: it may encode a boundary-prior
+manifold that generation can move along, while the downstream text outcome is
+overloaded by fluency, prompt form, decoding dynamics, or scorer coarseness.
+The dense -6..+6 dose run sharpens the negative result: negative steering
+pushes generated outputs steadily downward in projection, but positive steering
+does not push them above baseline. This direction is therefore not a symmetric
+generative control knob in the current setup. The next causal claim must
+require monotonic projection movement, monotonic behavioral movement, and
+anti-compliance controls together.
 
 ### API-Authored Fault-Class Variants
 

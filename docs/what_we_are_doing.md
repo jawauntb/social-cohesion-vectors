@@ -358,11 +358,18 @@ direction inside Qwen during generation, generate held-out social decision
 responses at negative/zero/positive strengths, and score the outputs. The first
 results are weak or mixed rather than a clean behavioral intervention: naive
 activation addition does not reliably improve the generated responses, even
-when the same directions classify probe pairs perfectly. That is still a useful
-trajectory update. The next NeurIPS-shaped problem is not another probe-only
-benchmark; it is a steering-method sweep with better hook sites, strength
-schedules, generated-token-only edits, anti-compliance controls, and stronger
-pairwise evaluators.
+when the same directions classify probe pairs perfectly. A steering-method
+sweep now tests pre/post hooks, prefill/generate timing, last/all positions, and
+small/strong strengths. The most interesting new diagnostic is a dissociation:
+post/generate/last steering at +/-4 moves re-embedded generated responses apart
+along the learned direction (+3.561 positive-minus-negative projection), but
+the local text score moves the wrong way (-0.021) and positive steering remains
+below baseline projection. A dense -6..+6 run confirms this is not a clean
+dose-response: negative steering pushes generated responses downward in
+projection, positive steering does not lift them above baseline, and behavior
+stays flat. So the next NeurIPS-shaped problem is not another probe-only
+benchmark; it is finding a steering protocol where projection movement,
+behavioral score movement, and anti-compliance controls all agree.
 
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
@@ -424,9 +431,9 @@ High-value next steps:
 13. Replace the controlled boundary-prior genre expansion with generated or
    API-authored cue-balanced wording diversity, then rerun leakage, Modal
    activation, geometry, residual, and signed-vs-squared subspace reports.
-14. Run the causal steering-method sweep from `docs/neurips_trajectory_plan.md`
-   and require anti-compliance regressions before calling any steering result
-   prosocial.
+14. Extend the causal steering-method sweep and require monotonic
+   generated-output projection, monotonic behavior, and anti-compliance
+   regressions before calling any steering result prosocial.
 15. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
 16. Run direction-geometry, residual-subspace, and signed-vs-squared subspace

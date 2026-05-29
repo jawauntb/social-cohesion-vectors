@@ -46,6 +46,9 @@ The current local pipeline can:
 23. Run a first causal activation-steering smoke: inject signed directions
     during Modal generation, score held-out social decision responses, and
     document that naive activation addition is weak/mixed so far.
+24. Run a steering-method sweep and generated-output projection check showing a
+    useful dissociation: some edits move re-embedded generations along the
+    learned direction even when the local text score does not improve.
 
 ## Setup
 
@@ -322,10 +325,19 @@ The first causal steering harness is also in place. It loads a signed direction
 NPZ, hooks a selected Qwen layer during generation on Modal, generates held-out
 social decision responses at negative/zero/positive strengths, and scores the
 outputs. The first smokes are weak/mixed: perfect probe directions do not yet
-produce reliable behavioral steering under naive activation addition. That is a
-useful handoff point because it turns the next research question into a real
-mechanistic-control problem rather than another benchmark expansion. See
-`docs/neurips_trajectory_plan.md`.
+produce reliable behavioral steering under naive activation addition. A
+follow-up steering-method sweep compares pre/post hooks, prefill/generate
+timing, last/all positions, and small/strong strengths. The most interesting
+diagnostic is that the strongest post/generate/last edit separates positive
+from negative generated responses after re-embedding (+3.561 projection), while
+the local text score moves slightly negative (-0.021) and positive steering
+stays below baseline projection. A dense -6..+6 dose run confirms the current
+edit is not a symmetric control knob: negative steering pushes generations down
+the learned projection, positive steering does not lift them above baseline,
+and text scores stay flat. That is a useful handoff point because it turns the
+next research question into a real mechanistic-control problem: find a protocol
+where activation projection, generated behavior, and anti-compliance controls
+all move together. See `docs/neurips_trajectory_plan.md`.
 
 Run those checks with:
 

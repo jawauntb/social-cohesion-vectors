@@ -46,7 +46,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             layer=args.layer,
             max_new_tokens=args.max_new_tokens,
             max_length=args.max_length,
+            hook_site=args.hook_site,
             steering_position=args.steering_position,
+            steering_timing=args.steering_timing,
             use_chat_template=not args.no_chat_template,
             seed=args.seed,
         )
@@ -87,9 +89,19 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--max-length", type=int, default=512)
     parser.add_argument(
+        "--hook-site",
+        choices=("pre", "post"),
+        default="post",
+    )
+    parser.add_argument(
         "--steering-position",
         choices=("last", "all"),
         default="last",
+    )
+    parser.add_argument(
+        "--steering-timing",
+        choices=("always", "prefill", "generate"),
+        default="always",
     )
     parser.add_argument("--no-chat-template", action="store_true")
     parser.add_argument("--seed", type=int, default=0)

@@ -43,17 +43,33 @@ prompts, but the mean rubric shift is near zero or negative under the tested
 settings. This is useful: it means the current probe directions are not yet
 reliable steering directions under naive activation addition.
 
+The first method sweep makes that more precise. Small post-hook edits on
+generated tokens are the least bad behavioral setting so far: 0.750
+positive-vs-negative cohesion success with a +0.004 mean score delta. Stronger
+post/generate/last steering at +/-4 is more mechanistically interesting but not
+behaviorally good: re-embedded generated responses separate positive from
+negative steering by +3.561 along the learned direction, while the local text
+score moves -0.021 and positive steering remains below baseline projection.
+That is a useful dissociation: the intervention can move generated text in the
+learned representation without yet producing agency-preserving cohesion in the
+output. A dense -6..+6 run confirms the current edit is not a symmetric
+generative control knob: negative steering pushes generations down the learned
+projection, positive steering does not lift them above baseline, and behavior
+stays flat.
+
 ## Immediate Next Move
 
-The next high-value work is a steering-method sweep, not another probe-only
-benchmark:
+The next high-value work is a monotonic steering protocol, not another
+probe-only benchmark:
 
 - compare residual-stream hook sites against MLP/block-output hook sites;
 - sweep strengths with generation quality checks;
 - test prompt-only steering versus generated-token-only steering;
 - score with a stronger pairwise evaluator, not only the lexical local rubric;
-- evaluate whether steering shifts the projection of the generated outputs back
-  onto the learned direction;
+- require steering to shift generated-output projections monotonically before
+  treating the intervention as mechanistically active;
+- require generated-output projection movement and pairwise behavioral
+  improvement to agree before calling the edit prosocial;
 - add explicit pseudo-cohesion and compliance regressions to every steering
   report.
 

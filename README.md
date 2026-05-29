@@ -218,13 +218,22 @@ or neural claim.
 The first causal activation-steering harness now exists. It runs held-out social
 decision prompts through Modal while adding a signed direction at negative,
 zero, and positive strengths, then scores the generated responses locally. The
-first Qwen smokes are weak/mixed rather than a clean causal win: the best small
-boundary-prior setting gets 0.750 positive-vs-negative cohesion success but a
-near-zero mean score delta, and stronger/all-position interventions get worse.
-The lesson is important for publication strategy: probe directions are not
-automatically reliable generation-time controls. The NeurIPS-shaped next step
-is a steering-method sweep with better hook sites, generated-token-only edits,
-anti-compliance controls, and stronger pairwise evaluation.
+first Qwen smokes are weak/mixed rather than a clean causal win, and the
+steering-method sweep makes the shape clearer: small generated-token post-hook
+edits reach 0.750 positive-vs-negative cohesion success with only a +0.004
+mean score delta, while stronger post/generate edits make the text score worse.
+A re-embedding projection check is the most interesting result so far:
+post/generate/last steering at +/-4 separates positive from negative generated
+responses in activation projection (+3.561), even though the local text score
+moves the wrong way (-0.021) and positive steering remains below baseline on
+projection. A dense -6..+6 dose run makes the failure mode sharper: negative
+steering pushes generated outputs downward in projection, but positive steering
+does not push them above baseline, and behavior remains flat. The lesson is
+important for publication strategy: probe directions can be representation-real
+without being clean generation-time controls. The NeurIPS-shaped next step is a
+monotonic steering protocol with anti-compliance controls, stronger pairwise
+evaluation, and generated-output projection checks as a required causal
+diagnostic.
 
 ## Next Steps
 
@@ -250,6 +259,9 @@ Immediate build targets:
   residual-stream hook sites, strength schedules, generated-token-only edits,
   pairwise evaluators, projection checks on generated outputs, and
   anti-compliance regressions.
+- Convert the current steering dissociation into a sharper experiment: require
+  a setting to move generated-output projections and local behavior
+  monotonically before treating it as causal prosocial steering.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.
