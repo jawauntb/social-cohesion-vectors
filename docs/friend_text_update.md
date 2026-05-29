@@ -128,13 +128,25 @@ Concrete early signals:
   for the experiments. The useful next benchmark is three-way: rigid self/other
   partitioning, flexible contextual relation, and coercive "we are one" boundary
   collapse.
+- I turned that into a first benchmark export: 12 matched pairs / 24 activation
+  prompts across 6 mechanisms and 2 negative poles. The scorer prefers the
+  flexible contextual-relation side on 12/12, with a +0.167 mean score margin
+  and a +0.686 autonomy-safety margin. The leakage check still solves 5/12
+  pairs, so this is ready for Modal/paraphrase hardening but not a clean
+  semantic result yet.
+- I ran that boundary-prior set on Modal through `Qwen/Qwen2.5-0.5B-Instruct`
+  at layers -1, -2, and -4. All three layers get 1.000 leave-one-pair-out
+  accuracy on the 12 pairs. The geometry says this is not six orthogonal axes:
+  mechanism directions have mean cosine around +0.42 to +0.49. But residual
+  mechanism-specific directions survive, and signed subspace voting is 1.000
+  while squared-energy accuracy is weak. So the sign really matters here too.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
 LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
 misses, running geometry/residual/subspace audits on every activation/SAE
-result, adding boundary-prior contrasts, and checking whether the same
-fault-specific feature bundles survive.
+result, running boundary-prior activations plus cue-balanced paraphrases, and
+checking whether the same fault-specific feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated

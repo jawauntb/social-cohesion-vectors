@@ -32,6 +32,8 @@ social cohesion vectors before touching expensive human or neural experiments.
   cancellation cannot masquerade as orthogonality.
 - Run residual subspace audits after projecting out the global direction, then
   check whether fault-specific residual directions still separate.
+- Export a boundary-prior benchmark that contrasts flexible contextual relation
+  against rigid us/them reification and coercive "we are one" boundary collapse.
 - Prepare API-authored fault-class generation from the same prompt-record
   contract once a valid provider key is available.
 
@@ -170,6 +172,25 @@ rigid self/other or us/them boundary reification, flexible contextual relation,
 and coercive boundary collapse. The pure mathematical version of this framing is
 in `docs/abstract_math_framing.md`.
 
+That benchmark family now has a first local export: 12 matched pairs / 24
+activation prompts across 6 mechanisms and 2 negative poles. The scorer prefers
+the flexible contextual-relation side on 12/12 pairs, with a +0.167 mean score
+margin and a +0.686 mean autonomy-safety margin. The leakage gate is not clean
+yet: simple cue counts solve 5/12 pairs, tie 5/12, and invert 2/12, with a
++0.583 mean cue margin. So the benchmark is ready for Modal activation and
+generated paraphrase hardening, but it is not yet a cue-balanced semantic test.
+
+A small Modal sweep now runs those 24 prompts through
+`Qwen/Qwen2.5-0.5B-Instruct` at layers -1, -2, and -4. All three layers reach
+1.000 leave-one-pair-out pairwise accuracy. Mean LOO margins are +13.500,
++2.875, and +2.465 respectively. Mechanism-direction geometry is moderately
+shared rather than orthogonal: mean signed/absolute off-diagonal cosine is
++0.488 at layer -1, +0.424 at layer -2, and +0.430 at layer -4, with no strong
+anti-aligned pairs. Residual mechanism directions still separate after removing
+the global direction. Signed subspace voting reaches 1.000, while best
+pair-LOO squared-energy accuracy is only 0.417, 0.500, and 0.583, reinforcing
+that sign-preserving reports are necessary.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -187,8 +208,8 @@ Immediate build targets:
   same cue discipline work for API-authored examples.
 - Expand the autonomy stress suite with generated/API-authored variants, focused
   especially on the dialogue-style verification and silence-as-consent misses.
-- Add a boundary-prior benchmark: rigid self/other or us/them partitioning,
-  flexible contextual relation, and coercive "we are one" boundary collapse.
+- Run the new boundary-prior benchmark through Modal/open-model activations,
+  then create cue-balanced/generated paraphrases until the leakage gate drops.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.

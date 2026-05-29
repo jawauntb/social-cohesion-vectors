@@ -130,6 +130,29 @@ vs coercive boundary collapse
 The third category is important. "We are all one, so your refusal is betrayal"
 is not good cohesion; it is pseudo-cohesion via boundary collapse.
 
+The first implementation treats this as a paired contrast problem. For each
+mechanism `m`, construct:
+
+```text
+x_m^+  = contextual relation with consent, review, privacy, exit, and dissent
+x_m^-r = rigid boundary reification
+x_m^-c = coercive boundary collapse
+```
+
+Then learn signed differences:
+
+```text
+Delta_m^r = phi_l(x_m^+) - phi_l(x_m^-r)
+Delta_m^c = phi_l(x_m^+) - phi_l(x_m^-c)
+```
+
+The key question is whether `Delta^r` and `Delta^c` share a global
+agency-preserving direction, whether they form separate residual subspaces, and
+whether that separation survives cue-balanced paraphrases. The local scaffold
+currently exports 12 pairs / 24 prompts across 6 mechanisms; the first leakage
+gate still solves 5/12 pairs, so the next mathematical requirement is
+invariance under paraphrase and cue balancing.
+
 ## Neighboring Mathematical Fields
 
 This project touches several established mathematical areas:

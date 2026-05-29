@@ -34,6 +34,10 @@ The current local pipeline can:
     paired, and activation-prompt schemas.
 18. Audit direction geometry and residual subspaces so we do not overclaim
     orthogonal axes or one-vector exhaustiveness from contrastive results.
+19. Export a boundary-prior benchmark that tests rigid us/them reification,
+    flexible contextual relation, and coercive boundary collapse.
+20. Run the boundary-prior prompt set through Qwen 0.5B layers -1, -2, and -4,
+    with vector, geometry, residual, and signed-vs-squared reports.
 
 ## Setup
 

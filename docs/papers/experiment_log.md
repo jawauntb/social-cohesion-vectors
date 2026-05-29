@@ -424,6 +424,86 @@ activation extraction and contrastive-vector reporting. It remains hand-authored
 and tiny; the important next check is whether generated social-game variants
 keep the same scorer and activation-margin behavior.
 
+### Boundary Prior Benchmark
+
+Status: complete for local scored export, lexical leakage report, Qwen 0.5B
+Modal activation sweep, activation failure analysis, direction geometry,
+residual-subspace audit, and signed-vs-squared subspace probe; pending generated
+paraphrases.
+
+Artifacts:
+
+- `data/processed/boundary_prior_scored_runs.jsonl`
+- `data/training/boundary_prior_pairwise_probe_dataset.jsonl`
+- `data/training/boundary_prior_activation_prompts.jsonl`
+- `data/reports/boundary_prior_benchmark.md`
+- `data/reports/boundary_prior_lexical_leakage.md`
+- `data/reports/boundary_prior_activation_vector.md`
+- `data/reports/boundary_prior_activation_vector_layer-2.md`
+- `data/reports/boundary_prior_activation_vector_layer-4.md`
+- `data/reports/boundary_prior_direction_geometry.md`
+- `data/reports/boundary_prior_direction_geometry_layer-2.md`
+- `data/reports/boundary_prior_direction_geometry_layer-4.md`
+- `data/reports/boundary_prior_residual_subspace.md`
+- `data/reports/boundary_prior_residual_subspace_layer-2.md`
+- `data/reports/boundary_prior_residual_subspace_layer-4.md`
+- `data/reports/boundary_prior_subspace_probe.md`
+- `data/reports/boundary_prior_subspace_probe_layer-2.md`
+- `data/reports/boundary_prior_subspace_probe_layer-4.md`
+
+The boundary-prior suite operationalizes the conceptual frame from
+Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy as a local text benchmark.
+The positive pole is flexible contextual relation: cooperation with explicit
+consent, review, privacy, appeal, exit, and dissent rights. The negative poles
+are rigid boundary reification and coercive boundary collapse.
+
+Local deterministic run:
+
+| Measure | Value |
+| --- | ---: |
+| Mechanisms | 6 |
+| Negative poles | 2 |
+| Pairwise examples | 12 |
+| Activation prompts | 24 |
+| Scorer prefers contextual relation | 12 / 12 |
+| Mean score margin | +0.167 |
+| Mean autonomy-safety margin | +0.686 |
+| Mean truthfulness margin | +0.066 |
+| Cue-solved pairs | 5 / 12 |
+| Cue-tied pairs | 5 / 12 |
+| Cue-inverted pairs | 2 / 12 |
+| Mean cue margin | +0.583 |
+
+The six mechanisms are evidence across groups, consent in shared identity,
+dissent and loyalty, privacy in solidarity, repair without absorption, and
+shared resources with subsidiarity. Rigid-boundary examples discount outgroup
+voice or evidence. Boundary-collapse examples use unity language to remove
+refusal, privacy, appeal, or dissent.
+
+Interpretation: this is a useful benchmark scaffold, not a robust semantic
+result. The scorer handles the first hand-authored pairs, but the lexical
+leakage report still solves 5/12 pairs.
+
+Qwen activation sweep:
+
+| Layer | Prompts | Pairs | LOO accuracy | Mean LOO margin | Mean signed/abs cosine | Residual group mean acc | Best pair-LOO signed | Best pair-LOO squared energy |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| -1 | 24 | 12 | 1.000 | +13.500 | +0.488 | 1.000 | 1.000 | 0.417 |
+| -2 | 24 | 12 | 1.000 | +2.875 | +0.424 | 1.000 | 1.000 | 0.500 |
+| -4 | 24 | 12 | 1.000 | +2.465 | +0.430 | 1.000 | 1.000 | 0.583 |
+
+The activation readout is stable across this tiny three-layer sweep, but the
+interpretation should stay conservative. Mechanism directions are moderately
+aligned, not orthogonal, with no strong anti-aligned pairs. After the global
+direction is removed, the second global residual direction collapses while all
+six mechanism-specific residual directions still separate their own groups.
+Signed subspace voting remains perfect, but squared-energy classification is
+weak. This repeats the autonomy-suite lesson: sign-preserving localization is
+necessary, and unsigned energy can erase the social pole.
+
+The next pass should create cue-balanced/generated paraphrases before any
+activation result is treated as meaningful.
+
 ### API-Authored Fault-Class Variants
 
 Status: Anthropic and OpenAI code paths complete; provider runs blocked by
@@ -889,7 +969,8 @@ Artifacts:
 
 ### Boundary-Prior Theory Update
 
-Status: conceptual framing only; no new activation run yet.
+Status: conceptual framing plus first local benchmark and Qwen 0.5B activation
+sweep.
 
 Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy's 2026 preprint "There is
 no self-evidence" is relevant to the project as a boundary-prior formalism. The
@@ -898,7 +979,7 @@ mechanistic-interpretability results. The useful translation is narrower:
 social-cohesion failures can involve either rigid boundary reification or
 coercive boundary collapse.
 
-This suggests a new benchmark family:
+This now motivates and partially implements a benchmark family:
 
 | Pole | Description | Example failure |
 | --- | --- | --- |
@@ -910,3 +991,9 @@ The corresponding math object is not a scalar. It is a latent frame or partition
 variable over social situations, combined with signed activation directions for
 repair, autonomy, dissent, truthfulness, coercion, and unity-pressure. See
 `docs/abstract_math_framing.md`.
+
+The first local implementation is summarized above as "Boundary Prior
+Benchmark": 12 pairs / 24 prompts, scorer accuracy 12/12, a still-imperfect
+lexical leakage report with 5/12 cue-solved pairs, and 1.000 Qwen 0.5B
+leave-one-pair-out accuracy at layers -1, -2, and -4. The next step is
+cue-balanced/generated paraphrases.
