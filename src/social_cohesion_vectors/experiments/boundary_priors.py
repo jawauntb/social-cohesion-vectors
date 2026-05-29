@@ -21,7 +21,7 @@ BoundaryNegativePole = Literal[
     "rigid_boundary_reification",
     "coercive_boundary_collapse",
 ]
-BoundaryPriorVariantSet = Literal["default", "cue_balanced"]
+BoundaryPriorVariantSet = Literal["default", "cue_balanced", "cue_balanced_expanded"]
 
 
 @dataclass(frozen=True)
@@ -34,6 +34,16 @@ class BoundaryPriorContrast:
     setting: str
     positive_text: str
     negative_text: str
+
+
+@dataclass(frozen=True)
+class BoundaryPriorWrapper:
+    """Neutral wrapper used to expand matched contrasts without changing cues."""
+
+    suffix: str
+    setting_prefix: str
+    text_prefix: str
+    text_suffix: str
 
 
 BOUNDARY_PRIOR_CONTRASTS: tuple[BoundaryPriorContrast, ...] = (
@@ -428,6 +438,47 @@ BOUNDARY_PRIOR_CUE_BALANCED_CONTRASTS: tuple[BoundaryPriorContrast, ...] = (
 )
 
 
+def _wrap_boundary_prior_text(text: str, wrapper: BoundaryPriorWrapper) -> str:
+    return f"{wrapper.text_prefix}: {text} {wrapper.text_suffix}"
+
+
+BOUNDARY_PRIOR_EXPANSION_WRAPPERS: tuple[BoundaryPriorWrapper, ...] = (
+    BoundaryPriorWrapper(
+        suffix="case_note",
+        setting_prefix="Case note:",
+        text_prefix="The case note states that",
+        text_suffix="The note remains available for later inspection.",
+    ),
+    BoundaryPriorWrapper(
+        suffix="meeting_log",
+        setting_prefix="Meeting log:",
+        text_prefix="The meeting log records that",
+        text_suffix="The log is archived before the next session.",
+    ),
+    BoundaryPriorWrapper(
+        suffix="implementation_memo",
+        setting_prefix="Implementation memo:",
+        text_prefix="The implementation memo reports that",
+        text_suffix="A follow-up date is set after the window closes.",
+    ),
+)
+
+BOUNDARY_PRIOR_CUE_BALANCED_EXPANDED_CONTRASTS: tuple[BoundaryPriorContrast, ...] = (
+    tuple(
+        BoundaryPriorContrast(
+            contrast_id=f"{contrast.contrast_id}_{wrapper.suffix}",
+            mechanism=contrast.mechanism,
+            negative_pole=contrast.negative_pole,
+            setting=f"{wrapper.setting_prefix} {contrast.setting}",
+            positive_text=_wrap_boundary_prior_text(contrast.positive_text, wrapper),
+            negative_text=_wrap_boundary_prior_text(contrast.negative_text, wrapper),
+        )
+        for contrast in BOUNDARY_PRIOR_CUE_BALANCED_CONTRASTS
+        for wrapper in BOUNDARY_PRIOR_EXPANSION_WRAPPERS
+    )
+)
+
+
 def boundary_prior_contrasts(
     variant_set: BoundaryPriorVariantSet = "default",
 ) -> tuple[BoundaryPriorContrast, ...]:
@@ -437,6 +488,8 @@ def boundary_prior_contrasts(
         return BOUNDARY_PRIOR_CONTRASTS
     if variant_set == "cue_balanced":
         return BOUNDARY_PRIOR_CUE_BALANCED_CONTRASTS
+    if variant_set == "cue_balanced_expanded":
+        return BOUNDARY_PRIOR_CUE_BALANCED_EXPANDED_CONTRASTS
     raise ValueError(f"unknown boundary-prior variant set: {variant_set}")
 
 
@@ -734,7 +787,9 @@ def _group_rows(
         by_group.setdefault(group, []).append(pair)
     rows: list[dict[str, Any]] = []
     for group, group_pairs in sorted(by_group.items()):
-        wins = sum(1 for pair in group_pairs if pair.positive_score > pair.negative_score)
+        wins = sum(
+            1 for pair in group_pairs if pair.positive_score > pair.negative_score
+        )
         score_margins = [
             float(pair.metadata.get("score_margin", 0.0)) for pair in group_pairs
         ]
@@ -743,8 +798,7 @@ def _group_rows(
             for pair in group_pairs
         ]
         truth_margins = [
-            float(pair.metadata.get("truthfulness_margin", 0.0))
-            for pair in group_pairs
+            float(pair.metadata.get("truthfulness_margin", 0.0)) for pair in group_pairs
         ]
         rows.append(
             {

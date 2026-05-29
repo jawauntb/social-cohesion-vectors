@@ -146,12 +146,18 @@ Concrete early signals:
   separates it at layers -1/-2, all with 1.000 leave-one-pair-out accuracy.
   This is the best boundary-prior signal so far, with the obvious caveat that it
   is still deterministic hand-authored text.
+- I expanded that cue-balanced boundary-prior set to 36 pairs / 72 prompts with
+  neutral case-note, meeting-log, and implementation-memo framings. The lexical
+  gate is still totally tied: 0/36 cue-solved and mean cue margin 0.000. The
+  scorer still gets 36/36, and the same five Qwen model/layer checks are all
+  1.000 leave-one-pair-out. So the signal survives a bigger controlled batch,
+  but the next real threshold is generated wording diversity.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
 LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
 misses, running geometry/residual/subspace audits on every activation/SAE
-result, expanding boundary-prior cue-balanced paraphrases with generated/API
+result, replacing the controlled boundary-prior expansion with generated/API
 wording diversity, and checking whether the same fault-specific feature bundles
 survive.
 

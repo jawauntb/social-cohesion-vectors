@@ -222,6 +222,15 @@ mechanism-specific signal. This is the best current boundary-prior compute-only
 signal, but it still needs generated wording diversity before human-facing
 claims.
 
+The next controlled pass expands the cue-balanced boundary-prior set to 36
+matched pairs / 72 prompts using neutral case-note, meeting-log, and
+implementation-memo framings. The simple lexical gate remains fully tied
+(0/36 cue-solved, 36/36 tied, 0.000 mean cue margin), the scorer still prefers
+contextual relation on 36/36 pairs, and Qwen 0.5B/1.5B again reach 1.000
+leave-one-pair-out accuracy across the five tested model/layer points. The
+result is a stronger compute-only smoke test, but still not generated
+paraphrase diversity or human validation.
+
 ## Research Questions
 
 - Can social cohesion be represented as a stable direction or sparse feature set in LLM activation space?

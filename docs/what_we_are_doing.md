@@ -343,6 +343,16 @@ Mean LOO margins are +14.514, +2.666, +2.331, +8.461, and +11.137. Mechanism
 directions remain moderately aligned rather than independent, and residual
 mechanism-specific directions still separate all six groups.
 
+The latest boundary-prior run expands that cue-balanced scaffold to 36 pairs /
+72 prompts by adding three neutral record genres to each base contrast. The
+simple leakage gate stays exactly tied: 0/36 cue-solved pairs, 36/36 tied, and
+0.000 mean cue margin. The scorer keeps 36/36 contextual-side wins with +0.123
+mean score margin and +0.605 mean autonomy-safety margin. The Modal sweep again
+survives across Qwen 0.5B layers -1/-2/-4 and Qwen 1.5B layers -1/-2: all five
+runs are 1.000 leave-one-pair-out. Mean margins are +14.183, +2.732, +2.309,
++8.357, and +10.976. This is still controlled deterministic text, but it makes
+the boundary-prior signal less likely to be just a 12-pair batch artifact.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -400,9 +410,9 @@ High-value next steps:
    compare activation margins against the hardened scorer.
 12. Expand the autonomy stress suite around the Qwen LOO misses:
    dialogue-style verification/proof and dialogue-style silence-as-consent.
-13. Expand cue-balanced boundary-prior paraphrases with generated/API-authored
-   wording diversity, then rerun leakage, Modal activation, geometry, residual,
-   and signed-vs-squared subspace reports.
+13. Replace the controlled boundary-prior genre expansion with generated or
+   API-authored cue-balanced wording diversity, then rerun leakage, Modal
+   activation, geometry, residual, and signed-vs-squared subspace reports.
 14. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
 15. Run direction-geometry, residual-subspace, and signed-vs-squared subspace

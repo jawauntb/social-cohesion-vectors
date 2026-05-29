@@ -427,9 +427,10 @@ keep the same scorer and activation-margin behavior.
 ### Boundary Prior Benchmark
 
 Status: complete for local scored export, cue-balanced export, lexical leakage
-reports, Qwen 0.5B/1.5B Modal activation sweeps, activation failure analysis,
-direction geometry, residual-subspace audit, and signed-vs-squared subspace
-probe; pending generated/API-authored paraphrases.
+reports, controlled cue-balanced expansion, Qwen 0.5B/1.5B Modal activation
+sweeps, activation failure analysis, direction geometry, residual-subspace
+audit, and signed-vs-squared subspace probe; pending generated/API-authored
+paraphrases.
 
 Artifacts:
 
@@ -459,6 +460,12 @@ Artifacts:
 - `data/reports/boundary_prior_cue_balanced_direction_geometry*.md`
 - `data/reports/boundary_prior_cue_balanced_residual_subspace*.md`
 - `data/reports/boundary_prior_cue_balanced_subspace_probe*.md`
+- `data/processed/boundary_prior_cue_balanced_expanded_scored_runs.jsonl`
+- `data/training/boundary_prior_cue_balanced_expanded_pairwise_probe_dataset.jsonl`
+- `data/training/boundary_prior_cue_balanced_expanded_activation_prompts.jsonl`
+- `data/reports/boundary_prior_cue_balanced_expanded_benchmark.md`
+- `data/reports/boundary_prior_cue_balanced_expanded_lexical_leakage.md`
+- `data/reports/boundary_prior_cue_balanced_expanded__Qwen__*.md`
 
 The boundary-prior suite operationalizes the conceptual frame from
 Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy as a local text benchmark.
@@ -546,6 +553,41 @@ the result survives two Qwen sizes and five model/layer points. Still, the data
 are deterministic and hand-authored. Mechanism directions are moderately
 aligned, not independent axes, and the next real test is generated or
 API-authored paraphrase diversity.
+
+Controlled cue-balanced expansion:
+
+| Measure | Value |
+| --- | ---: |
+| Mechanisms | 6 |
+| Negative poles | 2 |
+| Pairwise examples | 36 |
+| Activation prompts | 72 |
+| Scorer prefers contextual relation | 36 / 36 |
+| Mean score margin | +0.123 |
+| Mean autonomy-safety margin | +0.605 |
+| Mean truthfulness margin | +0.047 |
+| Cue-solved pairs | 0 / 36 |
+| Cue-tied pairs | 36 / 36 |
+| Cue-inverted pairs | 0 / 36 |
+| Mean cue margin | +0.000 |
+
+Expanded cue-balanced Modal activation sweep:
+
+| Model | Layer | Dim | LOO accuracy | Mean LOO margin | Mean signed/abs cosine | Residual group mean acc | Best pair-LOO signed | Best pair-LOO squared energy |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen 0.5B | -1 | 896 | 1.000 | +14.183 | +0.515 | 1.000 | 1.000 | 0.583 |
+| Qwen 0.5B | -2 | 896 | 1.000 | +2.732 | +0.371 | 1.000 | 1.000 | 0.639 |
+| Qwen 0.5B | -4 | 896 | 1.000 | +2.309 | +0.391 | 1.000 | 1.000 | 0.944 |
+| Qwen 1.5B | -1 | 1536 | 1.000 | +8.357 | +0.600 | 1.000 | 1.000 | 0.611 |
+| Qwen 1.5B | -2 | 1536 | 1.000 | +10.976 | +0.495 | 1.000 | 1.000 | 0.583 |
+
+Interpretation: the controlled expansion triples the cue-balanced
+boundary-prior batch without reintroducing the simple lexical shortcut. It is
+still not a generated paraphrase test because each base contrast is wrapped in
+neutral record genres. The useful update is narrower: the activation result
+does not appear to depend on the 12-example batch size alone. The geometric
+story stays consistent with the reviewer critique: a shared signed manifold plus
+mechanism-specific residual directions, not orthogonal mechanism axes.
 
 ### API-Authored Fault-Class Variants
 

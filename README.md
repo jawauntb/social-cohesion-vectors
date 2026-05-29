@@ -201,6 +201,20 @@ LOO margins are +14.514, +2.666, +2.331, +8.461, and +11.137 respectively.
 Mechanism-direction cosines remain moderately positive (+0.36 to +0.57), while
 residual mechanism directions still separate all six groups.
 
+The newest boundary-prior pass expands that cue-balanced set into 36 matched
+pairs / 72 prompts by wrapping each contrast in three neutral record genres.
+The simple leakage gate remains fully tied: 0/36 cue-solved pairs, 36/36 tied,
+and 0.000 mean cue margin. The scorer still prefers contextual relation on
+36/36 pairs with the same +0.123 mean score margin and +0.605 mean
+autonomy-safety margin. Modal results also survive the larger controlled batch:
+Qwen 0.5B layers -1/-2/-4 and Qwen 1.5B layers -1/-2 all reach 1.000
+leave-one-pair-out accuracy. Mean LOO margins are +14.183, +2.732, +2.309,
++8.357, and +10.976. Mechanism directions remain moderately aligned rather
+than independent axes, but no high-absolute anti-aligned pairs appear, and
+residual mechanism directions still separate all six groups after the global
+direction is removed. This is a stronger compute-only smoke test, not a human
+or neural claim.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -218,9 +232,9 @@ Immediate build targets:
   same cue discipline work for API-authored examples.
 - Expand the autonomy stress suite with generated/API-authored variants, focused
   especially on the dialogue-style verification and silence-as-consent misses.
-- Expand the cue-balanced boundary-prior benchmark with generated/API-authored
-  paraphrases, then rerun leakage, activation, geometry, residual, and
-  signed-vs-squared reports.
+- Replace the controlled cue-balanced boundary-prior expansion with genuinely
+  generated/API-authored paraphrases, then rerun leakage, activation, geometry,
+  residual, and signed-vs-squared reports.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.

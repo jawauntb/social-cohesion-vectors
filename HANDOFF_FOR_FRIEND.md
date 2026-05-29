@@ -40,6 +40,9 @@ The current local pipeline can:
     with vector, geometry, residual, and signed-vs-squared reports.
 21. Add a cue-balanced boundary-prior variant, reduce simple lexical leakage to
     zero, and run Qwen 0.5B/1.5B activation sweeps on it.
+22. Expand the cue-balanced boundary-prior variant to 36 pairs / 72 prompts
+    with neutral record genres, keeping leakage at zero and rerunning the Qwen
+    0.5B/1.5B activation, geometry, residual, and subspace audits.
 
 ## Setup
 
@@ -302,6 +305,15 @@ flexibly and contextually. Pseudo-cohesion can fail in two opposite ways: rigid
 self/other or us/them boundary reification, and coercive boundary collapse
 where unity language removes refusal, dissent, verification, privacy, or exit.
 The pure-math version is in `docs/abstract_math_framing.md`.
+
+That lane now has a bigger controlled run. The cue-balanced boundary-prior set
+was expanded from 12 pairs / 24 prompts to 36 pairs / 72 prompts with neutral
+case-note, meeting-log, and implementation-memo framings. The simple lexical
+gate remains fully tied: 0/36 cue-solved pairs and 0.000 mean cue margin. The
+scorer prefers contextual relation on 36/36 pairs. Modal activations also stay
+separable: Qwen 0.5B layers -1/-2/-4 and Qwen 1.5B layers -1/-2 all reach
+1.000 leave-one-pair-out accuracy. This is still compute-only and deterministic,
+but it means the boundary-prior result survived a larger cue-balanced batch.
 
 Run those checks with:
 
