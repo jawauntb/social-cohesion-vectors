@@ -159,14 +159,26 @@ Concrete early signals:
   behavioral controls; the next serious work is a steering-method sweep with
   better hook sites, strength schedules, anti-compliance controls, and stronger
   pairwise evaluation.
+- I ran that first steering-method sweep. Small post-hook generated-token edits
+  get the best weak behavioral result so far: 0.750 positive-vs-negative
+  cohesion success but only a +0.004 mean score delta. The more interesting
+  diagnostic is a projection/behavior split: post/generate/last steering at
+  +/-4 separates positive from negative generated responses after re-embedding
+  them (+3.561 projection), but the local text score moves slightly negative
+  (-0.021) and positive steering is still below baseline projection. So the
+  direction seems representation-real but not yet behaviorally clean. A dense
+  -6..+6 run confirms this is not a simple dose-response: negative steering
+  pushes generated outputs down the projection, positive steering does not lift
+  them above baseline, and behavior stays flat.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
 LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
 misses, running geometry/residual/subspace audits on every activation/SAE
 result, replacing the controlled boundary-prior expansion with generated/API
-wording diversity, running the causal steering-method sweep, and checking
-whether the same fault-specific feature bundles survive.
+wording diversity, extending the causal steering-method sweep until projection
+movement and behavior movement agree, and checking whether the same
+fault-specific feature bundles survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated
