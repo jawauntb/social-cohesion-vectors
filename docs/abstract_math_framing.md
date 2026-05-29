@@ -149,9 +149,11 @@ Delta_m^c = phi_l(x_m^+) - phi_l(x_m^-c)
 The key question is whether `Delta^r` and `Delta^c` share a global
 agency-preserving direction, whether they form separate residual subspaces, and
 whether that separation survives cue-balanced paraphrases. The local scaffold
-currently exports 12 pairs / 24 prompts across 6 mechanisms; the first leakage
-gate still solves 5/12 pairs, so the next mathematical requirement is
-invariance under paraphrase and cue balancing.
+currently exports 12 pairs / 24 prompts across 6 mechanisms. The first leakage
+gate solved 5/12 pairs. A cue-balanced variant drives the simple cue margin to
+zero while Qwen 0.5B and 1.5B activation directions still separate the pairs.
+The next mathematical requirement is stronger invariance under generated
+paraphrase and domain shift, not just hand-authored cue balancing.
 
 ## Neighboring Mathematical Fields
 

@@ -333,6 +333,16 @@ residual directions still separate their groups. The signed-vs-squared result
 is the big warning: signed subspace voting stays 1.000, while best pair-LOO
 squared-energy accuracy is only 0.417, 0.500, and 0.583.
 
+The cue-balanced boundary-prior variant is stronger. It keeps the 12-pair /
+24-prompt shape but removes the simple cue leak: 0/12 cue-solved pairs, 12/12
+tied, and 0.000 mean cue margin. The scorer still prefers the contextual side
+on 12/12 pairs, with +0.123 mean score margin and +0.605 mean autonomy-safety
+margin. Modal activations still separate the set: Qwen 0.5B reaches 1.000 LOO
+at layers -1, -2, and -4, and Qwen 1.5B reaches 1.000 at layers -1 and -2.
+Mean LOO margins are +14.514, +2.666, +2.331, +8.461, and +11.137. Mechanism
+directions remain moderately aligned rather than independent, and residual
+mechanism-specific directions still separate all six groups.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
@@ -390,9 +400,9 @@ High-value next steps:
    compare activation margins against the hardened scorer.
 12. Expand the autonomy stress suite around the Qwen LOO misses:
    dialogue-style verification/proof and dialogue-style silence-as-consent.
-13. Generate cue-balanced boundary-prior paraphrases until lexical leakage
-   drops, then rerun Modal activation, geometry, residual, and signed-vs-squared
-   subspace reports.
+13. Expand cue-balanced boundary-prior paraphrases with generated/API-authored
+   wording diversity, then rerun leakage, Modal activation, geometry, residual,
+   and signed-vs-squared subspace reports.
 14. Generate API-authored cue-balanced variants with more wording diversity and
    rerun leakage, component, and activation held-out reports.
 15. Run direction-geometry, residual-subspace, and signed-vs-squared subspace

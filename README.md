@@ -191,6 +191,16 @@ the global direction. Signed subspace voting reaches 1.000, while best
 pair-LOO squared-energy accuracy is only 0.417, 0.500, and 0.583, reinforcing
 that sign-preserving reports are necessary.
 
+The cue-balanced boundary-prior variant now removes that simple leakage:
+0/12 cue-solved pairs, 12/12 tied, and 0.000 mean cue margin. The scorer still
+prefers the contextual-relation side on 12/12 pairs, with a +0.123 mean score
+margin and +0.605 mean autonomy-safety margin. Modal activations remain
+separable after the cue words are balanced. Qwen 0.5B reaches 1.000 LOO at
+layers -1, -2, and -4; Qwen 1.5B reaches 1.000 LOO at layers -1 and -2. Mean
+LOO margins are +14.514, +2.666, +2.331, +8.461, and +11.137 respectively.
+Mechanism-direction cosines remain moderately positive (+0.36 to +0.57), while
+residual mechanism directions still separate all six groups.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -208,8 +218,9 @@ Immediate build targets:
   same cue discipline work for API-authored examples.
 - Expand the autonomy stress suite with generated/API-authored variants, focused
   especially on the dialogue-style verification and silence-as-consent misses.
-- Run the new boundary-prior benchmark through Modal/open-model activations,
-  then create cue-balanced/generated paraphrases until the leakage gate drops.
+- Expand the cue-balanced boundary-prior benchmark with generated/API-authored
+  paraphrases, then rerun leakage, activation, geometry, residual, and
+  signed-vs-squared reports.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.

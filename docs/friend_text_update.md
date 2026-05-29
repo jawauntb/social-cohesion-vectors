@@ -140,13 +140,20 @@ Concrete early signals:
   mechanism directions have mean cosine around +0.42 to +0.49. But residual
   mechanism-specific directions survive, and signed subspace voting is 1.000
   while squared-energy accuracy is weak. So the sign really matters here too.
+- I then made a cue-balanced boundary-prior variant. The simple lexical gate
+  drops to 0/12 cue-solved pairs with mean cue margin 0.000, while the scorer
+  still gets 12/12. Qwen 0.5B separates it at layers -1/-2/-4 and Qwen 1.5B
+  separates it at layers -1/-2, all with 1.000 leave-one-pair-out accuracy.
+  This is the best boundary-prior signal so far, with the obvious caveat that it
+  is still deterministic hand-authored text.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating
 LLM-authored hard negatives, expanding the autonomy stress suite around the Qwen
 misses, running geometry/residual/subspace audits on every activation/SAE
-result, running boundary-prior activations plus cue-balanced paraphrases, and
-checking whether the same fault-specific feature bundles survive.
+result, expanding boundary-prior cue-balanced paraphrases with generated/API
+wording diversity, and checking whether the same fault-specific feature bundles
+survive.
 
 The repo has a handoff doc and experiment log so you should be able to pick it
 up quickly. The highest-value next move is generating less templated

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from social_cohesion_vectors.config import get_config
 from social_cohesion_vectors.experiments.boundary_priors import (
+    boundary_prior_contrasts,
     export_boundary_prior_artifacts,
 )
 
@@ -20,9 +21,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         prompts_output=args.prompts_output,
         json_report_output=args.json_report_output,
         markdown_report_output=args.markdown_report_output,
+        contrasts=boundary_prior_contrasts(args.variant_set),
     )
     print(
         "exported boundary-prior benchmark: "
+        f"variant_set={args.variant_set} "
         f"scored_runs={counts['scored_runs']} "
         f"pairs={counts['pairwise_examples']} "
         f"prompts={counts['activation_prompts']}"
@@ -34,6 +37,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     paths = get_config().paths
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--variant-set",
+        choices=("default", "cue_balanced"),
+        default="default",
+    )
     parser.add_argument(
         "--scored-runs-output",
         type=Path,

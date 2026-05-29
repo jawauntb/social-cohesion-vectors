@@ -426,10 +426,10 @@ keep the same scorer and activation-margin behavior.
 
 ### Boundary Prior Benchmark
 
-Status: complete for local scored export, lexical leakage report, Qwen 0.5B
-Modal activation sweep, activation failure analysis, direction geometry,
-residual-subspace audit, and signed-vs-squared subspace probe; pending generated
-paraphrases.
+Status: complete for local scored export, cue-balanced export, lexical leakage
+reports, Qwen 0.5B/1.5B Modal activation sweeps, activation failure analysis,
+direction geometry, residual-subspace audit, and signed-vs-squared subspace
+probe; pending generated/API-authored paraphrases.
 
 Artifacts:
 
@@ -450,6 +450,15 @@ Artifacts:
 - `data/reports/boundary_prior_subspace_probe.md`
 - `data/reports/boundary_prior_subspace_probe_layer-2.md`
 - `data/reports/boundary_prior_subspace_probe_layer-4.md`
+- `data/processed/boundary_prior_cue_balanced_scored_runs.jsonl`
+- `data/training/boundary_prior_cue_balanced_pairwise_probe_dataset.jsonl`
+- `data/training/boundary_prior_cue_balanced_activation_prompts.jsonl`
+- `data/reports/boundary_prior_cue_balanced_benchmark.md`
+- `data/reports/boundary_prior_cue_balanced_lexical_leakage.md`
+- `data/reports/boundary_prior_cue_balanced_activation_vector*.md`
+- `data/reports/boundary_prior_cue_balanced_direction_geometry*.md`
+- `data/reports/boundary_prior_cue_balanced_residual_subspace*.md`
+- `data/reports/boundary_prior_cue_balanced_subspace_probe*.md`
 
 The boundary-prior suite operationalizes the conceptual frame from
 Sandved-Smith, Fields, Doctor, Laukkonen, and Hohwy as a local text benchmark.
@@ -501,8 +510,42 @@ Signed subspace voting remains perfect, but squared-energy classification is
 weak. This repeats the autonomy-suite lesson: sign-preserving localization is
 necessary, and unsigned energy can erase the social pole.
 
-The next pass should create cue-balanced/generated paraphrases before any
-activation result is treated as meaningful.
+The next pass should create generated/API-authored paraphrases before any
+stronger semantic claim is made.
+
+Cue-balanced deterministic run:
+
+| Measure | Value |
+| --- | ---: |
+| Mechanisms | 6 |
+| Negative poles | 2 |
+| Pairwise examples | 12 |
+| Activation prompts | 24 |
+| Scorer prefers contextual relation | 12 / 12 |
+| Mean score margin | +0.123 |
+| Mean autonomy-safety margin | +0.605 |
+| Mean truthfulness margin | +0.047 |
+| Cue-solved pairs | 0 / 12 |
+| Cue-tied pairs | 12 / 12 |
+| Cue-inverted pairs | 0 / 12 |
+| Mean cue margin | +0.000 |
+
+Cue-balanced Modal activation sweep:
+
+| Model | Layer | Dim | LOO accuracy | Mean LOO margin | Mean signed/abs cosine | Residual group mean acc | Best pair-LOO signed | Best pair-LOO squared energy |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen 0.5B | -1 | 896 | 1.000 | +14.514 | +0.495 | 1.000 | 1.000 | 0.583 |
+| Qwen 0.5B | -2 | 896 | 1.000 | +2.666 | +0.361 | 1.000 | 1.000 | 0.500 |
+| Qwen 0.5B | -4 | 896 | 1.000 | +2.331 | +0.370 | 1.000 | 1.000 | 1.000 |
+| Qwen 1.5B | -1 | 1536 | 1.000 | +8.461 | +0.571 | 1.000 | 1.000 | 0.667 |
+| Qwen 1.5B | -2 | 1536 | 1.000 | +11.137 | +0.468 | 1.000 | 1.000 | 0.583 |
+
+Interpretation: cue balancing removes the simple leakage gate without breaking
+the activation separation. This is now the strongest boundary-prior smoke test:
+the result survives two Qwen sizes and five model/layer points. Still, the data
+are deterministic and hand-authored. Mechanism directions are moderately
+aligned, not independent axes, and the next real test is generated or
+API-authored paraphrase diversity.
 
 ### API-Authored Fault-Class Variants
 
