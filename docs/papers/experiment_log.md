@@ -681,6 +681,22 @@ generative control knob in the current setup. The next causal claim must
 require monotonic projection movement, monotonic behavioral movement, and
 anti-compliance controls together.
 
+In-generation hidden-state telemetry:
+
+| Layer | Events/run | Hidden delta error | Post-hook pos - baseline | Post-hook pos - neg | Short text-score pos - neg |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| -1 | 23.0 | 0.007303 | +5.251 | +11.152 | +0.015 |
+| -2 | 23.0 | 0.001837 | +5.953 | +11.689 | +0.024 |
+| -4 | 23.0 | 0.002499 | +5.739 | +11.599 | +0.024 |
+
+Interpretation: the hook itself is behaving. During greedy generation, every
+targeted hidden state moves almost exactly by the requested signed strength
+along the learned direction. Earlier layers (-2 and -4) propagate slightly more
+of that movement into the short 24-token local score than the final layer, but
+the behavioral shift remains small. This localizes the failure mode: the current
+activation direction is a reliable hidden-state displacement direction, not yet
+a reliable semantic control direction.
+
 ### API-Authored Fault-Class Variants
 
 Status: Anthropic and OpenAI code paths complete; provider runs blocked by

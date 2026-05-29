@@ -733,10 +733,11 @@ coverage. The next claim threshold is generated/API-authored paraphrase
 diversity with leakage, geometry, residual, and signed-vs-squared audits
 rerun from scratch.
 
-### 7.9 Causal Steering Smoke
+### 7.9 Causal Steering And Hidden-State Telemetry
 
-Status: first Modal generation-time intervention harness complete; initial
-results are weak/mixed.
+Status: first Modal generation-time intervention harness, steering-method
+sweep, generated-output projection check, and hidden-state telemetry pass
+complete; initial behavioral results are weak/mixed.
 
 The next publication threshold is causal. A direction that classifies
 positive/negative activation pairs is only a probe unless it can also be used as
@@ -755,13 +756,33 @@ result: the directions that separate controlled prompt activations are not
 automatically reliable generation-time controls under naive activation
 addition.
 
+The follow-up sweep makes the failure mode more precise. Small generated-token
+post-hook edits reach a 0.750 prompt-level positive-vs-negative win rate, but
+the mean text-score shift is only +0.004. Stronger post/generate/last steering
+at +/-4 separates positive from negative generated responses after re-embedding
+them (+3.561 projection), while the local text score moves slightly negative
+(-0.021) and positive steering remains below baseline projection. A dense
+-6..+6 dose run confirms that this is not a clean symmetric control knob:
+negative steering pushes generated outputs down the learned projection, but
+positive steering does not lift them above baseline and behavior remains flat.
+
+Hidden-state telemetry localizes the bottleneck. At layers -1, -2, and -4, the
+hook applies the requested signed displacement almost exactly during greedy
+generation: mean absolute delta error is 0.0073, 0.0018, and 0.0025
+respectively. Post-hook projection shifts by roughly +11 along the learned
+direction from negative to positive steering, but the short 24-token generated
+text score only moves +0.015 to +0.024. The current direction is therefore a
+reliable hidden-state displacement direction, not yet a reliable semantic
+control direction.
+
 The methodological consequence is important. The next NeurIPS-relevant
 experiment is not simply a larger probe benchmark. It is a steering-method
 sweep: residual-stream hook sites, generated-token-only steering, strength
-schedules, projection checks on generated outputs, anti-compliance regressions,
-and stronger pairwise evaluators. A publishable causal claim should require a
-monotonic positive-vs-negative behavioral shift while preserving refusal,
-privacy, truth, dissent, and exit rights.
+schedules, hidden-state telemetry, projection checks on generated outputs,
+anti-compliance regressions, and stronger pairwise evaluators. A publishable
+causal claim should require the hook-level displacement, generated-output
+projection, and positive-vs-negative behavioral shift to move together while
+preserving refusal, privacy, truth, dissent, and exit rights.
 
 ## 8. Ethics And Safety
 

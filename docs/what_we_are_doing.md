@@ -371,6 +371,15 @@ stays flat. So the next NeurIPS-shaped problem is not another probe-only
 benchmark; it is finding a steering protocol where projection movement,
 behavioral score movement, and anti-compliance controls all agree.
 
+The hidden-state telemetry pass narrows the failure mode. At layers -1, -2, and
+-4, the hook moves the targeted hidden state almost exactly by the requested
+signed strength while generating: mean absolute delta error is 0.007, 0.0018,
+and 0.0025. Post-hook projection shifts by about +11 from negative to positive
+steering, but the short 24-token text score only moves +0.015 to +0.024. So the
+direction is a real hidden-state displacement direction; what we still do not
+have is reliable propagation into semantic, agency-preserving generated
+behavior.
+
 The social-game validation scaffold adds five small game-theoretic probes:
 dictator need sensitivity, public-goods free riding, ultimatum fairness, trust
 with verification, and restorative repair. The local scorer prefers the
