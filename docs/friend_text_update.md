@@ -170,6 +170,12 @@ Concrete early signals:
   -6..+6 run confirms this is not a simple dose-response: negative steering
   pushes generated outputs down the projection, positive steering does not lift
   them above baseline, and behavior stays flat.
+- I added hidden-state telemetry to localize the failure. During generation the
+  hook moves the targeted hidden state almost exactly by the requested strength
+  at layers -1, -2, and -4. The hidden projection moves strongly and
+  monotonically, but the short generated text score only moves +0.015 to
+  +0.024. So the current direction is a real hidden-state displacement, but not
+  yet a reliable semantic steering control.
 
 Main caveat: no human or neural claims yet. This is all compute-only scaffolding.
 Before Prolific or any brain-aligned story, the next step is generating

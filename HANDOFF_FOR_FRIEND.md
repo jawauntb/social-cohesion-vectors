@@ -49,6 +49,9 @@ The current local pipeline can:
 24. Run a steering-method sweep and generated-output projection check showing a
     useful dissociation: some edits move re-embedded generations along the
     learned direction even when the local text score does not improve.
+25. Trace in-generation hidden projections at layers -1, -2, and -4, showing
+    the hook applies the requested vector displacement almost exactly while
+    behavioral movement remains small.
 
 ## Setup
 
@@ -337,7 +340,11 @@ the learned projection, positive steering does not lift them above baseline,
 and text scores stay flat. That is a useful handoff point because it turns the
 next research question into a real mechanistic-control problem: find a protocol
 where activation projection, generated behavior, and anti-compliance controls
-all move together. See `docs/neurips_trajectory_plan.md`.
+all move together. The hidden-state telemetry pass adds the key localization:
+the hook moves the targeted layer almost exactly by the requested signed
+strength at layers -1, -2, and -4, but short generated text scores only move a
+little. So this is not a broken hook; it is a propagation/semantic-control
+bottleneck. See `docs/neurips_trajectory_plan.md`.
 
 Run those checks with:
 

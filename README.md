@@ -235,6 +235,15 @@ monotonic steering protocol with anti-compliance controls, stronger pairwise
 evaluation, and generated-output projection checks as a required causal
 diagnostic.
 
+The newest hidden-telemetry pass localizes that failure. During greedy
+generation, the hook moves the targeted hidden state almost exactly by the
+requested signed strength: mean absolute delta error is 0.007 at layer -1,
+0.0018 at layer -2, and 0.0025 at layer -4. Post-hook projection moves by about
++11.2 to +11.7 from negative to positive steering across layers. Short 24-token
+text-score movement is only +0.015 to +0.024, with earlier layers slightly
+better than the final layer. So the current direction is a reliable hidden-state
+displacement direction, not yet a reliable semantic control direction.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -262,6 +271,9 @@ Immediate build targets:
 - Convert the current steering dissociation into a sharper experiment: require
   a setting to move generated-output projections and local behavior
   monotonically before treating it as causal prosocial steering.
+- Use hidden-state telemetry before expensive sweeps: first verify that the
+  hook moves the targeted layer, then test whether that displacement propagates
+  into logits, generated-output projections, and anti-compliance behavior.
 - Add lexical leakage as a required report for every generated pairwise dataset.
 - Add direction-geometry and residual-subspace reports alongside every
   activation-vector result before claiming axes are independent or exhausted.

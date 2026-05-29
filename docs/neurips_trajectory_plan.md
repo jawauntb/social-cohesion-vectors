@@ -57,6 +57,17 @@ generative control knob: negative steering pushes generations down the learned
 projection, positive steering does not lift them above baseline, and behavior
 stays flat.
 
+The hidden-state telemetry pass now localizes the failure more cleanly. At
+layers -1, -2, and -4, the hook applies the requested displacement almost
+exactly during generation: mean absolute delta error is 0.0073, 0.0018, and
+0.0025 respectively. Post-hook projection shifts by roughly +11 along the
+learned direction from negative to positive steering. The short generated text
+score only moves +0.015 to +0.024, with earlier layers slightly better than the
+final layer. This means the next publishable claim is not "we can steer
+cohesion"; it is a precise control-bottleneck claim: the learned direction is a
+reliable hidden-state displacement, but the current intervention does not yet
+compose into stable semantic behavior.
+
 ## Immediate Next Move
 
 The next high-value work is a monotonic steering protocol, not another
@@ -70,6 +81,8 @@ probe-only benchmark:
   treating the intervention as mechanistically active;
 - require generated-output projection movement and pairwise behavioral
   improvement to agree before calling the edit prosocial;
+- add hidden-state telemetry to every steering sweep so failed runs can be
+  localized to hook application, logit propagation, decoding, or scoring;
 - add explicit pseudo-cohesion and compliance regressions to every steering
   report.
 
