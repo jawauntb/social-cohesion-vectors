@@ -34,6 +34,9 @@ social cohesion vectors before touching expensive human or neural experiments.
   check whether fault-specific residual directions still separate.
 - Export a boundary-prior benchmark that contrasts flexible contextual relation
   against rigid us/them reification and coercive "we are one" boundary collapse.
+- Export a NOVA-inspired affect-control benchmark that crosses boundary-prior
+  contrasts with anger, sadness, fear, disgust, happy, and neutral frames, then
+  runs ridge residualization against coarse affect/style proxies.
 - Prepare API-authored fault-class generation from the same prompt-record
   contract once a valid provider key is available.
 
@@ -244,6 +247,18 @@ text-score movement is only +0.015 to +0.024, with earlier layers slightly
 better than the final layer. So the current direction is a reliable hidden-state
 displacement direction, not yet a reliable semantic control direction.
 
+The new affect-control lane turns the NOVA emotion-decoding idea into a local
+control rather than a neural claim. It crosses the cue-balanced boundary-prior
+contrasts with six affect frames: anger, sadness, fear, disgust, happy, and
+neutral. This produces 72 matched pairs / 144 activation prompts. The local
+scorer prefers contextual relation on 72/72 pairs with a +0.122 mean score
+margin. A simple affect-only ridge control reaches 0.750 pairwise
+leave-one-out accuracy, so affect/style proxies explain some structure, but
+ridge-residualized pairwise accuracy remains 1.000 with a +0.116 mean residual
+margin and +0.017 minimum residual margin. This is useful evidence against the
+weakest "cohesion is just positive affect" objection, while still remaining a
+deterministic text-control result rather than EEG or human validation.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -264,6 +279,10 @@ Immediate build targets:
 - Replace the controlled cue-balanced boundary-prior expansion with genuinely
   generated/API-authored paraphrases, then rerun leakage, activation, geometry,
   residual, and signed-vs-squared reports.
+- Run the affect-control activation lane: extract Modal activations for
+  `data/training/affect_control_activation_prompts.jsonl`, train affect
+  directions and cohesion directions in the same model/layer files, then test
+  whether cohesion survives affect-direction regression or projection.
 - Run the causal steering-method sweep from `docs/neurips_trajectory_plan.md`:
   residual-stream hook sites, strength schedules, generated-token-only edits,
   pairwise evaluators, projection checks on generated outputs, and
@@ -394,6 +413,7 @@ uv run python scripts/run_activation_subspace_probe.py \
   --metadata-key mechanism \
   --json-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.json \
   --markdown-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.md
+uv run python scripts/export_affect_control_benchmark.py
 ```
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.

@@ -784,6 +784,42 @@ causal claim should require the hook-level displacement, generated-output
 projection, and positive-vs-negative behavioral shift to move together while
 preserving refusal, privacy, truth, dissent, and exit rights.
 
+### 7.10 Affect-Control Residualization
+
+Status: complete for first local text-control export; pending Modal activation
+residualization and any real EEG or human validation.
+
+The NOVA emotion-decoding post is useful here as a methodological warning, not
+as evidence for this project. NOVA emphasizes careful stimulus curation,
+session-wise evaluation, PSD-vs-DE feature choices, and simple ridge models
+before more complex neural decoders. The immediate analog for this repo is an
+affect-control lane: before claiming that a social-cohesion direction is about
+agency-preserving relation, test whether it is merely tracking coarse affect
+such as anger, sadness, fear, disgust, happiness, or neutral procedural style.
+
+The first local export crosses the cue-balanced boundary-prior contrasts with
+six affect frames: anger, sadness, fear, disgust, happy, and neutral. This
+produces 72 matched pairs / 144 activation prompts across the same six
+boundary-prior mechanisms and two negative poles. The local scorer prefers the
+contextual-relation side on 72/72 pairs, with a +0.122 mean score margin. A
+simple affect-only ridge classifier reaches 0.750 pairwise leave-one-out
+accuracy, which means affect/style proxies are not irrelevant. However,
+leave-one-pair-out residualization of local cohesion scores against the same
+coarse affect features preserves 1.000 pairwise accuracy, with a +0.116 mean
+residualized margin and a +0.017 minimum residualized margin.
+
+This is useful but narrow. It is evidence against the weakest objection that
+the current scorer is only choosing lower-threat or more positive affect. It is
+not evidence about human emotion, EEG, or neural cohesion. The next activation
+version should extract open-model activations for
+`data/training/affect_control_activation_prompts.jsonl`, train affect directions
+and cohesion directions in the same model/layer files, and report whether the
+cohesion direction survives projection or regression against the affect
+directions. A later EEG pilot, if the behavioral signal becomes worth testing,
+should follow the NOVA lesson directly: PSD and differential-entropy baselines,
+subject/session splits, simple ridge first, and explicit separation of affect
+decoding from social-cohesion claims.
+
 ## 8. Ethics And Safety
 
 The target is not agreement maximization. The system must explicitly preserve:
