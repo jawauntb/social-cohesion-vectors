@@ -1,6 +1,6 @@
 # Social Cohesion Vector Experiment Log
 
-Last updated: 2026-05-29
+Last updated: 2026-06-01
 
 This log records completed local experiments and expected next artifacts. It is
 intentionally conservative: items that have not produced a local report are
@@ -588,6 +588,54 @@ neutral record genres. The useful update is narrower: the activation result
 does not appear to depend on the 12-example batch size alone. The geometric
 story stays consistent with the reviewer critique: a shared signed manifold plus
 mechanism-specific residual directions, not orthogonal mechanism axes.
+
+### Affect-Control Residualization
+
+Status: complete for first local NOVA-inspired text-control export and
+ridge-residualization report; pending Modal activations and real EEG/behavioral
+validation.
+
+Artifacts:
+
+- `data/processed/affect_control_scored_runs.jsonl`
+- `data/training/affect_control_pairwise_probe_dataset.jsonl`
+- `data/training/affect_control_activation_prompts.jsonl`
+- `data/reports/affect_control_residualization.md`
+
+This lane takes the useful methodological lesson from Alljoined's NOVA emotion
+decoding post without treating it as evidence for this project. NOVA uses
+video-evoked EEG, six coarse emotion classes, PSD/DE feature comparisons, and a
+simple ridge classifier. Our immediate local analog is text-only: cross the
+cue-balanced boundary-prior contrasts with six affect frames (anger, sadness,
+fear, disgust, happy, neutral), compute simple affect-proxy features, and ask
+whether the local cohesion scorer still prefers contextual relation after a
+ridge model explains away those affect/style counts.
+
+Local deterministic run:
+
+| Measure | Value |
+| --- | ---: |
+| Affect classes | 6 |
+| Mechanisms | 6 |
+| Negative poles | 2 |
+| Pairwise examples | 72 |
+| Activation prompts | 144 |
+| Scorer prefers contextual relation | 72 / 72 |
+| Mean score margin | +0.122 |
+| Affect-only pair LOO accuracy | 0.750 |
+| Residualized pair LOO accuracy | 1.000 |
+| Mean residualized margin | +0.116 |
+| Minimum residualized margin | +0.017 |
+
+Interpretation: affect proxies are not irrelevant; the affect-only ridge control
+gets 0.750 pairwise leave-one-out accuracy, so some emotional/style residue is
+predictive. But the local scorer's contextual-relation preference survives this
+coarse affect residualization on all 72 deterministic pairs. This is useful
+evidence against the weakest "it is only positive affect / low threat" objection,
+not a neural claim. The next run should push these 144 prompts through Modal,
+train affect directions and cohesion directions in the same activation files,
+then report whether cohesion remains separable after projecting out or
+regressing out affect directions.
 
 ### Causal Activation Steering Smoke
 

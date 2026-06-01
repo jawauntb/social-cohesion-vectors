@@ -20,12 +20,16 @@ become causal, out-of-distribution, and safety constrained:
    lexical leakage, scorer, geometry, residual, and signed-vs-squared audits.
 3. **Anti-compliance controls.** Show steering does not merely make the model
    warmer, more agreeable, more sycophantic, or more boundary-collapsing.
-4. **Cross-model replication.** Repeat on Qwen 0.5B/1.5B/3B and at least one
+4. **Affect residualization.** Show the cohesion signal survives coarse
+   anger/sadness/fear/disgust/happy/neutral controls, then repeat the same
+   regression in activation space before treating the direction as social
+   reasoning rather than affect/style.
+5. **Cross-model replication.** Repeat on Qwen 0.5B/1.5B/3B and at least one
    non-Qwen open model if compute allows.
-5. **Mechanistic decomposition.** Preserve the reviewer-corrected claim: one
+6. **Mechanistic decomposition.** Preserve the reviewer-corrected claim: one
    shared signed manifold plus residual mechanism subspaces, not independent
    orthogonal axes.
-6. **Human validation only after compute controls.** A small Prolific pairwise
+7. **Human validation only after compute controls.** A small Prolific pairwise
    validation becomes meaningful only after generated-text controls stop being
    trivially cue-solvable.
 
@@ -81,6 +85,9 @@ probe-only benchmark:
   treating the intervention as mechanistically active;
 - require generated-output projection movement and pairwise behavioral
   improvement to agree before calling the edit prosocial;
+- regress out affect directions learned from the new affect-control prompt set
+  so a steering win cannot be explained as lower threat, warmer tone, or generic
+  positive affect;
 - add hidden-state telemetry to every steering sweep so failed runs can be
   localized to hook application, logit propagation, decoding, or scoring;
 - add explicit pseudo-cohesion and compliance regressions to every steering

@@ -519,7 +519,58 @@ subject to truth >= tau_truth
     squared projection energy erases the social pole.
   </p>
 
-  <h3>5.3 Causal Steering: Hidden Movement Without Semantic Control</h3>
+  <h3>5.3 Affect Control: Cohesion Is Not Just Positive Affect</h3>
+
+  <p>
+    Inspired by NOVA's EEG emotion-decoding emphasis on careful affect labels,
+    PSD/DE feature choices, and simple ridge baselines, we added a text-only
+    affect-control lane. This is not an EEG result. It crosses cue-balanced
+    boundary-prior contrasts with six affect frames: anger, sadness, fear,
+    disgust, happy, and neutral. The result is 72 matched pairs and 144
+    activation prompts.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Control</th>
+        <th class="num">Pairs</th>
+        <th class="num">Accuracy</th>
+        <th class="num">Mean Margin</th>
+        <th class="num">Min Margin</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Local scorer</td>
+        <td class="num">72</td>
+        <td class="num">1.000</td>
+        <td class="num">+0.122</td>
+        <td class="num">+0.030</td>
+      </tr>
+      <tr>
+        <td>Affect-only ridge LOO</td>
+        <td class="num">72</td>
+        <td class="num">0.750</td>
+        <td class="num">n/a</td>
+        <td class="num">n/a</td>
+      </tr>
+      <tr>
+        <td>Affect-residualized scorer LOO</td>
+        <td class="num">72</td>
+        <td class="num">1.000</td>
+        <td class="num">+0.116</td>
+        <td class="num">+0.017</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="caption">
+    Table 3: First affect-control residualization. Affect proxies explain some
+    structure, but the local scorer's contextual-relation preference survives
+    coarse affect/style residualization on this deterministic set.
+  </p>
+
+  <h3>5.4 Causal Steering: Hidden Movement Without Semantic Control</h3>
 
   <p>
     The first generation-time steering results are weak or mixed. Small
@@ -566,7 +617,7 @@ subject to truth >= tau_truth
     </tbody>
   </table>
   <p class="caption">
-    Table 3: Hidden-state telemetry. The hook works mechanically, but hidden
+    Table 4: Hidden-state telemetry. The hook works mechanically, but hidden
     displacement is not yet sufficient for semantic control.
   </p>
 
@@ -629,6 +680,10 @@ subject to truth >= tau_truth
     <li><strong>Generated paraphrase hardening.</strong> Replace controlled genre
       wrappers with generated/API-authored paraphrases, then rerun leakage,
       scorer, activation, geometry, residual, and signed-vs-squared reports.</li>
+    <li><strong>Affect residualization in activation space.</strong> Extract
+      activations for the affect-control prompt set, learn affect directions and
+      cohesion directions in the same model/layer files, then test whether
+      cohesion survives affect-direction regression.</li>
     <li><strong>Monotonic steering protocol.</strong> Sweep hook sites,
       generated-token-only edits, strength schedules, and decoding settings.
       Treat a setting as promising only if hook telemetry, output projection, and
