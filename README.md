@@ -259,6 +259,17 @@ margin and +0.017 minimum residual margin. This is useful evidence against the
 weakest "cohesion is just positive affect" objection, while still remaining a
 deterministic text-control result rather than EEG or human validation.
 
+The first activation-space affect residualization pass is stronger. The 144
+affect-control prompts ran through Modal on Qwen 0.5B and 1.5B at layers -1,
+-2, and -4. Raw cohesion directions reach 1.000 leave-one-pair-out accuracy on
+all six model/layer points. After learning a five-dimensional affect-label
+subspace from the training folds only and projecting it out before retraining
+the cohesion direction, all six points still reach 1.000 leave-one-pair-out
+accuracy. Residualized mean margins remain positive: +8.175, +1.876, +1.596,
++4.836, +7.703, and +6.570 respectively. This is still synthetic text and open
+model activation evidence, not human or EEG validation, but it is a much better
+answer to the affect-confound objection.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -414,6 +425,17 @@ uv run python scripts/run_activation_subspace_probe.py \
   --json-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.json \
   --markdown-output data/reports/layer_sweep/autonomy_stress__Qwen__Qwen2.5-1.5B-Instruct__layer-2_subspace.md
 uv run python scripts/export_affect_control_benchmark.py
+uv run python scripts/run_activation_layer_sweep.py \
+  --dataset-name affect_control \
+  --prompts data/training/affect_control_activation_prompts.jsonl \
+  --models Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct \
+  --layers -1 -2 -4 \
+  --batch-size 4 \
+  --max-length 512
+uv run python scripts/run_affect_activation_residualization.py \
+  data/features/open_llm/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --json-output data/reports/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1_affect_residualization.json \
+  --markdown-output data/reports/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1_affect_residualization.md
 ```
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.
