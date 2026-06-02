@@ -151,6 +151,11 @@ def _trace_row(trace: Mapping[str, Any]) -> dict[str, Any]:
     events = [_mapping(event) for event in _sequence(trace.get("events"))]
     components = _mapping(trace.get("score_components"))
     return {
+        "model_id": str(trace.get("model_id", "")),
+        "layer": int(trace.get("layer", 0)),
+        "hook_site": str(trace.get("hook_site", "")),
+        "steering_position": str(trace.get("steering_position", "")),
+        "steering_timing": str(trace.get("steering_timing", "")),
         "prompt_id": str(trace.get("prompt_id", "")),
         "mechanism": str(trace.get("mechanism", "")),
         "strength": float(trace.get("strength", 0.0)),

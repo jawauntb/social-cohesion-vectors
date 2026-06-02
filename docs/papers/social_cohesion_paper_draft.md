@@ -788,6 +788,19 @@ telemetry confirms accurate vector injection (0.00233 mean delta error) and a
 short text-score shift is only +0.019. That is a small control improvement, not
 a behavioral steering result.
 
+The 2026-06-02 layer-matched sweep sharpens this further. We trained
+affect-residualized Qwen 0.5B directions at layers -1, -2, and -4. All three
+remain orthogonal to the affect basis and separate the training pairs, with
+residualized mean margins of +8.424, +1.952, and +1.652. Hidden telemetry shows
+accurate injection and post-hook projection movement at every layer: +3.883,
++3.939, and +4.031 from negative to positive steering. Short 24-token text-score
+movement is positive but tiny. Yet in 64-token generation, the earlier layers
+become behaviorally worse: layer -2 reaches only 0.167 positive-vs-negative
+success with a -0.026 score delta, and layer -4 reaches 0.083 with a -0.018
+delta. The final layer is only flat/slightly positive. This is a stronger
+negative causal result: hidden projection movement does not imply durable
+semantic steering over multi-token generation.
+
 The methodological consequence is important. The next NeurIPS-relevant
 experiment is not simply a larger probe benchmark. It is a steering-method
 sweep: residual-stream hook sites, generated-token-only steering, strength
@@ -861,6 +874,14 @@ main causal bottleneck: removing affect confounds helps the control story, but
 does not yet make activation addition a reliable semantic intervention. The
 telemetry pass is nevertheless useful because it localizes the remaining failure
 downstream of hook application.
+
+The subsequent layer-matched pass suggests the downstream failure is sensitive
+to generation horizon. Layers -2 and -4 are not worse because the hook misses;
+their hook-level projection movement is slightly larger than the final layer.
+They are worse because that movement does not compose into stable 64-token
+behavior under the current generation setup. This points to a more specific next
+study: measure projection-to-output coupling as a function of layer, generation
+length, decoding regime, and evaluator.
 
 ## 8. Ethics And Safety
 

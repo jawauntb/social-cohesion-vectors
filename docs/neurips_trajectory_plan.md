@@ -82,17 +82,17 @@ current boundary-prior signal is not erased by coarse
 anger/sadness/fear/disgust/happy/neutral activation subspaces. It remains
 synthetic text evidence, not human or EEG validation.
 
-A steering-ready affect-residualized Qwen 0.5B layer -1 vector is now saved in
-the original activation coordinates after projecting out the five-dimensional
-affect-label basis. It keeps a +8.427 in-sample mean margin and is orthogonal to
-the affect basis. In the first six-prompt steering smoke, raw affect-control
-steering reaches 0.500 positive-vs-negative cohesion success with a -0.005 mean
-score delta, while the affect-residualized direction reaches 0.583 with a
-+0.007 delta. Hidden telemetry for the residualized direction shows accurate
-injection (0.00233 mean delta error) and a +3.91 positive-minus-negative
-post-hook projection shift, but only a +0.019 short text-score shift. This is a
-useful control improvement, but it is still far below a publishable causal
-steering claim.
+Layer-matched affect-residualized Qwen 0.5B directions are now saved for layers
+-1, -2, and -4. All three are orthogonal to the five-dimensional affect-label
+basis and keep positive in-sample margins on the 72 affect-control pairs:
++8.424, +1.952, and +1.652. Hidden telemetry shows accurate injection and
+positive-minus-negative post-hook projection movement at every layer
+(+3.883, +3.939, and +4.031). Short 24-token text-score movement is tiny but
+positive (+0.009, +0.019, +0.019). The longer 64-token generation run is the
+important result: layer -1 is flat/slightly positive (0.500 win rate, +0.002
+score delta), while layers -2 and -4 become behaviorally worse (0.167/-0.026
+and 0.083/-0.018). This strengthens the control-bottleneck claim: hidden
+projection movement is not sufficient for stable semantic steering.
 
 The next high-value work is therefore a monotonic steering protocol, not another
 probe-only benchmark:
