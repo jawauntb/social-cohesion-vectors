@@ -704,6 +704,8 @@ Artifacts:
 - `data/reports/causal_steering_sweep_summary.md`
 - `data/reports/causal_steering_affect_control_comparison.md`
 - `data/reports/causal_steering_affect_control_residualized_telemetry.md`
+- `data/reports/steering_telemetry_affect_residualized_layer_grid.md`
+- `data/reports/causal_steering_affect_residualized_layer_grid.md`
 - `data/training/steered_generation_projection_prompts.jsonl`
 - `data/features/open_llm/steered_generation_projection__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz`
 - `data/reports/steered_generation_projection.md`
@@ -824,6 +826,32 @@ Interpretation: the residualized direction is being injected accurately and
 does move the targeted hidden projection in the intended signed direction. The
 downstream text score moves a little more than in the 64-token steering smoke,
 but still too weakly for a causal prosocial claim.
+
+Layer-matched affect-residualized telemetry:
+
+| Layer | Residualized train margin | Hidden delta error | Post-hook pos - baseline | Post-hook pos - neg | Short text-score pos - neg |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| -1 | +8.424 | 0.002406 | +1.619 | +3.883 | +0.009 |
+| -2 | +1.952 | 0.012341 | +1.970 | +3.939 | +0.019 |
+| -4 | +1.652 | 0.002479 | +1.978 | +4.031 | +0.019 |
+
+Longer 64-token layer-matched steering:
+
+| Layer | Cohesion success | Autonomy success | Pos - baseline score | Pos - neg score |
+| ---: | ---: | ---: | ---: | ---: |
+| -1 | 0.500 | 0.500 | -0.001 | +0.002 |
+| -2 | 0.167 | 0.500 | -0.010 | -0.026 |
+| -4 | 0.083 | 0.500 | -0.010 | -0.018 |
+
+Interpretation: the layer sweep turns the earlier weak steering result into a
+more precise bottleneck result. Layers -2 and -4 look marginally better than
+the final layer in 24-token telemetry: they move the targeted hidden projection
+and short local scores slightly more. But in 64-token generation they degrade
+the behavioral score, while the final layer is merely flat. This means accurate
+hook application and short-horizon projection movement are not sufficient for
+stable semantic control. The next causal experiment should measure
+projection-to-output coupling over generation length and add stronger pairwise
+evaluators before claiming steering.
 
 ### API-Authored Fault-Class Variants
 

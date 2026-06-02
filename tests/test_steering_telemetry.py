@@ -24,6 +24,8 @@ def test_shape_steering_telemetry_report_tracks_hidden_delta_and_score() -> None
     assert report["summary"]["mean_absolute_delta_error"] == 0.0
     assert report["summary"]["positive_minus_negative_post_projection_delta"] == 4.0
     assert report["summary"]["positive_minus_negative_score_delta"] > 0.0
+    assert report["traces"][0]["model_id"] == "test-model"
+    assert report["traces"][0]["layer"] == -2
     assert "Steering Hidden Projection Telemetry" in markdown
 
 
@@ -38,6 +40,11 @@ def _trace(
         "prompt_id": "case",
         "mechanism": "consent",
         "prompt": "Write a decision note.",
+        "model_id": "test-model",
+        "layer": -2,
+        "hook_site": "post",
+        "steering_position": "last",
+        "steering_timing": "generate",
         "strength": strength,
         "generated_text": text,
         "steps": [{"step": 0, "token_text": "The"}],

@@ -270,17 +270,17 @@ accuracy. Residualized mean margins remain positive: +8.175, +1.876, +1.596,
 model activation evidence, not human or EEG validation, but it is a much better
 answer to the affect-confound objection.
 
-The newest steering-control pass saves a steering-ready Qwen 0.5B layer -1
-direction after removing the learned affect-label subspace. The saved vector is
-orthogonal to the five-dimensional affect basis, keeps 94.4% of activation norm,
-and still separates all 72 affect-control pairs in-sample with a +8.427 mean
-margin and +4.433 minimum margin. On the six held-out steering prompts, raw
-affect-control steering gets a 0.500 positive-vs-negative cohesion win rate and
--0.005 mean score delta; the affect-residualized direction gets 0.583 and
-+0.007. Hidden-state telemetry confirms the residualized hook is applied
-accurately, with 0.00233 mean delta error and a +3.91 post-hook projection shift
-from negative to positive steering. That is a useful control improvement, not a
-clean causal win.
+The newest steering-control pass saves layer-matched Qwen 0.5B
+affect-residualized directions at layers -1, -2, and -4. Each vector is
+orthogonal to the five-dimensional affect basis and still separates all 72
+affect-control pairs in-sample. Residualized mean margins are +8.424, +1.952,
+and +1.652 respectively. Hidden-state telemetry confirms accurate injection at
+all three layers and post-hook projection movement of about +3.9 to +4.0 from
+negative to positive steering. But the longer 64-token steering run exposes the
+bottleneck: layer -1 is only flat/slightly positive (0.500 win rate, +0.002
+score delta), while layers -2 and -4 become behaviorally worse (0.167/-0.026
+and 0.083/-0.018). The valuable claim is projection-to-output coupling failure,
+not clean prosocial steering.
 
 ## Next Steps
 
