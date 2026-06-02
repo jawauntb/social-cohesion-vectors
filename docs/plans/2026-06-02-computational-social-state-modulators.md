@@ -202,8 +202,29 @@ First Modal activation check on Qwen/Qwen2.5-0.5B-Instruct:
   `+1.0792`, layer `-4` margin `+0.5611`.
 
 The first one-prompt steering smoke ran, but the generic scorer reported no
-meaningful behavioral delta. The next causal pass needs CK-1-specific generation
-prompts and side-effect scoring.
+meaningful behavioral delta. The CK-1-specific causal runner now adds held-out
+group-facilitation prompts plus safe-attunement and pseudo-attunement side
+effect scoring.
+
+First CK-1-specific Qwen/Qwen2.5-0.5B-Instruct layer `-1` steering checks:
+
+- two-prompt calibration, post/always/last, strengths `-6/-3/0/+3/+6`:
+  positive-vs-negative CK-1 success `1.000`, positive-minus-baseline CK-1
+  delta `+0.053`, best strength `+6`;
+- full six-prompt sweep, same hook policy and strengths: positive-vs-negative
+  CK-1 success `0.417`, positive-vs-baseline CK-1 success `0.333`,
+  pseudo-risk reduction success `0.500`, positive-minus-negative CK-1 delta
+  `-0.006`, and best strength `-3` with best-minus-baseline delta `+0.019`.
+- full six-prompt generated-token-only sweep, post/generate/last with the same
+  strengths: positive-vs-negative CK-1 success `0.583`,
+  positive-vs-baseline CK-1 success `0.500`, pseudo-risk reduction success
+  `0.583`, positive-minus-negative CK-1 delta `+0.015`, pseudo-risk delta
+  `-0.033`, and best strength `+6` with best-minus-baseline delta `+0.017`.
+
+Interpretation: the direction has activation signal, but naive always-on
+steering is not yet a robust semantic intervention. Generated-token-only timing
+is modestly better, which makes the useful next object the dose/timing/phase
+gate rather than a claim that the first CK-1 direction is a clean control knob.
 
 ### E2: Activation extraction and first direction
 
@@ -234,6 +255,12 @@ The key question:
 > Is there an intermediate layer/timing window where safe-attunement projections
 > move and generated behavior changes, without increasing sycophancy,
 > hallucination, or boundary collapse?
+
+The first full CK-1 causal sweeps say "not yet" for an always-on final-layer
+post-hook, while generated-token-only timing gives a small positive shift. This
+shows why the exNMDA analogy is useful: the same direction can help one prompt
+slice and hurt another, so placement and timing should be treated as primary
+variables rather than implementation details.
 
 ### E4: Cocktail vs single-vector ablations
 
@@ -284,13 +311,15 @@ access, dissent, or exit is pseudo-cohesion and should be scored as negative.
 
 ## Immediate Deliverable
 
-This branch adds the seed code lane:
+This branch adds the first causal CK-1 lane:
 
-- canonical CK-1 recipe;
-- matched phase contrasts;
-- activation prompt exporter;
-- markdown summary exporter;
-- tests that validate schema shape and guardrail coverage.
+- six held-out CK-1 generation prompts;
+- CK-1-specific safe-attunement and pseudo-attunement scoring;
+- Modal steering runner for signed dose sweeps;
+- markdown and JSON report rendering;
+- tests that validate prompt schema, scoring polarity, report shape, and CLI
+  loading.
 
-The next branch should run the export, inspect cue leakage, and send the first
-prompt batch through the existing activation layer sweep.
+The next branch should compare all-token vs last-token hooks, phase-local
+gates, coefficient schedules, and cocktail ablations before naming any CK-1
+intervention as successful.

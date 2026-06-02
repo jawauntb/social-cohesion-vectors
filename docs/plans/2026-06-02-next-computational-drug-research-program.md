@@ -53,8 +53,27 @@ layer `-1` separates `cue_balanced` CK-1 examples with leave-one-pair-out
 accuracy `1.000` and mean projection margin `+5.1063`; the `expanded` batch
 also reaches LOO accuracy `1.000` with mean margin `+5.8329`. A small placement
 sweep suggests final-layer separation is strongest among layers `-1`, `-2`,
-and `-4`. This is activation evidence only; the first steering smoke did not
-yet show a meaningful scored behavior delta.
+and `-4`.
+
+Second answer: causal steering is mixed. A two-prompt calibration sweep using
+the cue-balanced layer `-1` direction favored strong positive steering, with
+positive-vs-negative CK-1 success `1.000` and positive-minus-baseline CK-1
+delta `+0.053`. The full six-prompt held-out sweep did not replicate that as a
+global control result: positive-vs-negative CK-1 success was `0.417`, the mean
+positive-minus-negative CK-1 delta was `-0.006`, and the best average score was
+at strength `-3`, only `+0.019` above baseline.
+
+Third answer: timing helps. Re-running the same full six-prompt sweep as a
+generated-token-only post-hook intervention raises positive-vs-negative CK-1
+success to `0.583`, positive-minus-negative CK-1 delta to `+0.015`, and
+pseudo-risk delta to `-0.033`, with best strength `+6`. This remains a small
+compute-only result, but it supports the central design bet that intervention
+timing and phase gating matter.
+
+This is exactly the kind of result the computational-drug frame should expect:
+activation separability is not the same as a safe intervention. The next CK-1
+work should treat sign, dose, layer, timing, and phase gate as the intervention,
+not as afterthought parameters.
 
 ### Raw EEG and data direction
 
@@ -155,8 +174,9 @@ Operational translation:
 
 ## Sequence
 
-1. Expand CK-1 into a cue-balanced benchmark with cocktail ablations and
-   guardrail telemetry.
+1. Expand CK-1 from single-vector steering into generated-token timing,
+   phase-local gates, cocktail ablations, dose schedules, and guardrail
+   telemetry.
 2. Build a raw-data registry for EEG and adjacent behavioral/neural datasets,
    with consent, labels, timing, and artifact notes visible.
 3. Write a Drosophila feasibility note focused on state modulation and circuit
