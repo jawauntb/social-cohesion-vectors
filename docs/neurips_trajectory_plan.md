@@ -82,6 +82,18 @@ current boundary-prior signal is not erased by coarse
 anger/sadness/fear/disgust/happy/neutral activation subspaces. It remains
 synthetic text evidence, not human or EEG validation.
 
+A steering-ready affect-residualized Qwen 0.5B layer -1 vector is now saved in
+the original activation coordinates after projecting out the five-dimensional
+affect-label basis. It keeps a +8.427 in-sample mean margin and is orthogonal to
+the affect basis. In the first six-prompt steering smoke, raw affect-control
+steering reaches 0.500 positive-vs-negative cohesion success with a -0.005 mean
+score delta, while the affect-residualized direction reaches 0.583 with a
++0.007 delta. Hidden telemetry for the residualized direction shows accurate
+injection (0.00233 mean delta error) and a +3.91 positive-minus-negative
+post-hook projection shift, but only a +0.019 short text-score shift. This is a
+useful control improvement, but it is still far below a publishable causal
+steering claim.
+
 The next high-value work is therefore a monotonic steering protocol, not another
 probe-only benchmark:
 

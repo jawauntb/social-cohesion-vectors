@@ -593,8 +593,10 @@ mechanism-specific residual directions, not orthogonal mechanism axes.
 
 Status: complete for first local NOVA-inspired text-control export,
 ridge-residualization report, Qwen 0.5B/1.5B Modal activation sweeps, and
-activation-space affect-subspace residualization; pending generated paraphrase
-hardening and real EEG/behavioral validation.
+activation-space affect-subspace residualization. A first steering-ready
+affect-residualized direction and raw-vs-residualized steering smoke are also
+complete. Generated paraphrase hardening and real EEG/behavioral validation
+remain pending.
 
 Artifacts:
 
@@ -605,6 +607,8 @@ Artifacts:
 - `data/features/open_llm/layer_sweep/affect_control__Qwen__*.npz`
 - `data/reports/layer_sweep/affect_control__Qwen__*.md`
 - `data/reports/layer_sweep/affect_control__Qwen__*_affect_residualization.md`
+- `data/reports/layer_sweep/affect_control__Qwen__*_affect_residualized_direction.md`
+- `data/reports/causal_steering_affect_control_comparison.md`
 
 This lane takes the useful methodological lesson from Alljoined's NOVA emotion
 decoding post without treating it as evidence for this project. NOVA uses
@@ -662,12 +666,35 @@ The next version should replace deterministic affect wrappers with generated
 paraphrases and add an activation report that jointly removes affect, lexical
 cue, and compliance/sycophancy directions.
 
+The steering-ready control vector uses the full Qwen 0.5B layer -1
+affect-control activation matrix, projects out the learned affect-label
+subspace, then saves the resulting cohesion direction in the original
+activation coordinates so it can be used by the Modal generation hook.
+
+| Measure | Value |
+| --- | ---: |
+| Prompts | 144 |
+| Activation dim | 896 |
+| Pairwise examples | 72 |
+| Affect subspace rank | 5 |
+| Retained norm fraction | 0.944 |
+| Max absolute dot with affect basis | 0.000000 |
+| Raw in-sample mean margin | +10.726 |
+| Residualized in-sample mean margin | +8.427 |
+| Residualized minimum margin | +4.433 |
+
+Interpretation: this is a training artifact for steering controls, not a
+held-out evaluation. It is still useful because the saved direction is
+explicitly orthogonal to the coarse affect basis while preserving the
+positive-vs-negative separation needed for a causal smoke test.
+
 ### Causal Activation Steering Smoke
 
 Status: first Modal generation hook, local scoring report, steering-method
-sweep, and generated-output projection check complete. Initial results are
-weak/mixed rather than publication-ready causal wins, but they now expose a
-useful representation/behavior dissociation.
+sweep, generated-output projection check, hidden-state telemetry pass, and
+affect-residualized steering comparison complete. Initial results are weak/mixed
+rather than publication-ready causal wins, but they now expose a useful
+representation/behavior dissociation.
 
 Artifacts:
 
@@ -675,6 +702,8 @@ Artifacts:
 - `data/processed/causal_steering_*_generations.jsonl`
 - `data/reports/causal_steering_*.md`
 - `data/reports/causal_steering_sweep_summary.md`
+- `data/reports/causal_steering_affect_control_comparison.md`
+- `data/reports/causal_steering_affect_control_residualized_telemetry.md`
 - `data/training/steered_generation_projection_prompts.jsonl`
 - `data/features/open_llm/steered_generation_projection__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz`
 - `data/reports/steered_generation_projection.md`
@@ -769,6 +798,32 @@ of that movement into the short 24-token local score than the final layer, but
 the behavioral shift remains small. This localizes the failure mode: the current
 activation direction is a reliable hidden-state displacement direction, not yet
 a reliable semantic control direction.
+
+Affect-control steering comparison:
+
+| Direction | Model | Layer | Hook | Strengths | Cohesion success | Autonomy success | Pos - baseline score | Pos - neg score |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: |
+| Affect-control raw | Qwen 0.5B | -1 | post/generate/last | -2/0/+2 | 0.500 | 0.500 | -0.012 | -0.005 |
+| Affect-residualized | Qwen 0.5B | -1 | post/generate/last | -2/0/+2 | 0.583 | 0.500 | -0.010 | +0.007 |
+
+Interpretation: removing the affect-label subspace slightly improves the tiny
+local steering smoke, but it does not yet produce a robust behavioral control
+knob. The win rate moves from chance to 0.583 across six prompts and the
+positive-minus-negative score delta becomes positive, but the positive steering
+condition is still below baseline on mean score. Treat this as a better control
+condition for the next steering sweep, not as evidence that affect-residualized
+steering already works.
+
+Affect-residualized hidden-state telemetry:
+
+| Direction | Model | Layer | Events/run | Hidden delta error | Post-hook pos - baseline | Post-hook pos - neg | Short text-score pos - neg |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Affect-residualized | Qwen 0.5B | -1 | 23.0 | 0.002330 | +1.817 | +3.911 | +0.019 |
+
+Interpretation: the residualized direction is being injected accurately and
+does move the targeted hidden projection in the intended signed direction. The
+downstream text score moves a little more than in the 64-token steering smoke,
+but still too weakly for a causal prosocial claim.
 
 ### API-Authored Fault-Class Variants
 
