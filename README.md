@@ -228,6 +228,10 @@ with explicit side-effect monitors. The first recipe, `ck1_attunement_amplifier`
 is not a biological claim. It is a small prompt scaffold for testing safe
 attunement against pseudo-attunement failures: forced unity, sycophancy,
 hallucination, manipulation, and coercive boundary collapse.
+That lane now exports scored runs, pairwise examples, activation prompts, and
+benchmark reports. The first scratch lexical-leakage run over its four seed
+pairs solves 1/4 pairs with a 0.000 mean cue margin, so the lane is ready for
+cue-balanced expansion before any activation result is trusted.
 
 The first causal activation-steering harness now exists. It runs held-out social
 decision prompts through Modal while adding a signed direction at negative,

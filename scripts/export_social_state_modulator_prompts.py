@@ -7,32 +7,27 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from social_cohesion_vectors.config import get_config
-from social_cohesion_vectors.datasets import write_jsonl
 from social_cohesion_vectors.experiments.social_state_modulators import (
-    activation_prompts_from_social_state_modulators,
-    canonical_social_state_modulators,
-    render_markdown_summary,
+    export_social_state_modulator_artifacts,
 )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    modulators = canonical_social_state_modulators()
-    prompts = activation_prompts_from_social_state_modulators(modulators)
-    prompt_count = write_jsonl(prompts, args.output)
-
-    message = (
-        f"Exported {prompt_count} social-state modulator activation prompts "
-        f"to {args.output}"
+    counts = export_social_state_modulator_artifacts(
+        scored_runs_output=args.scored_runs_output,
+        pairs_output=args.pairs_output,
+        prompts_output=args.prompts_output,
+        json_report_output=args.json_report_output,
+        markdown_report_output=args.markdown_report_output,
     )
-    if args.markdown_summary is not None:
-        args.markdown_summary.parent.mkdir(parents=True, exist_ok=True)
-        args.markdown_summary.write_text(
-            render_markdown_summary(modulators=modulators, prompts=prompts),
-            encoding="utf-8",
-        )
-        message += f" and summary to {args.markdown_summary}"
-    print(message)
+    print(
+        "exported social-state modulator benchmark: "
+        f"scored_runs={counts['scored_runs']} "
+        f"pairs={counts['pairwise_examples']} "
+        f"prompts={counts['activation_prompts']}"
+    )
+    print(f"wrote {args.markdown_report_output}")
     return 0
 
 
@@ -44,22 +39,33 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         )
     )
     parser.add_argument(
+        "--scored-runs-output",
+        type=Path,
+        default=paths.processed / "social_state_modulator_scored_runs.jsonl",
+    )
+    parser.add_argument(
+        "--pairs-output",
+        type=Path,
+        default=paths.training / "social_state_modulator_pairwise_probe_dataset.jsonl",
+    )
+    parser.add_argument(
+        "--prompts-output",
         "--output",
         type=Path,
         default=paths.training / "social_state_modulator_activation_prompts.jsonl",
         help="Output ActivationPrompt JSONL path.",
     )
     parser.add_argument(
+        "--json-report-output",
+        type=Path,
+        default=paths.reports / "social_state_modulator_benchmark.json",
+    )
+    parser.add_argument(
+        "--markdown-report-output",
         "--markdown-summary",
         type=Path,
-        nargs="?",
-        const=paths.reports / "social_state_modulator_prompt_summary.md",
-        default=None,
-        help=(
-            "Optional markdown summary path. If the flag is passed without a "
-            "path, writes to "
-            f"{paths.reports / 'social_state_modulator_prompt_summary.md'}."
-        ),
+        default=paths.reports / "social_state_modulator_benchmark.md",
+        help="Output benchmark markdown report path.",
     )
     return parser.parse_args(argv)
 

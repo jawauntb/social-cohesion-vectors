@@ -883,6 +883,31 @@ behavior under the current generation setup. This points to a more specific next
 study: measure projection-to-output coupling as a function of layer, generation
 length, decoding regime, and evaluator.
 
+### 7.11 CK-1 As A Phase-Gated Social-State Modulator
+
+The computational-drug framing is useful only if it is kept abstract and
+operational. CK-1 should not be described as a ketamine analog or as evidence
+for biological synchrony. The safer paper claim is that CK-1 is a proposed
+reversible, dose-controlled, phase-gated activation-state intervention: a
+temporary steering recipe that can be turned on only during specified social
+phases, swept across layers and coefficients, and stopped when guardrail
+monitors detect sycophancy, false certainty, manipulation, or boundary collapse.
+
+In this framing, the biological literature contributes motifs rather than
+claims. Ketamine-adjacent self/other findings motivate caution around boundary
+precision and social salience, while exNMDA models motivate placement, timing,
+decay, and conjunctive gating. Neither source validates CK-1 in humans, neural
+data, or model behavior. The construct remains a compute-only hypothesis until
+it survives cue-balanced expansion, Modal activation extraction, causal
+steering telemetry, and eventually human behavioral validation if the prior
+steps justify it.
+
+The immediate next step is therefore narrow: expand the 4 phase contrasts / 8
+seed prompts into a cue-balanced CK-1 batch, run the existing Modal activation
+layer sweep, and report whether attunement projections separate without
+increasing hallucination, sycophancy, manipulation, or coercive boundary
+collapse. High pairwise accuracy alone should not be treated as success.
+
 ## 8. Ethics And Safety
 
 The target is not agreement maximization. The system must explicitly preserve:
