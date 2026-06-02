@@ -270,6 +270,18 @@ accuracy. Residualized mean margins remain positive: +8.175, +1.876, +1.596,
 model activation evidence, not human or EEG validation, but it is a much better
 answer to the affect-confound objection.
 
+The newest steering-control pass saves a steering-ready Qwen 0.5B layer -1
+direction after removing the learned affect-label subspace. The saved vector is
+orthogonal to the five-dimensional affect basis, keeps 94.4% of activation norm,
+and still separates all 72 affect-control pairs in-sample with a +8.427 mean
+margin and +4.433 minimum margin. On the six held-out steering prompts, raw
+affect-control steering gets a 0.500 positive-vs-negative cohesion win rate and
+-0.005 mean score delta; the affect-residualized direction gets 0.583 and
++0.007. Hidden-state telemetry confirms the residualized hook is applied
+accurately, with 0.00233 mean delta error and a +3.91 post-hook projection shift
+from negative to positive steering. That is a useful control improvement, not a
+clean causal win.
+
 ## Next Steps
 
 The next phase is to make pseudo-cohesion more formal and less vibe-driven. The
@@ -290,10 +302,9 @@ Immediate build targets:
 - Replace the controlled cue-balanced boundary-prior expansion with genuinely
   generated/API-authored paraphrases, then rerun leakage, activation, geometry,
   residual, and signed-vs-squared reports.
-- Run the affect-control activation lane: extract Modal activations for
-  `data/training/affect_control_activation_prompts.jsonl`, train affect
-  directions and cohesion directions in the same model/layer files, then test
-  whether cohesion survives affect-direction regression or projection.
+- Extend the affect-control lane from deterministic wrappers to generated
+  paraphrases, then jointly remove affect, lexical, and compliance/sycophancy
+  directions before trusting steering results.
 - Run the causal steering-method sweep from `docs/neurips_trajectory_plan.md`:
   residual-stream hook sites, strength schedules, generated-token-only edits,
   pairwise evaluators, projection checks on generated outputs, and
@@ -436,6 +447,11 @@ uv run python scripts/run_affect_activation_residualization.py \
   data/features/open_llm/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
   --json-output data/reports/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1_affect_residualization.json \
   --markdown-output data/reports/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1_affect_residualization.md
+uv run python scripts/train_affect_residualized_direction.py \
+  data/features/open_llm/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1.npz \
+  --output data/models/vectors/open_llm/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1_affect_residualized.npz \
+  --json-output data/reports/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1_affect_residualized_direction.json \
+  --markdown-output data/reports/layer_sweep/affect_control__Qwen__Qwen2.5-0.5B-Instruct__layer-1_affect_residualized_direction.md
 ```
 
 Outputs land under `data/processed`, `data/training`, and `data/reports`.

@@ -736,8 +736,9 @@ rerun from scratch.
 ### 7.9 Causal Steering And Hidden-State Telemetry
 
 Status: first Modal generation-time intervention harness, steering-method
-sweep, generated-output projection check, and hidden-state telemetry pass
-complete; initial behavioral results are weak/mixed.
+sweep, generated-output projection check, hidden-state telemetry pass, and
+affect-residualized steering comparison complete; initial behavioral results are
+weak/mixed.
 
 The next publication threshold is causal. A direction that classifies
 positive/negative activation pairs is only a probe unless it can also be used as
@@ -775,6 +776,18 @@ text score only moves +0.015 to +0.024. The current direction is therefore a
 reliable hidden-state displacement direction, not yet a reliable semantic
 control direction.
 
+The affect-control direction gives the same lesson under a stricter confound
+control. A Qwen 0.5B layer -1 direction trained after projecting out the
+five-dimensional affect-label subspace remains orthogonal to the affect basis
+and keeps a +8.427 in-sample mean margin across the 72 affect-control pairs. On
+the six held-out steering prompts, raw affect-control steering reaches 0.500
+positive-vs-negative cohesion success with a -0.005 mean score delta, while the
+affect-residualized direction reaches 0.583 with a +0.007 delta. Hidden
+telemetry confirms accurate vector injection (0.00233 mean delta error) and a
++3.91 post-hook projection shift from negative to positive steering, but the
+short text-score shift is only +0.019. That is a small control improvement, not
+a behavioral steering result.
+
 The methodological consequence is important. The next NeurIPS-relevant
 experiment is not simply a larger probe benchmark. It is a steering-method
 sweep: residual-stream hook sites, generated-token-only steering, strength
@@ -786,8 +799,9 @@ preserving refusal, privacy, truth, dissent, and exit rights.
 
 ### 7.10 Affect-Control Residualization
 
-Status: complete for first local text-control export; pending Modal activation
-residualization and any real EEG or human validation.
+Status: complete for first local text-control export, Modal activation
+residualization, and an affect-residualized steering-control smoke; pending
+generated paraphrase hardening and any real EEG or human validation.
 
 The NOVA emotion-decoding post is useful here as a methodological warning, not
 as evidence for this project. NOVA emphasizes careful stimulus curation,
@@ -836,6 +850,17 @@ behavioral signal becomes worth testing, should follow the NOVA lesson
 directly: PSD and differential-entropy baselines, subject/session splits, simple
 ridge first, and explicit separation of affect decoding from social-cohesion
 claims.
+
+We also trained a steering-ready Qwen 0.5B layer -1 vector in the residualized
+activation space and saved it in the original coordinate basis for the Modal
+generation hook. The saved vector is orthogonal to the affect basis and keeps
+1.000 in-sample pairwise accuracy on the 72 affect-control pairs, with a +8.427
+mean margin and +4.433 minimum margin. Its first generation-time smoke improves
+slightly over the raw affect-control direction but remains weak, reinforcing the
+main causal bottleneck: removing affect confounds helps the control story, but
+does not yet make activation addition a reliable semantic intervention. The
+telemetry pass is nevertheless useful because it localizes the remaining failure
+downstream of hook application.
 
 ## 8. Ethics And Safety
 
