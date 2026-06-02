@@ -26,6 +26,9 @@ social cohesion vectors before touching expensive human or neural experiments.
   manipulation resistance, and privacy/exit rights.
 - Export local social-game validation prompts across dictator, public-goods,
   ultimatum, trust, and restorative-repair settings.
+- Export a CK-1 social-state modulator prompt suite for testing reversible,
+  phase-gated attunement amplification against sycophancy, hallucination,
+  manipulation, and boundary-collapse guardrails.
 - Run a lexical leakage gate on pairwise benchmarks before trusting activation
   or SAE results.
 - Audit direction geometry with signed and absolute off-diagonal cosines so
@@ -217,6 +220,14 @@ than independent axes, but no high-absolute anti-aligned pairs appear, and
 residual mechanism directions still separate all six groups after the global
 direction is removed. This is a stronger compute-only smoke test, not a human
 or neural claim.
+
+The next concept lane is computational social-state modulation. It translates
+the user's "computational ketamine" idea into a safer control-theoretic object:
+temporary, reversible, dose-controlled, phase-gated activation interventions
+with explicit side-effect monitors. The first recipe, `ck1_attunement_amplifier`,
+is not a biological claim. It is a small prompt scaffold for testing safe
+attunement against pseudo-attunement failures: forced unity, sycophancy,
+hallucination, manipulation, and coercive boundary collapse.
 
 The first causal activation-steering harness now exists. It runs held-out social
 decision prompts through Modal while adding a signed direction at negative,
