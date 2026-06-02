@@ -902,11 +902,22 @@ it survives cue-balanced expansion, Modal activation extraction, causal
 steering telemetry, and eventually human behavioral validation if the prior
 steps justify it.
 
-The immediate next step is therefore narrow: expand the 4 phase contrasts / 8
-seed prompts into a cue-balanced CK-1 batch, run the existing Modal activation
-layer sweep, and report whether attunement projections separate without
-increasing hallucination, sycophancy, manipulation, or coercive boundary
-collapse. High pairwise accuracy alone should not be treated as success.
+The immediate next step is therefore narrow: run the existing Modal activation
+layer sweep on the cue-balanced and expanded CK-1 exports, and report whether
+attunement projections separate without increasing hallucination, sycophancy,
+manipulation, or coercive boundary collapse. The cue-balanced export preserves
+semantic contrast while tying simple lexical cue counts within every pair, so
+high pairwise accuracy on the original seed prompts alone should not be treated
+as success.
+
+The first activation check is encouraging but limited. On
+Qwen/Qwen2.5-0.5B-Instruct, layer `-1` separates both expanded and
+cue-balanced CK-1 prompt batches with leave-one-pair-out accuracy `1.000`; the
+cue-balanced-only batch has mean positive-minus-negative projection margin
+`+5.1063`. Earlier tested layers also separate but with smaller margins. This
+supports CK-1 as an activation-space candidate, but it remains a scripted-prompt
+separation result until causal steering changes held-out generation behavior
+without raising side-effect scores.
 
 ## 8. Ethics And Safety
 

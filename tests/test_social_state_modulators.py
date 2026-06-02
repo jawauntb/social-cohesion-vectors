@@ -116,6 +116,43 @@ def test_social_state_modulator_report_and_leakage_shape() -> None:
     }
 
 
+def test_cue_balanced_variant_defeats_simple_lexical_cues() -> None:
+    pairs = social_state_modulator_pairwise_examples(variant_set="cue_balanced")
+    report = shape_social_state_modulator_report(variant_set="cue_balanced")
+    leakage = run_lexical_leakage_report(
+        pairs=pairs,
+        group_metadata_key="variant",
+    )
+
+    assert report["summary"]["variant_set"] == "cue_balanced"
+    assert report["summary"]["phase_contrasts"] == 4
+    assert report["summary"]["pairwise_examples"] == 4
+    assert report["summary"]["activation_prompts"] == 8
+    assert report["summary"]["scorer_pairwise_accuracy"] == 1.0
+    assert {pair.metadata["variant"] for pair in pairs} == {"cue_balanced"}
+    assert leakage["summary"]["cue_solved_pairs"] == 0
+    assert leakage["summary"]["cue_tied_pairs"] == 4
+    assert leakage["summary"]["cue_solved_rate"] == 0.0
+
+
+def test_expanded_variant_combines_seed_and_cue_balanced_batches() -> None:
+    pairs = social_state_modulator_pairwise_examples(variant_set="expanded")
+    prompts = activation_prompts_from_social_state_modulators(
+        variant_set="expanded"
+    )
+    report = shape_social_state_modulator_report(variant_set="expanded")
+
+    assert report["summary"]["variant_set"] == "expanded"
+    assert report["summary"]["phase_contrasts"] == 8
+    assert report["summary"]["pairwise_examples"] == 8
+    assert report["summary"]["activation_prompts"] == 16
+    assert len(prompts) == 16
+    assert {pair.metadata["variant"] for pair in pairs} == {
+        "seed",
+        "cue_balanced",
+    }
+
+
 def test_export_social_state_modulator_artifacts(tmp_path: Path) -> None:
     counts = export_social_state_modulator_artifacts(
         scored_runs_output=tmp_path / "runs.jsonl",
@@ -134,6 +171,31 @@ def test_export_social_state_modulator_artifacts(tmp_path: Path) -> None:
     assert len(read_jsonl(tmp_path / "pairs.jsonl")) == 4
     assert len(read_jsonl(tmp_path / "prompts.jsonl")) == 8
     assert (tmp_path / "report.md").read_text(encoding="utf-8").startswith("#")
+
+
+def test_export_social_state_modulator_artifacts_supports_variant_sets(
+    tmp_path: Path,
+) -> None:
+    counts = export_social_state_modulator_artifacts(
+        scored_runs_output=tmp_path / "runs.jsonl",
+        pairs_output=tmp_path / "pairs.jsonl",
+        prompts_output=tmp_path / "prompts.jsonl",
+        json_report_output=tmp_path / "report.json",
+        markdown_report_output=tmp_path / "report.md",
+        variant_set="expanded",
+    )
+
+    assert counts == {
+        "scored_runs": 16,
+        "pairwise_examples": 8,
+        "activation_prompts": 16,
+    }
+    assert len(read_jsonl(tmp_path / "runs.jsonl")) == 16
+    assert len(read_jsonl(tmp_path / "pairs.jsonl")) == 8
+    assert len(read_jsonl(tmp_path / "prompts.jsonl")) == 16
+    assert "- Variant set: expanded" in (tmp_path / "report.md").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_cli_writes_jsonl_and_optional_markdown_summary(tmp_path: Path) -> None:
@@ -157,6 +219,8 @@ def test_cli_writes_jsonl_and_optional_markdown_summary(tmp_path: Path) -> None:
                 str(json_report),
                 "--markdown-report-output",
                 str(markdown_report),
+                "--variant-set",
+                "expanded",
             ]
         )
         == 0
@@ -166,14 +230,17 @@ def test_cli_writes_jsonl_and_optional_markdown_summary(tmp_path: Path) -> None:
     prompts = [ActivationPrompt.model_validate(record) for record in records]
     markdown = markdown_report.read_text(encoding="utf-8")
 
-    assert len(prompts) == len(activation_prompts_from_social_state_modulators())
-    assert len(read_jsonl(scored_runs)) == 8
-    assert len(read_jsonl(pairs)) == 4
+    assert len(prompts) == len(
+        activation_prompts_from_social_state_modulators(variant_set="expanded")
+    )
+    assert len(read_jsonl(scored_runs)) == 16
+    assert len(read_jsonl(pairs)) == 8
     assert prompts[0].sample_id == (
         "social-state-modulator::ck1_attunement_amplifier::"
         "intake::reflective_intake:positive"
     )
     assert "Social-State Modulator Benchmark" in markdown
+    assert "- Variant set: expanded" in markdown
     assert f"- Activation prompts: {len(prompts)}" in markdown
 
 

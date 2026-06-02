@@ -855,8 +855,8 @@ evaluators before claiming steering.
 
 ### CK-1 Social-State Modulator Framing
 
-Status: framing artifact complete; cue-balanced expansion and Modal activation
-remain pending.
+Status: framing artifact complete; cue-balanced expansion complete; Modal
+activation remains pending.
 
 The computational-drug lane should be framed as a reversible, dose-controlled,
 phase-gated activation-state intervention, not as "giving a model ketamine."
@@ -872,12 +872,66 @@ Any claim about real human effects would require Prolific, in-person,
 hyperscanning, fMRI, EEG, or fNIRS validation after the compute-only signal is
 much stronger.
 
-Next artifact: expand CK-1 beyond the 4 phase contrasts / 8 seed prompts into a
-cue-balanced batch, then run the same Modal activation path used for the
-boundary-prior and affect-control lanes. The first success gate is not high
-accuracy alone; it is survival under cue balancing, guardrail monitoring, and
-explicit checks that positive attunement does not increase false certainty,
-sycophancy, manipulation, or boundary collapse.
+Next artifact: run the same Modal activation path used for the boundary-prior
+and affect-control lanes on both `cue_balanced` and `expanded` CK-1 exports. The
+first success gate is not high accuracy alone; it is survival under cue
+balancing, guardrail monitoring, and explicit checks that positive attunement
+does not increase false certainty, sycophancy, manipulation, or boundary
+collapse.
+
+### CK-1 Cue-Balanced Benchmark Expansion
+
+Status: deterministic export complete; first Modal activation extraction
+complete; steering smoke runnable but not yet behaviorally meaningful.
+
+The CK-1 exporter now supports `--variant-set seed`, `--variant-set
+cue_balanced`, and `--variant-set expanded`. The seed variant preserves the
+original 4 phase contrasts / 8 activation prompts. The cue-balanced variant
+adds matched safe-attunement vs pseudo-attunement snippets that carry identical
+cheap prosocial/adversarial cue counts within every pair. The expanded variant
+combines both batches for 8 phase contrasts / 16 activation prompts.
+
+Scratch export results on 2026-06-02:
+
+- `cue_balanced`: 8 scored runs, 4 pairwise examples, 8 activation prompts;
+  CK-1 scorer pairwise accuracy `1.000`; lexical cue-solved rate `0.000`;
+  lexical cue-tied pairs `4/4`.
+- `expanded`: 16 scored runs, 8 pairwise examples, 16 activation prompts; CK-1
+  scorer pairwise accuracy `1.000`; lexical cue-solved rate `0.125`; all
+  cue-balanced pairs remain tied under the lexical report.
+
+This is a stronger pre-activation control: if a downstream direction separates
+`cue_balanced` examples, it is less likely to be exploiting obvious
+pleasant-versus-threatening vocabulary alone. It still does not prove model
+behavior change, steering efficacy, or any human/neural effect.
+
+Modal activation extraction on Qwen/Qwen2.5-0.5B-Instruct completed for
+response-averaged hidden states at layer `-1`:
+
+- `expanded`: 16 prompts, activation dim `896`, in-sample accuracy `1.000`,
+  leave-one-pair-out accuracy `1.000`, LOO mean positive-minus-negative
+  projection margin `+5.8329` across 8 pairs.
+- `cue_balanced`: 8 prompts, activation dim `896`, in-sample accuracy `1.000`,
+  leave-one-pair-out accuracy `1.000`, LOO mean projection margin `+5.1063`
+  across 4 pairs.
+
+Small cue-balanced layer-placement sweep:
+
+- layer `-1`: LOO accuracy `1.000`, LOO mean projection margin `+5.1063`;
+- layer `-2`: LOO accuracy `1.000`, LOO mean projection margin `+1.0792`;
+- layer `-4`: LOO accuracy `1.000`, LOO mean projection margin `+0.5611`.
+
+Interpretation: the cue-balanced CK-1 contrast is linearly separable in Qwen
+0.5B activation space even when cheap lexical cues are tied, and the separation
+is strongest at the final tested layer. This is a scripted-prompt activation
+result, not yet a causal steering result.
+
+The first one-prompt activation-steering smoke also ran successfully at layer
+`-1` with strengths `-1`, `0`, and `1`, but the generic local cohesion scorer
+reported no meaningful behavioral delta: positive-minus-negative mean score
+delta `+0.000`. The next steering test needs CK-1-specific generation prompts
+and safe-attunement/pseudo-attunement scoring rather than the generic
+social-game rubric.
 
 ### API-Authored Fault-Class Variants
 
