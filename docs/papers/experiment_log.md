@@ -1,6 +1,6 @@
 # Social Cohesion Vector Experiment Log
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 This log records completed local experiments and expected next artifacts. It is
 intentionally conservative: items that have not produced a local report are
@@ -852,6 +852,32 @@ hook application and short-horizon projection movement are not sufficient for
 stable semantic control. The next causal experiment should measure
 projection-to-output coupling over generation length and add stronger pairwise
 evaluators before claiming steering.
+
+### CK-1 Social-State Modulator Framing
+
+Status: framing artifact complete; cue-balanced expansion and Modal activation
+remain pending.
+
+The computational-drug lane should be framed as a reversible, dose-controlled,
+phase-gated activation-state intervention, not as "giving a model ketamine."
+The first named recipe, CK-1, is an attunement-amplifier hypothesis: amplify
+safe relational attunement, shared-context reasoning, perspective permeability,
+and grounded uncertainty while monitoring or inhibiting sycophancy,
+hallucination, manipulation, and coercive boundary collapse.
+
+This is not a ketamine claim, not a biological synchrony claim, and not human or
+neural validation. Ketamine-adjacent and exNMDA papers are being used only as
+motifs for state change, timing, placement, gating, and side-effect monitoring.
+Any claim about real human effects would require Prolific, in-person,
+hyperscanning, fMRI, EEG, or fNIRS validation after the compute-only signal is
+much stronger.
+
+Next artifact: expand CK-1 beyond the 4 phase contrasts / 8 seed prompts into a
+cue-balanced batch, then run the same Modal activation path used for the
+boundary-prior and affect-control lanes. The first success gate is not high
+accuracy alone; it is survival under cue balancing, guardrail monitoring, and
+explicit checks that positive attunement does not increase false certainty,
+sycophancy, manipulation, or boundary collapse.
 
 ### API-Authored Fault-Class Variants
 
