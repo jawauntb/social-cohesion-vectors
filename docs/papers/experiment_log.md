@@ -591,9 +591,10 @@ mechanism-specific residual directions, not orthogonal mechanism axes.
 
 ### Affect-Control Residualization
 
-Status: complete for first local NOVA-inspired text-control export and
-ridge-residualization report; pending Modal activations and real EEG/behavioral
-validation.
+Status: complete for first local NOVA-inspired text-control export,
+ridge-residualization report, Qwen 0.5B/1.5B Modal activation sweeps, and
+activation-space affect-subspace residualization; pending generated paraphrase
+hardening and real EEG/behavioral validation.
 
 Artifacts:
 
@@ -601,6 +602,9 @@ Artifacts:
 - `data/training/affect_control_pairwise_probe_dataset.jsonl`
 - `data/training/affect_control_activation_prompts.jsonl`
 - `data/reports/affect_control_residualization.md`
+- `data/features/open_llm/layer_sweep/affect_control__Qwen__*.npz`
+- `data/reports/layer_sweep/affect_control__Qwen__*.md`
+- `data/reports/layer_sweep/affect_control__Qwen__*_affect_residualization.md`
 
 This lane takes the useful methodological lesson from Alljoined's NOVA emotion
 decoding post without treating it as evidence for this project. NOVA uses
@@ -632,10 +636,31 @@ gets 0.750 pairwise leave-one-out accuracy, so some emotional/style residue is
 predictive. But the local scorer's contextual-relation preference survives this
 coarse affect residualization on all 72 deterministic pairs. This is useful
 evidence against the weakest "it is only positive affect / low threat" objection,
-not a neural claim. The next run should push these 144 prompts through Modal,
-train affect directions and cohesion directions in the same activation files,
-then report whether cohesion remains separable after projecting out or
-regressing out affect directions.
+not a neural claim.
+
+The first activation-space pass pushes the same 144 prompts through Modal and
+tests whether the cohesion direction survives after learning a five-dimensional
+affect-label subspace from the training folds only and projecting it out before
+retraining the cohesion direction.
+
+| Model | Layer | Dim | Raw LOO acc | Raw mean margin | Residualized LOO acc | Residualized mean margin | Residualized min margin | Retained norm |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen 0.5B | -1 | 896 | 1.000 | +10.507 | 1.000 | +8.175 | +4.112 | 0.946 |
+| Qwen 0.5B | -2 | 896 | 1.000 | +2.146 | 1.000 | +1.876 | +0.989 | 0.993 |
+| Qwen 0.5B | -4 | 896 | 1.000 | +1.814 | 1.000 | +1.596 | +0.926 | 0.987 |
+| Qwen 1.5B | -1 | 1536 | 1.000 | +6.099 | 1.000 | +4.836 | +2.441 | 0.980 |
+| Qwen 1.5B | -2 | 1536 | 1.000 | +8.676 | 1.000 | +7.703 | +4.499 | 0.985 |
+| Qwen 1.5B | -4 | 1536 | 1.000 | +7.743 | 1.000 | +6.570 | +3.997 | 0.956 |
+
+Interpretation: the activation result does not collapse when the coarse
+affect-label subspace is removed. The margins shrink, especially at the final
+0.5B layer, so affect labels are represented and are not a fake control. But
+the genuine-vs-pseudo boundary-prior separation remains positive for every
+held-out pair across six model/layer points. This is now the cleanest
+compute-only answer to "maybe the vector is just positive affect / low threat."
+The next version should replace deterministic affect wrappers with generated
+paraphrases and add an activation report that jointly removes affect, lexical
+cue, and compliance/sycophancy directions.
 
 ### Causal Activation Steering Smoke
 

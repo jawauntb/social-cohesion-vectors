@@ -74,7 +74,15 @@ compose into stable semantic behavior.
 
 ## Immediate Next Move
 
-The next high-value work is a monotonic steering protocol, not another
+The affect-control activation pass is now complete for Qwen 0.5B and 1.5B at
+layers -1, -2, and -4. Raw cohesion directions and affect-residualized cohesion
+directions both reach 1.000 leave-one-pair-out accuracy on the 72-pair
+affect-control benchmark. This strengthens the representation claim: the
+current boundary-prior signal is not erased by coarse
+anger/sadness/fear/disgust/happy/neutral activation subspaces. It remains
+synthetic text evidence, not human or EEG validation.
+
+The next high-value work is therefore a monotonic steering protocol, not another
 probe-only benchmark:
 
 - compare residual-stream hook sites against MLP/block-output hook sites;

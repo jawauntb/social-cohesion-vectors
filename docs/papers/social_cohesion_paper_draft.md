@@ -815,10 +815,27 @@ version should extract open-model activations for
 `data/training/affect_control_activation_prompts.jsonl`, train affect directions
 and cohesion directions in the same model/layer files, and report whether the
 cohesion direction survives projection or regression against the affect
-directions. A later EEG pilot, if the behavioral signal becomes worth testing,
-should follow the NOVA lesson directly: PSD and differential-entropy baselines,
-subject/session splits, simple ridge first, and explicit separation of affect
-decoding from social-cohesion claims.
+directions.
+
+That activation pass is now complete for Qwen 0.5B and 1.5B at layers -1, -2,
+and -4. Raw cohesion directions reach 1.000 leave-one-pair-out accuracy on all
+six model/layer points. The affect-residualized protocol learns a
+five-dimensional affect-label subspace from the training folds only, projects
+that subspace out of train and held-out activations, retrains the cohesion
+direction on residualized training activations, and evaluates the held-out pair.
+The residualized direction still reaches 1.000 leave-one-pair-out accuracy on
+all six model/layer points. Mean residualized margins remain strongly positive:
++8.175, +1.876, +1.596, +4.836, +7.703, and +6.570 across Qwen 0.5B layers
+-1/-2/-4 and Qwen 1.5B layers -1/-2/-4 respectively. Minimum residualized
+margins are also positive, ranging from +0.926 to +4.499.
+
+The interpretation is narrow but useful: coarse affect directions are present
+and reduce margins, yet they do not explain away the current boundary-prior
+cohesion separation in open-model activations. A later EEG pilot, if the
+behavioral signal becomes worth testing, should follow the NOVA lesson
+directly: PSD and differential-entropy baselines, subject/session splits, simple
+ridge first, and explicit separation of affect decoding from social-cohesion
+claims.
 
 ## 8. Ethics And Safety
 
