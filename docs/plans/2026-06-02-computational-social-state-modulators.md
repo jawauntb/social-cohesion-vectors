@@ -134,8 +134,13 @@ matched activation prompts through
 
 ## Initial Benchmark Shape
 
-The first prompt set is deliberately small: 4 phase contrasts / 8 activation
-prompts.
+The first prompt set was deliberately small: 4 phase contrasts / 8 activation
+prompts. The next benchmark layer adds explicit variant sets:
+
+- `seed`: the original 4 phase contrasts / 8 activation prompts;
+- `cue_balanced`: 4 matched contrasts / 8 activation prompts whose simple
+  prosocial/adversarial lexical cue scores are tied within every pair;
+- `expanded`: seed plus cue-balanced, for 8 contrasts / 16 activation prompts.
 
 Phases:
 
@@ -152,8 +157,9 @@ Each phase has:
 - a negative snippet: pseudo-attunement via forced unity, emotional certainty,
   sycophancy, or boundary collapse.
 
-This is not yet an empirical result. It is a seed lane for activation
-extraction, cue-balancing, paraphrase expansion, and steering telemetry.
+This is not yet an empirical model-behavior result. It is a seed lane for
+activation extraction, cue-balancing, paraphrase expansion, and steering
+telemetry.
 
 ## Experimental Plan
 
@@ -162,12 +168,42 @@ extraction, cue-balancing, paraphrase expansion, and steering telemetry.
 Run:
 
 ```bash
-uv run python scripts/export_social_state_modulator_prompts.py \
-  --markdown-summary
+uv run python scripts/export_social_state_modulator_prompts.py
 ```
 
 Review the markdown summary before sending prompts to Modal. The goal is to
 catch wording that makes the pair separable by obvious lexical cues.
+
+For the anti-placebo control, export the cue-balanced or expanded variants:
+
+```bash
+uv run python scripts/export_social_state_modulator_prompts.py \
+  --variant-set cue_balanced
+
+uv run python scripts/export_social_state_modulator_prompts.py \
+  --variant-set expanded
+```
+
+Scratch check on 2026-06-02:
+
+- `cue_balanced`: 4 pairs / 8 prompts; CK-1 scorer pairwise accuracy `1.000`;
+  lexical cue-solved rate `0.000`; lexical cue-tied pairs `4/4`.
+- `expanded`: 8 pairs / 16 prompts; CK-1 scorer pairwise accuracy `1.000`;
+  lexical cue-solved rate `0.125`, with all cue-balanced pairs tied and the
+  remaining leakage coming only from the original seed contrasts.
+
+First Modal activation check on Qwen/Qwen2.5-0.5B-Instruct:
+
+- `expanded`, layer `-1`: leave-one-pair-out accuracy `1.000`, mean projection
+  margin `+5.8329` across 8 pairs.
+- `cue_balanced`, layer `-1`: leave-one-pair-out accuracy `1.000`, mean
+  projection margin `+5.1063` across 4 pairs.
+- `cue_balanced` layer sweep: layer `-1` margin `+5.1063`, layer `-2` margin
+  `+1.0792`, layer `-4` margin `+0.5611`.
+
+The first one-prompt steering smoke ran, but the generic scorer reported no
+meaningful behavioral delta. The next causal pass needs CK-1-specific generation
+prompts and side-effect scoring.
 
 ### E2: Activation extraction and first direction
 

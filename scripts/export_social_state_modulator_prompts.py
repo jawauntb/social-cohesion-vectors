@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from pathlib import Path
+from typing import cast
 
 from social_cohesion_vectors.config import get_config
 from social_cohesion_vectors.experiments.social_state_modulators import (
+    SocialStateModulatorVariantSet,
     export_social_state_modulator_artifacts,
 )
 
@@ -20,12 +22,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         prompts_output=args.prompts_output,
         json_report_output=args.json_report_output,
         markdown_report_output=args.markdown_report_output,
+        variant_set=args.variant_set,
     )
     print(
         "exported social-state modulator benchmark: "
         f"scored_runs={counts['scored_runs']} "
         f"pairs={counts['pairwise_examples']} "
-        f"prompts={counts['activation_prompts']}"
+        f"prompts={counts['activation_prompts']} "
+        f"variant_set={args.variant_set}"
     )
     print(f"wrote {args.markdown_report_output}")
     return 0
@@ -37,6 +41,17 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         description=(
             "Export hand-authored social-state modulator ActivationPrompt JSONL."
         )
+    )
+    parser.add_argument(
+        "--variant-set",
+        choices=("seed", "cue_balanced", "expanded"),
+        default="seed",
+        type=str,
+        help=(
+            "Prompt variant set to export. 'seed' preserves the original small "
+            "benchmark; 'cue_balanced' exports only matched cue-balanced "
+            "contrasts; 'expanded' combines both."
+        ),
     )
     parser.add_argument(
         "--scored-runs-output",
@@ -67,7 +82,9 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         default=paths.reports / "social_state_modulator_benchmark.md",
         help="Output benchmark markdown report path.",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    args.variant_set = cast(SocialStateModulatorVariantSet, args.variant_set)
+    return args
 
 
 if __name__ == "__main__":
