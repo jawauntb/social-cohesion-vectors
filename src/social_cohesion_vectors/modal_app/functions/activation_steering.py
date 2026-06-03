@@ -156,6 +156,106 @@ def generate_with_activation_steering(
     gpu=get_config().modal.default_gpu,
     timeout=1800,
 )
+def generate_with_activation_cocktail(
+    records: list[dict[str, Any]],
+    recipes: list[dict[str, Any]],
+    model_id: str = DEFAULT_MODEL_ID,
+    max_new_tokens: int = 128,
+    max_length: int = 512,
+    use_chat_template: bool = True,
+    seed: int = 0,
+) -> list[dict[str, Any]]:
+    """Generate text while applying one or more activation-steering components."""
+
+    if not records:
+        raise ValueError("At least one prompt record is required.")
+    if not recipes:
+        raise ValueError("At least one steering recipe is required.")
+
+    random.seed(seed)
+    torch = importlib.import_module("torch")
+    transformers = importlib.import_module("transformers")
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tokenizer, model = _load_tokenizer_and_model(
+        transformers=transformers,
+        torch=torch,
+        model_id=model_id,
+        device=device,
+    )
+    layers = _transformer_layers(model)
+
+    generations: list[dict[str, Any]] = []
+    for recipe in recipes:
+        recipe_id = str(recipe.get("recipe_id", "recipe")).strip() or "recipe"
+        components = _prepare_cocktail_components(
+            recipe.get("components", []),
+            torch=torch,
+            device=device,
+            dtype=model.dtype,
+            hidden_size=int(model.config.hidden_size),
+            layer_count=len(layers),
+        )
+        handles = _register_cocktail_hooks(layers, components)
+        try:
+            for record in records:
+                for component in components:
+                    component["state"]["forward_calls"] = 0
+                prompt = str(record["text"]).strip()
+                encoded_text = _format_prompt(
+                    tokenizer,
+                    prompt,
+                    use_chat_template=use_chat_template,
+                )
+                encoded = tokenizer(
+                    encoded_text,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=max_length,
+                )
+                encoded = {name: value.to(device) for name, value in encoded.items()}
+                prompt_tokens = int(encoded["input_ids"].shape[1])
+                with torch.inference_mode():
+                    generated = model.generate(
+                        **encoded,
+                        do_sample=False,
+                        max_new_tokens=max_new_tokens,
+                        pad_token_id=tokenizer.pad_token_id,
+                        eos_token_id=tokenizer.eos_token_id,
+                        use_cache=True,
+                    )
+                new_tokens = generated[0, prompt_tokens:]
+                generated_text = tokenizer.decode(
+                    new_tokens,
+                    skip_special_tokens=True,
+                ).strip()
+                generations.append(
+                    {
+                        "prompt_id": str(record.get("prompt_id", record.get("id", ""))),
+                        "mechanism": str(record.get("mechanism", "")),
+                        "prompt": prompt,
+                        "recipe_id": recipe_id,
+                        "recipe_label": str(recipe.get("label", recipe_id)),
+                        "components": _component_metadata(components),
+                        "model_id": model_id,
+                        "generated_text": generated_text,
+                    }
+                )
+        finally:
+            for handle in handles:
+                handle.remove()
+    return generations
+
+
+@app.function(
+    image=open_llm_image(),
+    secrets=modal_secrets,
+    gpu=get_config().modal.default_gpu,
+    timeout=1800,
+)
 def trace_activation_steering(
     records: list[dict[str, Any]],
     direction: list[float],
@@ -573,10 +673,109 @@ def _format_prompt(
     return prompt
 
 
+def _prepare_cocktail_components(
+    components: Any,
+    *,
+    torch: Any,
+    device: Any,
+    dtype: Any,
+    hidden_size: int,
+    layer_count: int,
+) -> list[dict[str, Any]]:
+    prepared: list[dict[str, Any]] = []
+    if not isinstance(components, list):
+        raise ValueError("recipe components must be a list.")
+    for index, component in enumerate(components):
+        if not isinstance(component, dict):
+            raise ValueError(f"recipe component {index} must be a dictionary.")
+        component_id = str(component.get("component_id", f"component_{index}"))
+        layer = int(component.get("layer", DEFAULT_LAYER))
+        hook_site = str(component.get("hook_site", "post"))
+        position = str(component.get("steering_position", "last"))
+        timing = str(component.get("steering_timing", "generate"))
+        if hook_site not in {"pre", "post"}:
+            raise ValueError(f"unknown hook site for {component_id}: {hook_site}")
+        if position not in {"last", "all"}:
+            raise ValueError(f"unknown steering position for {component_id}: {position}")
+        if timing not in {"always", "prefill", "generate"}:
+            raise ValueError(f"unknown steering timing for {component_id}: {timing}")
+        prepared.append(
+            {
+                "component_id": component_id,
+                "strength": float(component.get("strength", 0.0)),
+                "layer": layer,
+                "layer_index": _resolve_layer(layer, layer_count),
+                "hook_site": hook_site,
+                "steering_position": position,
+                "steering_timing": timing,
+                "state": {"forward_calls": 0},
+                "direction": _direction_tensor(
+                    torch=torch,
+                    direction=list(component.get("direction", [])),
+                    device=device,
+                    dtype=dtype,
+                    hidden_size=hidden_size,
+                ),
+            }
+        )
+    return prepared
+
+
+def _register_cocktail_hooks(
+    layers: Sequence[Any],
+    components: Sequence[dict[str, Any]],
+) -> list[Any]:
+    handles: list[Any] = []
+    for component in components:
+        block = layers[int(component["layer_index"])]
+        if component["hook_site"] == "pre":
+            handles.append(
+                block.register_forward_pre_hook(
+                    _pre_steering_hook(
+                        direction=component["direction"],
+                        strength=float(component["strength"]),
+                        position=component["steering_position"],
+                        timing=component["steering_timing"],
+                        state=component["state"],
+                    )
+                )
+            )
+        elif component["hook_site"] == "post":
+            handles.append(
+                block.register_forward_hook(
+                    _post_steering_hook(
+                        direction=component["direction"],
+                        strength=float(component["strength"]),
+                        position=component["steering_position"],
+                        timing=component["steering_timing"],
+                        state=component["state"],
+                    )
+                )
+            )
+        else:
+            raise ValueError(f"unknown hook site: {component['hook_site']}")
+    return handles
+
+
+def _component_metadata(components: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "component_id": str(component["component_id"]),
+            "strength": float(component["strength"]),
+            "layer": int(component["layer"]),
+            "hook_site": str(component["hook_site"]),
+            "steering_position": str(component["steering_position"]),
+            "steering_timing": str(component["steering_timing"]),
+        }
+        for component in components
+    ]
+
+
 __all__ = [
     "SteeringHookSite",
     "SteeringPosition",
     "SteeringTiming",
+    "generate_with_activation_cocktail",
     "generate_with_activation_steering",
     "trace_activation_steering",
 ]
