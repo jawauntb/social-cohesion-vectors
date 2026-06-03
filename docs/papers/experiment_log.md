@@ -1,10 +1,16 @@
 # Social Cohesion Vector Experiment Log
 
-Last updated: 2026-06-02
+Last updated: 2026-06-03
 
 This log records completed local experiments and expected next artifacts. It is
 intentionally conservative: items that have not produced a local report are
 marked pending or partial.
+
+Current coordination note: the active CK-5 parallel batch is tracked in
+`docs/research/2026-06-03-ck5-parallel-execution-status.md`. It covers CK-4
+Modal run prep, transition-record upgrades, the Drosophila matrix, a raw EEG
+manifest builder, and optional SAE environment cleanup. These are compute,
+provenance, and readiness tasks only.
 
 ## Completed Local Artifacts
 

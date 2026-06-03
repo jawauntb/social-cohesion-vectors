@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
-
-import torch
-from sae_lens import SAE
-from transformer_lens import HookedTransformer
 
 from social_cohesion_vectors.config import get_config
 from social_cohesion_vectors.datasets import read_jsonl
@@ -54,8 +51,10 @@ def run_probe(
     labels = [str(record["label"]) for record in records]
     pair_ids = [str(record["pair_id"]) for record in records]
 
-    model = HookedTransformer.from_pretrained(model_id, device="cpu")
-    sae, cfg, _ = SAE.from_pretrained(release, sae_id, device="cpu")
+    ml = _load_optional_ml()
+    torch = ml["torch"]
+    model = ml["HookedTransformer"].from_pretrained(model_id, device="cpu")
+    sae, cfg, _ = ml["SAE"].from_pretrained(release, sae_id, device="cpu")
     _, cache = model.run_with_cache(texts, names_filter=[sae_id], prepend_bos=True)
     activations = cache[sae_id].mean(dim=1)
     with torch.no_grad():
@@ -115,7 +114,7 @@ def run_probe(
 
 
 def evaluate_leave_one_pair_out(
-    activations: torch.Tensor,
+    activations: Any,
     *,
     labels: Sequence[str],
     pair_ids: Sequence[str],
@@ -292,6 +291,30 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 
 def _mapping(value: object) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
+
+
+def _load_optional_ml() -> dict[str, Any]:
+    """Import optional GPT-2/SAE dependencies only for model execution."""
+
+    missing: list[str] = []
+    modules: dict[str, Any] = {}
+    for module_name in ("torch", "sae_lens", "transformer_lens"):
+        try:
+            modules[module_name] = importlib.import_module(module_name)
+        except ImportError:
+            missing.append(module_name)
+    if missing:
+        joined = ", ".join(missing)
+        raise ImportError(
+            "GPT-2 SAE pseudo probe requires optional ML dependencies missing from "
+            f"this environment: {joined}. Install the project's ml and sae extras "
+            "to run model-backed probing."
+        )
+    return {
+        "torch": modules["torch"],
+        "SAE": modules["sae_lens"].SAE,
+        "HookedTransformer": modules["transformer_lens"].HookedTransformer,
+    }
 
 
 if __name__ == "__main__":

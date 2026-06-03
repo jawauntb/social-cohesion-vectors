@@ -399,3 +399,20 @@ The THINGS-EEG2 gate is complete when:
   orphaned rows.
 - [ ] The first encoder report states that it is a representation-learning
   baseline and contains no human-intervention or social-cohesion claim.
+
+## Tiny Builder Status
+
+`src/social_cohesion_vectors/experiments/raw_eeg_manifest.py` implements the
+first metadata-only manifest builder and validator. It reads local CSV, TSV, or
+JSONL stubs for dataset access, stimuli, features, responses, and splits, then
+writes JSONL rows using `raw-eeg-bridge-manifest-v0`.
+
+`scripts/build_raw_eeg_manifest_stub.py` is the command-line entry point for
+THINGS-EEG2 stub manifests. It joins stimulus ids, feature paths, response
+paths, subject/session/run/trial fields, and split fields without loading raw
+EEG, image bytes, generated features, or trained encoders.
+
+The builder requires relative metadata paths and includes an explicit
+representation-learning-only claim boundary in every row. See
+`docs/research/2026-06-03-raw-eeg-manifest-builder.md` for input fields,
+validation behavior, and an example command.

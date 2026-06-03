@@ -29,6 +29,9 @@ social cohesion vectors before touching expensive human or neural experiments.
 - Export a CK-1 social-state modulator prompt suite for testing reversible,
   phase-gated attunement amplification against sycophancy, hallucination,
   manipulation, and boundary-collapse guardrails.
+- Track the CK-5 parallel execution batch for CK-4 Modal prep,
+  transition-record upgrades, Drosophila matrix planning, raw EEG manifest
+  scaffolding, and optional SAE environment cleanup.
 - Run a lexical leakage gate on pairwise benchmarks before trusting activation
   or SAE results.
 - Audit direction geometry with signed and absolute off-diagonal cosines so
@@ -296,6 +299,13 @@ bottleneck: layer -1 is only flat/slightly positive (0.500 win rate, +0.002
 score delta), while layers -2 and -4 become behaviorally worse (0.167/-0.026
 and 0.083/-0.018). The valuable claim is projection-to-output coupling failure,
 not clean prosocial steering.
+
+The current CK-5 coordination note is
+`docs/research/2026-06-03-ck5-parallel-execution-status.md`. It is a short
+status tracker for CK-4 Modal run prep, transition-record upgrades, the
+Drosophila perturbation matrix, a raw EEG manifest builder, and optional SAE
+environment cleanup. These are scaffolding tasks, not human, neural, biological,
+therapeutic, or drug-effect claims.
 
 ## Next Steps
 

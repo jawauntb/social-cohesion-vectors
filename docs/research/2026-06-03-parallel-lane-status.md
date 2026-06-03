@@ -22,6 +22,10 @@ Shared guide:
 - [CK-4 Parallel Lane Status](2026-06-03-ck4-parallel-lane-status.md)
   records the active execution batch across scheduled cocktails, transition
   records, raw EEG/fMRI provenance, and the toy Drosophila substrate.
+- [CK-5 Parallel Execution Status](2026-06-03-ck5-parallel-execution-status.md)
+  tracks the current five-task batch: CK-4 Modal run prep, transition-record
+  upgrades, Drosophila matrix, raw EEG manifest builder, and optional SAE env
+  cleanup.
 
 ## Lane 1: LLM Pharmacology / CK Assay
 
