@@ -48,16 +48,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         generate_with_activation_cocktail,
     )
 
-    with app.run():
-        generations = generate_with_activation_cocktail.remote(
-            records=prompts,
-            recipes=modal_recipes,
-            model_id=args.model_id,
-            max_new_tokens=args.max_new_tokens,
-            max_length=args.max_length,
-            use_chat_template=not args.no_chat_template,
-            seed=args.seed,
-        )
+    generations: list[dict[str, object]] | None = None
+    try:
+        with app.run():
+            generations = generate_with_activation_cocktail.remote(
+                records=prompts,
+                recipes=modal_recipes,
+                model_id=args.model_id,
+                max_new_tokens=args.max_new_tokens,
+                max_length=args.max_length,
+                use_chat_template=not args.no_chat_template,
+                seed=args.seed,
+            )
+    except KeyboardInterrupt:
+        raise SystemExit("Interrupted before Modal generations returned.") from None
+    if generations is None:
+        raise SystemExit("Modal generation did not return records.")
 
     generations = _merge_prompt_metadata(generations, prompts)
     write_ck3_generations(generations, args.generations_output)

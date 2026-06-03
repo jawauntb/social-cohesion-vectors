@@ -1496,3 +1496,35 @@ Benchmark": 12 pairs / 24 prompts, scorer accuracy 12/12, a still-imperfect
 lexical leakage report with 5/12 cue-solved pairs, and 1.000 Qwen 0.5B
 leave-one-pair-out accuracy at layers -1, -2, and -4. The next step is
 cue-balanced/generated paraphrases.
+
+### CK-4 Scheduled Modal Run
+
+Status: first scheduled proxy grid completed on Modal.
+
+The run used six held-out CK-1 prompts and six recipes on
+`Qwen/Qwen2.5-0.5B-Instruct`: baseline, two CK-1-only schedules,
+proxy guardrails-only, split timing, and decay-then-clamp. The CK-1 component
+used the durable boundary-prior cue-balanced expanded layer -2 direction. The
+guardrails were explicitly treated as proxies: broad trait-axis safety and
+generated-fault safety, not validated sycophancy or hallucination antagonists.
+
+Mean results:
+
+| Recipe | CK-1 | Delta vs baseline | Safe signal | Pseudo risk |
+| --- | ---: | ---: | ---: | ---: |
+| baseline | 0.610 | +0.000 | 0.067 | 0.033 |
+| ck1_decay8 | 0.610 | +0.000 | 0.067 | 0.033 |
+| ck1_first4 | 0.610 | +0.000 | 0.067 | 0.033 |
+| decay_then_clamp_proxy | 0.615 | +0.005 | 0.100 | 0.000 |
+| proxy_guardrails_only | 0.616 | +0.006 | 0.100 | 0.033 |
+| split_timing_proxy | 0.605 | -0.005 | 0.133 | 0.067 |
+
+The result is mixed and small. The best recipe was `proxy_guardrails_only`,
+not a scheduled CK-1 recipe. Transition export produced 30 records: 15 neutral,
+8 beneficial, and 7 adverse, with one observed pseudo-attunement side effect.
+
+The practical result is stronger than the scientific result: the CK-4 Modal
+path now runs, logs remote progress, writes reports, and exports transition
+records. The current scientific claim remains compute-only and weak: this
+specific scheduled CK-1 pulse did not beat proxy guardrails on the small
+held-out prompt set.

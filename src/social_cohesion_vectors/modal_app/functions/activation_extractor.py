@@ -227,18 +227,22 @@ def _load_tokenizer_and_model(
     device: Any,
 ) -> tuple[Any, Any]:
     token = os.environ.get("HUGGINGFACE_TOKEN") or os.environ.get("HF_TOKEN") or None
+    print(f"[modal] loading tokenizer model_id={model_id}", flush=True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, token=token)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     dtype = torch.bfloat16 if device.type == "cuda" else torch.float32
+    print(f"[modal] loading model model_id={model_id} dtype={dtype}", flush=True)
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_id,
         torch_dtype=dtype,
         token=token,
     )
+    print(f"[modal] moving model to device={device}", flush=True)
     model.to(device)
     model.eval()
+    print(f"[modal] model ready model_id={model_id}", flush=True)
     return tokenizer, model
 
 
