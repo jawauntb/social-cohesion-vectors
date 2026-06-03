@@ -8,8 +8,9 @@ from pathlib import Path
 
 from social_cohesion_vectors.transition_records import (
     load_ck_records_or_report,
+    summarize_transition_records,
     transition_records_from_ck_records,
-    transition_records_from_ck_report,
+    transition_records_from_report,
     write_transition_records,
 )
 
@@ -18,7 +19,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     records, report = load_ck_records_or_report(args.input)
     if report:
-        transitions = transition_records_from_ck_report(
+        transitions = transition_records_from_report(
             report,
             baseline_recipe_id=args.baseline_recipe_id,
             source_id=str(args.input),
@@ -30,7 +31,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             replication_context={"source_id": str(args.input)},
         )
     count = write_transition_records(transitions, args.output)
-    print(f"wrote {args.output} transitions={count}")
+    summary = summarize_transition_records(transitions)
+    print(
+        f"wrote {args.output} transitions={count} "
+        f"effect_class={summary['effect_class']} "
+        f"side_effect_status={summary['side_effect_status']} "
+        f"washout_status={summary['washout_status']}"
+    )
     return 0
 
 

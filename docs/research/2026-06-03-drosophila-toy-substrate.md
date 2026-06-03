@@ -22,7 +22,8 @@ readouts are synthetic fixtures used to make perturbation reporting concrete.
 
 The implementation lives in
 `src/social_cohesion_vectors/experiments/drosophila_substrate.py`, with a CLI
-exporter at `scripts/export_drosophila_toy_fixture.py`.
+exporter at `scripts/export_drosophila_toy_fixture.py` and a matrix exporter at
+`scripts/run_drosophila_transmitter_matrix.py`.
 
 The fixture contains:
 
@@ -73,3 +74,40 @@ uv run python scripts/export_drosophila_toy_fixture.py \
 
 The `1.0` coefficient is the neutral baseline and should report zero target
 movement, zero off-target movement, and zero washout.
+
+## Transmitter Matrix
+
+The expanded matrix sweep runs the same synthetic edge-scaling operation across
+every toy transmitter label and every requested coefficient. With the default
+fixture this is a `6 x 5` matrix:
+
+- acetylcholine;
+- GABA;
+- glutamate;
+- dopamine;
+- serotonin;
+- octopamine.
+
+Each matrix row remains a toy intervention record with target, off-target,
+selectivity, washout, instability, and scaled-edge fields. The matrix report
+adds:
+
+- `matrix_shape`: transmitter count by coefficient count;
+- `rankings.target`: rows sorted by absolute target movement, with selectivity
+  as a secondary key;
+- `rankings.selective`: rows sorted by target/off-target selectivity;
+- `rankings.washout`: rows sorted from lowest to highest washout;
+- `by_transmitter`: one rankable best-target summary per toy transmitter.
+
+Example:
+
+```bash
+uv run python scripts/run_drosophila_transmitter_matrix.py \
+  --coefficient 0.0 \
+  --coefficient 1.0 \
+  --coefficient 2.0
+```
+
+These rankings are only for synthetic fixture triage. They should be described
+as toy graph readouts, not as transmitter biology, pharmacology, behavioral
+effects, neural effects, or organism-level predictions.

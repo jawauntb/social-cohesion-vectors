@@ -7,10 +7,11 @@ origin: CK-4 parallel-lane bridge from cocktail reports to perturbation records
 
 # 2026-06-03 Transition Record Schema
 
-This schema converts CK-3/CK-4 cocktail report records into lane-agnostic
-perturbation transition records. It is deliberately lightweight: each transition
-pairs a non-baseline cocktail generation with the prompt-matched baseline
-generation, then records the observed score and text movement.
+This schema converts CK-3/CK-4 cocktail report records and toy substrate sweep
+reports into lane-agnostic perturbation transition records. It is deliberately
+lightweight: each transition pairs a non-baseline cocktail generation with the
+prompt-matched baseline generation, or a non-baseline toy sweep result with the
+coefficient-1.0 toy baseline, then records the observed movement.
 
 The record is compute-only. It does not claim biological, pharmacological,
 neural, human, therapeutic, or receptor-level effects.
@@ -38,7 +39,49 @@ neural, human, therapeutic, or receptor-level effects.
 - `washout`: marked `not_measured` because cocktail reports are single-pass
   generation assays.
 - `replication_context`: source report metadata plus prompt, recipe, model, seed,
-  and generation parameters when present.
+  generation parameters, and component steering schedules when present.
+
+CK-4 scheduled components preserve `steering_schedule` in both
+`perturbation.components` and `timing`. The replication context also carries
+`component_steering_schedules` so provenance summaries retain scheduled
+components even when consumers do not inspect the full component payload.
+
+## Toy Substrate Records
+
+Toy substrate reports with `results` are supported without changing the
+Drosophila/toy-substrate exporter. Results are grouped by graph, transmitter,
+and source-class first; within each group, `coefficient == 1.0` is treated as
+the baseline, and every other result becomes a transition record.
+
+Toy records reuse the same top-level fields:
+
+- `baseline_state`: graph id, transmitter mechanism, and baseline toy metrics.
+- `perturbation`: edge-scaling intervention id, coefficient, transmitter,
+  source class, and scaled-edge count.
+- `dose`: one component with coefficient and distance from vehicle
+  (`abs(coefficient - 1.0)`) as `absolute_strength_sum`.
+- `site`: graph id, target nodes, and scaled-edge count.
+- `timing`: constant `simulation_step` timing for the static sweep.
+- `effect_class`: `beneficial_transition` when target movement occurs without
+  off-target movement, washout residue, or instability; `mixed_transition` when
+  target movement co-occurs with off-target movement or residue;
+  `adverse_transition` for instability or off-target/residue without target
+  movement; otherwise `neutral_transition`.
+- `side_effects`: off-target movement and instability status.
+- `washout`: `recovered` when the toy washout value is zero, otherwise
+  `residual`.
+
+Toy records remain compute-only and do not claim real Drosophila biology,
+behavior, pharmacology, neural effects, or social effects.
+
+## Summaries
+
+`summarize_transition_records(records)` returns three count maps:
+
+- `effect_class`: count by transition effect class.
+- `side_effect_status`: `observed` versus `none`.
+- `washout_status`: count by washout status such as `not_measured`,
+  `recovered`, or `residual`.
 
 ## Export
 
@@ -53,3 +96,7 @@ uv run python scripts/export_ck3_transition_records.py \
 The exporter also accepts generation JSONL or a JSON list of records. Records
 without a prompt-matched baseline are skipped so the output remains a true
 baseline-to-perturbation transition set.
+
+The same exporter auto-detects toy substrate JSON reports that contain
+`results`, writes transition JSONL, and prints effect-class, side-effect, and
+washout summary counts.

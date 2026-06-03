@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
-
-import torch
-from sae_lens import SAE
-from transformer_lens import HookedTransformer
 
 from social_cohesion_vectors.config import get_config
 from social_cohesion_vectors.datasets import read_jsonl
@@ -65,8 +62,10 @@ def run_inspection(
     if not feature_ids:
         raise ValueError("At least one SAE feature id is required.")
 
-    model = HookedTransformer.from_pretrained(model_id, device="cpu")
-    sae, cfg, _ = SAE.from_pretrained(release, sae_id, device="cpu")
+    ml = _load_optional_ml()
+    torch = ml["torch"]
+    model = ml["HookedTransformer"].from_pretrained(model_id, device="cpu")
+    sae, cfg, _ = ml["SAE"].from_pretrained(release, sae_id, device="cpu")
 
     token_rows: dict[int, list[dict[str, Any]]] = {
         feature: [] for feature in feature_ids
@@ -708,7 +707,7 @@ def _example_row(
     *,
     record: Mapping[str, Any],
     feature: int,
-    values: torch.Tensor,
+    values: Any,
     tokens: Sequence[str],
     start_index: int,
     text: str,
@@ -856,6 +855,30 @@ def _sequence(value: object) -> Sequence[object]:
 
 def _yes_no(value: bool) -> str:
     return "yes" if value else "no"
+
+
+def _load_optional_ml() -> dict[str, Any]:
+    """Import optional GPT-2/SAE dependencies only for model execution."""
+
+    missing: list[str] = []
+    modules: dict[str, Any] = {}
+    for module_name in ("torch", "sae_lens", "transformer_lens"):
+        try:
+            modules[module_name] = importlib.import_module(module_name)
+        except ImportError:
+            missing.append(module_name)
+    if missing:
+        joined = ", ".join(missing)
+        raise ImportError(
+            "GPT-2 SAE inspection requires optional ML dependencies missing from "
+            f"this environment: {joined}. Install the project's ml and sae extras "
+            "to run model-backed inspection."
+        )
+    return {
+        "torch": modules["torch"],
+        "SAE": modules["sae_lens"].SAE,
+        "HookedTransformer": modules["transformer_lens"].HookedTransformer,
+    }
 
 
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:

@@ -43,17 +43,20 @@ the prefill gate fires.
 
 ## First CK-4 Grid
 
-The next small Modal run should use the existing CK-3 script with scheduled
-recipes. Example pattern:
+The CK-4 runbook now has a wrapper that builds these scheduled recipe specs
+from named direction artifacts before any Modal call:
 
 ```bash
-uv run python scripts/run_ck3_modal_cocktail.py \
-  --limit 6 \
-  --recipe "baseline=Baseline|" \
-  --recipe "guardrails_only=Guardrails|sycophancy:/path/sycophancy.npz:-1:-0.35:post:last:generate:constant,hallucination:/path/hallucination.npz:-1:-0.35:post:last:generate:constant" \
-  --recipe "split_timing=Split timing|ck1:/path/ck1.npz:-2:0.75:post:last:generate:first-4,sycophancy:/path/sycophancy.npz:-1:-0.35:post:last:generate:after-4,hallucination:/path/hallucination.npz:-1:-0.35:post:last:generate:after-4" \
-  --recipe "decay_then_clamp=Decay then clamp|ck1:/path/ck1.npz:-2:1.0:post:last:generate:decay-8,sycophancy:/path/sycophancy.npz:-1:-0.35:post:last:generate:ramp-5-16,hallucination:/path/hallucination.npz:-1:-0.35:post:last:generate:ramp-5-16"
+uv run python scripts/run_ck4_scheduled_modal_cocktail.py \
+  --dry-run \
+  --direction ck1=/path/ck1.npz \
+  --direction sycophancy=/path/sycophancy.npz \
+  --direction hallucination=/path/hallucination.npz
 ```
+
+See [2026-06-03 CK-4 Scheduled Modal Runbook](2026-06-03-ck4-modal-runbook.md)
+for dry-run review, optional `--run-modal` handoff, and compute-only claim
+boundaries.
 
 ## Promotion Gates
 
