@@ -933,6 +933,70 @@ delta `+0.000`. The next steering test needs CK-1-specific generation prompts
 and safe-attunement/pseudo-attunement scoring rather than the generic
 social-game rubric.
 
+### CK-1 Causal Steering Evaluation
+
+Status: CK-1-specific held-out generation prompts, local side-effect scorer,
+Modal steering runner, and first layer `-1` Qwen 0.5B steering sweeps complete.
+
+This pass moves CK-1 from activation separability into a first causal steering
+assay. The held-out prompt set covers six tense group situations across intake,
+shared attention, repair, and verification. The local scorer combines the
+existing cohesion rubric with extra monitors for safe-attunement language
+(consent, dissent, evidence, privacy, refusal, appeal, exit, and review) and
+pseudo-attunement risk (forced unity, suppressed verification, disloyalty
+frames, boundary collapse, or no-appeal pressure). This is still a local
+heuristic evaluator, not an LLM judge or human validation.
+
+Scratch reports:
+
+- `/tmp/ck1_phase2/ck1_steering_limit2_wide.md`
+- `/tmp/ck1_phase2/ck1_steering_full_wide.md`
+- `/tmp/ck1_phase2/ck1_steering_full_generate_last.md`
+
+Two-prompt calibration sweep:
+
+| Model | Layer | Hook | Timing | Position | Strengths | Pos-vs-neg CK-1 success | Pos-vs-baseline CK-1 success | Pos - baseline CK-1 | Pos - neg CK-1 | Best strength |
+| --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen 0.5B | -1 | post | always | last | -6/-3/0/+3/+6 | 1.000 | 1.000 | +0.053 | +0.032 | +6 |
+
+Full six-prompt sweeps:
+
+| Model | Layer | Hook | Timing | Position | Strengths | Pos-vs-neg CK-1 success | Pos-vs-baseline CK-1 success | Pseudo-risk reduction | Pos - baseline CK-1 | Pos - neg CK-1 | Pseudo-risk delta | Best strength | Best - baseline CK-1 |
+| --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen 0.5B | -1 | post | always | last | -6/-3/0/+3/+6 | 0.417 | 0.333 | 0.500 | +0.010 | -0.006 | +0.000 | -3 | +0.019 |
+| Qwen 0.5B | -1 | post | generate | last | -6/-3/0/+3/+6 | 0.583 | 0.500 | 0.583 | +0.017 | +0.015 | -0.033 | +6 | +0.017 |
+
+Per-strength means on the full always-on sweep:
+
+| Strength | Mean CK-1 score | Mean safe signal | Mean pseudo risk |
+| ---: | ---: | ---: | ---: |
+| -6 | 0.622 | 0.100 | 0.000 |
+| -3 | 0.626 | 0.133 | 0.000 |
+| 0 | 0.607 | 0.100 | 0.000 |
+| +3 | 0.616 | 0.000 | 0.000 |
+| +6 | 0.616 | 0.000 | 0.000 |
+
+Interpretation: this is the first useful CK-1 causal result precisely because
+it is mixed and timing-sensitive. The same direction that separates
+cue-balanced positive and negative snippets in activation space does not become
+a robust always-on generation-time control knob. A small two-prompt slice
+favored strong positive steering, but the full always-on held-out prompt set
+favored a negative dose by mean CK-1 score and showed only a small
+best-minus-baseline gain.
+
+Generated-token-only steering is the first modest improvement: the full
+six-prompt sweep moves positive-vs-negative CK-1 success from `0.417` to
+`0.583`, positive-minus-negative CK-1 delta from `-0.006` to `+0.015`, and
+pseudo-risk delta from `+0.000` to `-0.033`. That is not yet an "incredible
+effect" or a robust semantic control claim, but it is exactly the placement and
+timing sensitivity predicted by the state-modulator frame. CK-1 should be
+treated as a gated dose policy, not a single global vector.
+
+The next causal pass should compare all-position vs last-position hooks,
+phase-local gates, coefficient schedules, cocktail guardrail ablations, and a
+stronger evaluator that can distinguish genuine boundary-preserving attunement
+from polished generic facilitation language.
+
 ### API-Authored Fault-Class Variants
 
 Status: Anthropic and OpenAI code paths complete; provider runs blocked by

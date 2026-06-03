@@ -919,6 +919,32 @@ supports CK-1 as an activation-space candidate, but it remains a scripted-prompt
 separation result until causal steering changes held-out generation behavior
 without raising side-effect scores.
 
+The first CK-1-specific causal steering assay makes that limitation concrete.
+On six held-out group-facilitation prompts, a Qwen 0.5B layer `-1` post-hook
+sweep with strengths `-6/-3/0/+3/+6` produced mixed rather than monotonic
+behavior. The positive-vs-negative CK-1 success rate was `0.417`, the
+positive-vs-baseline success rate was `0.333`, and the mean positive-minus-
+negative CK-1 score delta was `-0.006`. The best mean CK-1 score appeared at
+strength `-3`, only `+0.019` above baseline. A smaller two-prompt calibration
+slice had favored strong positive steering, so the full result is best read as
+prompt- and phase-sensitive dose behavior rather than a clean sign failure.
+
+Changing only the timing from always-on steering to generated-token-only
+steering improves the result but does not yet make it a robust control knob.
+The same six-prompt sweep under post/generate/last steering reaches `0.583`
+positive-vs-negative CK-1 success, `0.500` positive-vs-baseline success,
+`+0.015` mean positive-minus-negative CK-1 delta, and `-0.033` pseudo-risk
+delta. The best mean score is at `+6`, `+0.017` above baseline. This is the
+first modest causal improvement and a useful timing signal, not a publishable
+semantic-steering claim.
+
+This is scientifically useful because it shows where the computational-drug
+analogy becomes operational: CK-1 cannot be treated as an always-on global
+vector. The intervention needs a placement policy, timing window, dose schedule,
+phase gate, and side-effect monitor. The current evidence supports CK-1 as a
+measurable activation-state candidate and a causal-method benchmark; it does
+not yet support a claim of reliable semantic control.
+
 ## 8. Ethics And Safety
 
 The target is not agreement maximization. The system must explicitly preserve:
