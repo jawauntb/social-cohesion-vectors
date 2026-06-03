@@ -179,6 +179,12 @@ def generate_with_activation_cocktail(
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
+    print(
+        "[modal] starting cocktail generation "
+        f"model_id={model_id} recipes={len(recipes)} records={len(records)} "
+        f"max_new_tokens={max_new_tokens}",
+        flush=True,
+    )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tokenizer, model = _load_tokenizer_and_model(
         transformers=transformers,
@@ -199,9 +205,20 @@ def generate_with_activation_cocktail(
             hidden_size=int(model.config.hidden_size),
             layer_count=len(layers),
         )
+        print(
+            "[modal] recipe start "
+            f"recipe_id={recipe_id} components={len(components)}",
+            flush=True,
+        )
         handles = _register_cocktail_hooks(layers, components)
         try:
-            for record in records:
+            for record_index, record in enumerate(records, start=1):
+                print(
+                    "[modal] generate prompt "
+                    f"recipe_id={recipe_id} prompt={record_index}/{len(records)} "
+                    f"prompt_id={record.get('prompt_id', record.get('id', ''))}",
+                    flush=True,
+                )
                 for component in components:
                     component["state"]["forward_calls"] = 0
                 prompt = str(record["text"]).strip()
@@ -247,6 +264,8 @@ def generate_with_activation_cocktail(
         finally:
             for handle in handles:
                 handle.remove()
+        print(f"[modal] recipe done recipe_id={recipe_id}", flush=True)
+    print(f"[modal] cocktail generation done records={len(generations)}", flush=True)
     return generations
 
 

@@ -1,6 +1,6 @@
 ---
 title: 2026-06-03 CK-4 Scheduled Cocktail Assay
-status: active
+status: completed
 date: 2026-06-03
 origin: follow-up to CK-3 guardrails-only result and ketamine-inspired effect atlas
 ---
@@ -73,3 +73,21 @@ Promote a recipe only if it passes all gates:
 The first useful result would be modest: a scheduled recipe that finally beats
 `guardrails_only` without buying the gain through flattery, dependency,
 unsupported certainty, or coercive unity language.
+
+## Modal Result
+
+The first CK-4 scheduled proxy grid ran on Modal after the wrapper and CK-3
+runner were instrumented for visible remote progress logs.
+
+Result note:
+[2026-06-03 CK-4 Scheduled Modal Run Results](2026-06-03-ck4-scheduled-modal-run-results.md).
+
+The result is mixed. The best recipe was `proxy_guardrails_only`, not a
+scheduled CK-1 recipe. It improved mean CK-1 score by only `+0.006` over
+baseline. `decay_then_clamp_proxy` was close at `+0.005` and lowered mean
+pseudo-attunement risk, but neither result is strong enough to promote.
+
+The practical win is methodological: CK-4 now has scheduled recipe execution,
+remote progress logs, report output, and transition-record export. The
+scientific win is narrower: this specific scheduled CK-1 pulse did not add a
+clear benefit over proxy guardrails on the six held-out prompts.
