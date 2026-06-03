@@ -26,8 +26,20 @@ def test_parse_recipe_spec_supports_baseline_and_components(tmp_path) -> None:
     assert spec.components[0].hook_site == "post"
     assert spec.components[0].steering_position == "last"
     assert spec.components[0].steering_timing == "generate"
+    assert spec.components[0].steering_schedule == "constant"
     assert baseline.recipe_id == "baseline"
     assert baseline.components == ()
+
+
+def test_parse_recipe_spec_supports_ck4_component_schedule(tmp_path) -> None:
+    direction_path = tmp_path / "direction.npz"
+    spec = parse_recipe_spec(
+        f"split=Split|ck1:{direction_path}:-2:0.75:post:last:generate:first-4"
+    )
+
+    assert spec.components[0].layer == -2
+    assert spec.components[0].strength == 0.75
+    assert spec.components[0].steering_schedule == "first-4"
 
 
 def test_recipe_specs_to_modal_payload_loads_unit_directions(tmp_path) -> None:
@@ -45,6 +57,7 @@ def test_recipe_specs_to_modal_payload_loads_unit_directions(tmp_path) -> None:
     assert payload[1]["recipe_id"] == "agonist"
     assert payload[1]["components"][0]["component_id"] == "ck1"
     assert np.allclose(payload[1]["components"][0]["direction"], [0.6, 0.8])
+    assert payload[1]["components"][0]["steering_schedule"] == "constant"
 
 
 def test_shape_ck3_cocktail_report_compares_to_baseline() -> None:

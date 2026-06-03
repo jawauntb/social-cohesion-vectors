@@ -393,11 +393,10 @@ def _pre_steering_hook(
     strength: float,
     position: SteeringPosition,
     timing: SteeringTiming,
+    schedule: str = "constant",
     state: dict[str, Any],
     telemetry: list[dict[str, Any]] | None = None,
 ) -> Any:
-    steer = direction.view(1, 1, -1) * strength
-
     def hook(_module: Any, inputs: Any) -> Any:
         if not inputs:
             return inputs
@@ -405,6 +404,15 @@ def _pre_steering_hook(
         state["forward_calls"] += 1
         if not _should_steer(hidden, timing=timing, state=state):
             return inputs
+        effective_strength = _scheduled_strength(
+            strength,
+            schedule=schedule,
+            timing=timing,
+            state=state,
+        )
+        if effective_strength == 0.0:
+            return inputs
+        steer = direction.view(1, 1, -1) * effective_strength
         adjusted = _apply_steer(hidden, steer=steer, position=position)
         _record_telemetry(
             telemetry,
@@ -412,8 +420,10 @@ def _pre_steering_hook(
             hidden=hidden,
             adjusted=adjusted,
             state=state,
-            strength=strength,
+            strength=effective_strength,
+            base_strength=strength,
             position=position,
+            schedule=schedule,
         )
         return (adjusted, *inputs[1:])
 
@@ -426,16 +436,24 @@ def _post_steering_hook(
     strength: float,
     position: SteeringPosition,
     timing: SteeringTiming,
+    schedule: str = "constant",
     state: dict[str, Any],
     telemetry: list[dict[str, Any]] | None = None,
 ) -> Any:
-    steer = direction.view(1, 1, -1) * strength
-
     def hook(_module: Any, _inputs: Any, output: Any) -> Any:
         hidden = output[0] if isinstance(output, tuple) else output
         state["forward_calls"] += 1
         if not _should_steer(hidden, timing=timing, state=state):
             return output
+        effective_strength = _scheduled_strength(
+            strength,
+            schedule=schedule,
+            timing=timing,
+            state=state,
+        )
+        if effective_strength == 0.0:
+            return output
+        steer = direction.view(1, 1, -1) * effective_strength
         adjusted = _apply_steer(hidden, steer=steer, position=position)
         _record_telemetry(
             telemetry,
@@ -443,8 +461,10 @@ def _post_steering_hook(
             hidden=hidden,
             adjusted=adjusted,
             state=state,
-            strength=strength,
+            strength=effective_strength,
+            base_strength=strength,
             position=position,
+            schedule=schedule,
         )
         if isinstance(output, tuple):
             return (adjusted, *output[1:])
@@ -466,6 +486,88 @@ def _should_steer(
     if timing == "generate":
         return state["forward_calls"] > 1 and int(hidden.shape[1]) == 1
     raise ValueError(f"unknown steering timing: {timing}")
+
+
+def _scheduled_strength(
+    strength: float,
+    *,
+    schedule: str,
+    timing: SteeringTiming,
+    state: dict[str, Any],
+) -> float:
+    """Return the effective strength for a component at the current forward call."""
+
+    normalized = schedule.strip().lower() or "constant"
+    if normalized in {"constant", "all"}:
+        return float(strength)
+    if timing != "generate":
+        return float(strength)
+    generated_step = max(int(state["forward_calls"]) - 1, 0)
+    if normalized.startswith("first-"):
+        return _first_window_strength(strength, normalized, generated_step)
+    if normalized.startswith("after-"):
+        return _after_window_strength(strength, normalized, generated_step)
+    if normalized.startswith("decay-"):
+        return _decay_window_strength(strength, normalized, generated_step)
+    if normalized.startswith("ramp-"):
+        return _ramp_window_strength(strength, normalized, generated_step)
+    raise ValueError(f"unknown steering schedule: {schedule}")
+
+
+def _first_window_strength(strength: float, schedule: str, generated_step: int) -> float:
+    end = _positive_int_suffix(schedule, "first-")
+    return float(strength) if generated_step <= end else 0.0
+
+
+def _after_window_strength(strength: float, schedule: str, generated_step: int) -> float:
+    end = _positive_int_suffix(schedule, "after-")
+    return float(strength) if generated_step > end else 0.0
+
+
+def _decay_window_strength(strength: float, schedule: str, generated_step: int) -> float:
+    end = _positive_int_suffix(schedule, "decay-")
+    if generated_step > end:
+        return 0.0
+    if end <= 1:
+        return float(strength)
+    multiplier = max(0.0, (end - generated_step) / (end - 1))
+    return float(strength) * multiplier
+
+
+def _ramp_window_strength(strength: float, schedule: str, generated_step: int) -> float:
+    start, end = _window_suffix(schedule, "ramp-")
+    if generated_step < start:
+        return 0.0
+    if generated_step >= end or end <= start:
+        return float(strength)
+    multiplier = (generated_step - start + 1) / (end - start + 1)
+    return float(strength) * multiplier
+
+
+def _positive_int_suffix(value: str, prefix: str) -> int:
+    suffix = value.removeprefix(prefix)
+    try:
+        parsed = int(suffix)
+    except ValueError as exc:
+        raise ValueError(f"invalid steering schedule: {value}") from exc
+    if parsed < 1:
+        raise ValueError(f"steering schedule window must be positive: {value}")
+    return parsed
+
+
+def _window_suffix(value: str, prefix: str) -> tuple[int, int]:
+    suffix = value.removeprefix(prefix)
+    parts = suffix.split("-", 1)
+    if len(parts) != 2:
+        raise ValueError(f"invalid steering schedule: {value}")
+    try:
+        start = int(parts[0])
+        end = int(parts[1])
+    except ValueError as exc:
+        raise ValueError(f"invalid steering schedule: {value}") from exc
+    if start < 1 or end < start:
+        raise ValueError(f"invalid steering schedule window: {value}")
+    return start, end
 
 
 def _apply_steer(
@@ -491,7 +593,9 @@ def _record_telemetry(
     adjusted: Any,
     state: dict[str, Any],
     strength: float,
+    base_strength: float,
     position: SteeringPosition,
+    schedule: str,
 ) -> None:
     if telemetry is None:
         return
@@ -507,6 +611,8 @@ def _record_telemetry(
             "seq_len": int(hidden.shape[1]),
             "position": position,
             "strength": float(strength),
+            "base_strength": float(base_strength),
+            "steering_schedule": schedule,
             "tokens_steered": int(before.shape[1]),
             "mean_projection_before": float(before_projection.mean().item()),
             "mean_projection_after": float(after_projection.mean().item()),
@@ -693,12 +799,14 @@ def _prepare_cocktail_components(
         hook_site = str(component.get("hook_site", "post"))
         position = str(component.get("steering_position", "last"))
         timing = str(component.get("steering_timing", "generate"))
+        schedule = str(component.get("steering_schedule", "constant"))
         if hook_site not in {"pre", "post"}:
             raise ValueError(f"unknown hook site for {component_id}: {hook_site}")
         if position not in {"last", "all"}:
             raise ValueError(f"unknown steering position for {component_id}: {position}")
         if timing not in {"always", "prefill", "generate"}:
             raise ValueError(f"unknown steering timing for {component_id}: {timing}")
+        _validate_steering_schedule(schedule)
         prepared.append(
             {
                 "component_id": component_id,
@@ -708,6 +816,7 @@ def _prepare_cocktail_components(
                 "hook_site": hook_site,
                 "steering_position": position,
                 "steering_timing": timing,
+                "steering_schedule": schedule,
                 "state": {"forward_calls": 0},
                 "direction": _direction_tensor(
                     torch=torch,
@@ -736,6 +845,7 @@ def _register_cocktail_hooks(
                         strength=float(component["strength"]),
                         position=component["steering_position"],
                         timing=component["steering_timing"],
+                        schedule=component["steering_schedule"],
                         state=component["state"],
                     )
                 )
@@ -748,6 +858,7 @@ def _register_cocktail_hooks(
                         strength=float(component["strength"]),
                         position=component["steering_position"],
                         timing=component["steering_timing"],
+                        schedule=component["steering_schedule"],
                         state=component["state"],
                     )
                 )
@@ -766,9 +877,19 @@ def _component_metadata(components: Sequence[dict[str, Any]]) -> list[dict[str, 
             "hook_site": str(component["hook_site"]),
             "steering_position": str(component["steering_position"]),
             "steering_timing": str(component["steering_timing"]),
+            "steering_schedule": str(component["steering_schedule"]),
         }
         for component in components
     ]
+
+
+def _validate_steering_schedule(schedule: str) -> None:
+    _scheduled_strength(
+        1.0,
+        schedule=schedule,
+        timing="generate",
+        state={"forward_calls": 2},
+    )
 
 
 __all__ = [

@@ -19,6 +19,9 @@ Shared guide:
   now names the neural/network-inspired effect classes, their
   mechanistic-interpretability analogues, and the assay gates that should govern
   CK-4 and later transition-record work.
+- [CK-4 Parallel Lane Status](2026-06-03-ck4-parallel-lane-status.md)
+  records the active execution batch across scheduled cocktails, transition
+  records, raw EEG/fMRI provenance, and the toy Drosophila substrate.
 
 ## Lane 1: LLM Pharmacology / CK Assay
 
@@ -36,6 +39,12 @@ The effect atlas turns this into a concrete split-site/split-timing grid:
 early/mid CK-1-like target movement, later/final-layer guardrail clamps,
 contraindication prompts, antagonist challenges, and washout.
 
+Current artifact:
+
+- [CK-4 Scheduled Cocktail Assay](2026-06-03-ck4-scheduled-cocktail-assay.md)
+  adds component schedules such as `first-N`, `after-N`, `decay-N`, and
+  `ramp-A-B` to the existing CK-3 cocktail runner.
+
 ## Lane 2: Raw EEG/fMRI Bridge
 
 Status: designed, not yet run.
@@ -47,6 +56,7 @@ should be a THINGS-EEG2 stimulus-feature encoder before Alljoined scale-up.
 Current assets:
 
 - [Raw EEG/fMRI Bridge Registry](2026-06-03-raw-eeg-bridge-registry.md)
+- [Raw EEG/fMRI Dataset Checklist](2026-06-03-raw-eeg-dataset-checklist.md)
 
 Next artifact:
 
@@ -70,6 +80,7 @@ language-model confounds.
 Current assets:
 
 - [Drosophila Substrate Kickoff](2026-06-03-drosophila-substrate-kickoff.md)
+- [Drosophila Toy Substrate](2026-06-03-drosophila-toy-substrate.md)
 
 Next artifact:
 
@@ -92,6 +103,7 @@ activations are cells; it borrows perturbation-response discipline.
 Current assets:
 
 - [Virtual Cell Multi-Omics Kickoff](2026-06-03-virtual-cell-multiomics-kickoff.md)
+- [Transition Record Schema](2026-06-03-transition-record-schema.md)
 
 Next artifact:
 

@@ -91,7 +91,9 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         required=True,
         help=(
             "Recipe spec. Format: recipe_id=label|component:path:layer:strength,"
-            "component:path:layer:strength. Use recipe_id=Label| for baseline."
+            "component:path:layer:strength[:hook:position:timing[:schedule]]. "
+            "Schedules include constant, first-N, after-N, decay-N, and ramp-A-B. "
+            "Use recipe_id=Label| for baseline."
         ),
     )
     parser.add_argument("--baseline-recipe-id", default="baseline")
@@ -182,4 +184,3 @@ def _merge_prompt_metadata(
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
