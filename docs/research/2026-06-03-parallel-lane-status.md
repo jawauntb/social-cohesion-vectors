@@ -13,6 +13,13 @@ The four-lane program is intact on `main`. CK-3 is the only lane that has now
 run a new compute assay. The other three lanes are scoped as kickoff registries
 and are ready for their first concrete artifacts.
 
+Shared guide:
+
+- [Ketamine-Inspired Effect Atlas](2026-06-03-ketamine-inspired-effect-atlas.md)
+  now names the neural/network-inspired effect classes, their
+  mechanistic-interpretability analogues, and the assay gates that should govern
+  CK-4 and later transition-record work.
+
 ## Lane 1: LLM Pharmacology / CK Assay
 
 Status: running.
@@ -24,6 +31,10 @@ does not yet compose cleanly at the same layer and timing.
 
 Next artifact: CK-4 site/timing separation, with CK-1 and guardrails applied at
 different layers or generation phases.
+
+The effect atlas turns this into a concrete split-site/split-timing grid:
+early/mid CK-1-like target movement, later/final-layer guardrail clamps,
+contraindication prompts, antagonist challenges, and washout.
 
 ## Lane 2: Raw EEG/fMRI Bridge
 
@@ -87,7 +98,8 @@ Next artifact:
 - a transition-record schema that can represent CK-3 recipes and later raw EEG,
   fly graph, or virtual-cell perturbation records;
 - a CK-3-to-transition-record exporter using the assay report as the first
-  filled example.
+  filled example;
+- an atlas-compatible transition field for `effect_class`, so results can be
+  compared across LLM, raw EEG/fMRI, fly graph, and virtual-cell-inspired lanes.
 
 Claim boundary: no cellular or biological claim. This is benchmark grammar.
-

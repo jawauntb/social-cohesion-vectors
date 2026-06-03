@@ -44,6 +44,8 @@ Nearest-term success:
 
 Primary doc: [2026-06-03 Ketamine-Inspired Computational Compound Translation](2026-06-03-ketamine-computational-compound-translation.md)
 
+Effect atlas: [2026-06-03 Ketamine-Inspired Effect Atlas](2026-06-03-ketamine-inspired-effect-atlas.md)
+
 Goal: keep the pharmacology analogy honest. Ketamine/HNK is useful because it
 forces a multi-target model: LHb burst suppression, downstream AMPA/plasticity
 signals, contested opioid/reward/aversion coupling, and side-effect/antagonist

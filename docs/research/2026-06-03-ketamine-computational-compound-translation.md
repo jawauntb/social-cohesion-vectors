@@ -16,6 +16,12 @@ proposal. The aim is to borrow the *measurement discipline* of pharmacology:
 multi-target mechanisms, dose, site, timing, metabolism, side effects,
 antagonist tests, and washout.
 
+Companion guide: the
+[Ketamine-Inspired Effect Atlas](2026-06-03-ketamine-inspired-effect-atlas.md)
+expands this translation into a broader effect-class table spanning
+neural/network changes, exNMDA timing analogies, boundary-prior assays, CK-4
+split-site experiments, and transition-record implications.
+
 ## Pharmacology Grounding
 
 ### Stronger Evidence: Ketamine And Lateral Habenula Burst Suppression
@@ -156,3 +162,6 @@ The important claim boundary:
 > We are not simulating ketamine. We are using ketamine/HNK as a design analogy
 > for multi-target, timed, reversible state intervention with side-effect and
 > antagonist tests.
+
+The same boundary applies to the effect atlas: it is a compute-assay guide, not
+a biological model.
