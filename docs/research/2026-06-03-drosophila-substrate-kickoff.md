@@ -201,6 +201,12 @@ control condition, failure mode, and claim allowed.
 1. `docs/research/2026-06-03-drosophila-substrate-kickoff.md`
    - This kickoff note and boundary-setting document.
 
+First implemented follow-up:
+
+- [Drosophila Toy Substrate](2026-06-03-drosophila-toy-substrate.md) adds a
+  synthetic graph fixture, transmitter-class edge-scaling sweep, target and
+  off-target movement metrics, washout metrics, and a CLI exporter.
+
 2. `docs/research/drosophila_substrate_registry.md`
    - Source registry for FlyWire/Codex, larval connectome, BANC/control
      substrate, adult LIF model, and effectome datasets.
@@ -265,4 +271,3 @@ neural synchrony, pharmacology, medical effects, or real organism outcomes.
 Those claims require the appropriate empirical experiments, controls, and
 domain collaborators. Until then, Drosophila is a disciplined state-modulation
 substrate for graph and dynamics methods development.
-

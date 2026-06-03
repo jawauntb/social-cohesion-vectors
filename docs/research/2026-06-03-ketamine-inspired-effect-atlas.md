@@ -124,6 +124,21 @@ Promotion rule:
 - the effect qualitatively replicates on at least one additional model or layer
   neighborhood before it is treated as more than a local artifact.
 
+## Current Execution Batch
+
+The active CK-4 batch is being split into four compute-only artifacts:
+
+- scheduled LLM cocktail recipes with explicit site, timing, gates, and washout;
+- transition records that preserve perturbation provenance and observed state
+  movement;
+- a raw EEG/fMRI access and provenance checklist before any data pull;
+- a Drosophila graph/dynamics toy for target, off-target, and washout readouts.
+
+These are coordination artifacts, not evidence of biological, therapeutic,
+human behavioral, or human neural effects. Their common output should be a
+transition-record-compatible description of what was perturbed, where, when,
+what moved, what failed, and whether the state returned toward baseline.
+
 ## Boundary-Prior Assay Extension
 
 The boundary-prior paper should guide assays, not biological claims. The useful

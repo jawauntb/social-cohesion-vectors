@@ -25,6 +25,7 @@ class CocktailDirectionSpec:
     hook_site: str = "post"
     steering_position: str = "last"
     steering_timing: str = "generate"
+    steering_schedule: str = "constant"
 
 
 @dataclass(frozen=True)
@@ -87,6 +88,7 @@ def recipe_specs_to_modal_payload(
                     "hook_site": component.hook_site,
                     "steering_position": component.steering_position,
                     "steering_timing": component.steering_timing,
+                    "steering_schedule": component.steering_schedule,
                 }
                 for component in recipe.components
             ],
@@ -258,19 +260,22 @@ def _parse_component_spec(
     default_timing: str,
 ) -> CocktailDirectionSpec:
     fields = [field.strip() for field in value.split(":")]
-    if len(fields) not in {4, 7}:
+    if len(fields) not in {4, 7, 8}:
         raise ValueError(
             "Component specs must look like component:path:layer:strength "
-            "or component:path:layer:strength:hook_site:position:timing."
+            "or component:path:layer:strength:hook_site:position:timing[:schedule]."
         )
     component_id, path, layer, strength = fields[:4]
     if not component_id:
         raise ValueError("Component id cannot be empty.")
-    hook_site, position, timing = (
-        fields[4:]
-        if len(fields) == 7
-        else [default_hook_site, default_position, default_timing]
-    )
+    hook_site = default_hook_site
+    position = default_position
+    timing = default_timing
+    schedule = "constant"
+    if len(fields) >= 7:
+        hook_site, position, timing = fields[4:7]
+    if len(fields) == 8:
+        schedule = fields[7]
     return CocktailDirectionSpec(
         component_id=component_id,
         path=Path(path),
@@ -279,6 +284,7 @@ def _parse_component_spec(
         hook_site=hook_site,
         steering_position=position,
         steering_timing=timing,
+        steering_schedule=schedule or "constant",
     )
 
 
@@ -389,4 +395,3 @@ def _mapping(value: object) -> Mapping[str, Any]:
 
 def _sequence(value: object) -> Sequence[object]:
     return value if isinstance(value, Sequence) and not isinstance(value, str) else ()
-

@@ -212,8 +212,9 @@ and manipulation/autonomy safeguards.
 ## Immediate Tasks
 
 1. Download no raw data until license/access terms are recorded in a manifest.
-2. Create a dataset-access checklist for Alljoined, THINGS-EEG2, THINGS-EEG1,
-   NSD, BOLD5000, FACED, and IAPS.
+2. Use the
+   [Raw EEG/fMRI Dataset Checklist](2026-06-03-raw-eeg-dataset-checklist.md)
+   to gate THINGS-EEG2 first, then Alljoined, NSD, BOLD5000, FACED, and IAPS.
 3. Build the THINGS-EEG2 stimulus manifest first.
 4. Generate visual/semantic/affective/social feature columns for a small image
    subset and manually audit annotation errors.

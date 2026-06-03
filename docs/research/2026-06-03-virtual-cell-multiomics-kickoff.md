@@ -313,6 +313,8 @@ intervention package:
 ### Week 1: Define the transition table
 
 - Create a small transition-record schema for CK-1 and one placebo recipe.
+  First implemented follow-up:
+  [Transition Record Schema](2026-06-03-transition-record-schema.md).
 - Select 12 to 20 contexts across repair, negotiation, verification,
   disagreement, and non-social factual tasks.
 - Mark at least three held-out axes before running experiments.
