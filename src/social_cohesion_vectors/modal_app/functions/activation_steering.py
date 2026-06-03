@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import random
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any, Literal
 
 from social_cohesion_vectors.config import get_config
@@ -164,6 +164,7 @@ def generate_with_activation_cocktail(
     max_length: int = 512,
     use_chat_template: bool = True,
     seed: int = 0,
+    include_component_projection_events: bool = False,
 ) -> list[dict[str, Any]]:
     """Generate text while applying one or more activation-steering components."""
 
@@ -221,6 +222,7 @@ def generate_with_activation_cocktail(
                 )
                 for component in components:
                     component["state"]["forward_calls"] = 0
+                    component["telemetry"].clear()
                 prompt = str(record["text"]).strip()
                 encoded_text = _format_prompt(
                     tokenizer,
@@ -249,18 +251,24 @@ def generate_with_activation_cocktail(
                     new_tokens,
                     skip_special_tokens=True,
                 ).strip()
-                generations.append(
-                    {
-                        "prompt_id": str(record.get("prompt_id", record.get("id", ""))),
-                        "mechanism": str(record.get("mechanism", "")),
-                        "prompt": prompt,
-                        "recipe_id": recipe_id,
-                        "recipe_label": str(recipe.get("label", recipe_id)),
-                        "components": _component_metadata(components),
-                        "model_id": model_id,
-                        "generated_text": generated_text,
-                    }
-                )
+                generation_record = {
+                    "prompt_id": str(record.get("prompt_id", record.get("id", ""))),
+                    "mechanism": str(record.get("mechanism", "")),
+                    "prompt": prompt,
+                    "recipe_id": recipe_id,
+                    "recipe_label": str(recipe.get("label", recipe_id)),
+                    "components": _component_metadata(components),
+                    "component_projection_telemetry": (
+                        summarize_component_projection_telemetry(components)
+                    ),
+                    "model_id": model_id,
+                    "generated_text": generated_text,
+                }
+                if include_component_projection_events:
+                    generation_record["component_projection_events"] = (
+                        _component_projection_events(components)
+                    )
+                generations.append(generation_record)
         finally:
             for handle in handles:
                 handle.remove()
@@ -837,6 +845,7 @@ def _prepare_cocktail_components(
                 "steering_timing": timing,
                 "steering_schedule": schedule,
                 "state": {"forward_calls": 0},
+                "telemetry": [],
                 "direction": _direction_tensor(
                     torch=torch,
                     direction=list(component.get("direction", [])),
@@ -866,6 +875,7 @@ def _register_cocktail_hooks(
                         timing=component["steering_timing"],
                         schedule=component["steering_schedule"],
                         state=component["state"],
+                        telemetry=component["telemetry"],
                     )
                 )
             )
@@ -879,6 +889,7 @@ def _register_cocktail_hooks(
                         timing=component["steering_timing"],
                         schedule=component["steering_schedule"],
                         state=component["state"],
+                        telemetry=component["telemetry"],
                     )
                 )
             )
@@ -902,6 +913,83 @@ def _component_metadata(components: Sequence[dict[str, Any]]) -> list[dict[str, 
     ]
 
 
+def summarize_component_projection_telemetry(
+    components: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Summarize hook-time projection movement for cocktail components."""
+
+    summaries: list[dict[str, Any]] = []
+    for component in components:
+        events = [
+            event
+            for event in component.get("telemetry", [])
+            if isinstance(event, dict)
+        ]
+        projection_deltas = [
+            float(event.get("mean_projection_delta", 0.0)) for event in events
+        ]
+        effective_strengths = [float(event.get("strength", 0.0)) for event in events]
+        summaries.append(
+            {
+                "component_id": str(component["component_id"]),
+                "layer": int(component["layer"]),
+                "hook_site": str(component["hook_site"]),
+                "steering_position": str(component["steering_position"]),
+                "steering_timing": str(component["steering_timing"]),
+                "steering_schedule": str(component["steering_schedule"]),
+                "configured_strength": float(component["strength"]),
+                "event_count": len(events),
+                "tokens_steered": sum(
+                    int(event.get("tokens_steered", 0)) for event in events
+                ),
+                "mean_effective_strength": _mean(effective_strengths),
+                "mean_projection_before": _mean(
+                    float(event.get("mean_projection_before", 0.0))
+                    for event in events
+                ),
+                "mean_projection_after": _mean(
+                    float(event.get("mean_projection_after", 0.0))
+                    for event in events
+                ),
+                "mean_projection_delta": _mean(projection_deltas),
+                "total_projection_delta": round(sum(projection_deltas), 6),
+                "mean_projection_delta_error": _mean(
+                    projection_delta - effective_strength
+                    for projection_delta, effective_strength in zip(
+                        projection_deltas,
+                        effective_strengths,
+                        strict=True,
+                    )
+                ),
+            }
+        )
+    return summaries
+
+
+def _component_projection_events(
+    components: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    for component in components:
+        for event in component.get("telemetry", []):
+            if isinstance(event, dict):
+                events.append(
+                    {
+                        "component_id": str(component["component_id"]),
+                        "layer": int(component["layer"]),
+                        **event,
+                    }
+                )
+    return events
+
+
+def _mean(values: Iterable[float]) -> float:
+    items = [float(value) for value in values]
+    if not items:
+        return 0.0
+    return round(sum(items) / len(items), 6)
+
+
 def _validate_steering_schedule(schedule: str) -> None:
     _scheduled_strength(
         1.0,
@@ -917,5 +1005,6 @@ __all__ = [
     "SteeringTiming",
     "generate_with_activation_cocktail",
     "generate_with_activation_steering",
+    "summarize_component_projection_telemetry",
     "trace_activation_steering",
 ]
