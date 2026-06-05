@@ -43,7 +43,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     records = build_fault_prompt_records(variants=variants)
     if args.limit is not None:
         records = records[: args.limit]
-    outputs = _generate_outputs(records, provider=args.provider, model=args.model)
+    output_records = _generate_output_records(
+        records,
+        provider=args.provider,
+        model=args.model,
+    )
+    outputs = _valid_outputs_by_prompt_id(output_records)
     examples = fault_examples_from_prompt_outputs(
         records,
         outputs,
@@ -57,9 +62,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     prompts = activation_prompts_from_pairs(pairs)
     report = shape_generated_fault_report(examples, variants=variants)
+    report["api_generation"] = _output_summary(output_records)
 
     counts = {
-        "raw_outputs": _write_output_records(records, outputs, args.raw_outputs),
+        "raw_outputs": _write_output_records(
+            records,
+            output_records,
+            args.raw_outputs,
+            provider=args.provider,
+            model=args.model,
+        ),
         "examples": write_jsonl(
             [asdict(example) for example in examples],
             args.examples_output,
@@ -77,6 +89,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(
         "api fault generation: "
         f"provider={args.provider} model={args.model} "
+        f"valid_outputs={report['api_generation']['valid_outputs']} "
         f"examples={counts['examples']} pairs={counts['pairwise_examples']} "
         f"prompts={counts['activation_prompts']}"
     )
@@ -140,28 +153,69 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     return args
 
 
-def _generate_outputs(
+def _generate_output_records(
     records: Sequence[FaultPromptRecord],
     *,
     provider: str,
     model: str,
-) -> dict[str, str]:
+) -> list[dict[str, object]]:
+    """Generate text while retaining one raw audit row per requested prompt."""
+
+    return [
+        _generate_output_record(record, provider=provider, model=model)
+        for record in records
+    ]
+
+
+def _generate_output_record(
+    record: FaultPromptRecord,
+    *,
+    provider: str,
+    model: str,
+) -> dict[str, object]:
+    try:
+        text = _generate_text(record, provider=provider, model=model)
+    except RuntimeError as exc:
+        return _raw_output_record(
+            record,
+            text="",
+            provider=provider,
+            model=model,
+            status="request_error",
+            valid=False,
+            error_type=type(exc).__name__,
+            error_detail=_sanitize_error_detail(str(exc)),
+        )
+
+    status, valid, error_detail = _validate_generated_output(text)
+    return _raw_output_record(
+        record,
+        text=text,
+        provider=provider,
+        model=model,
+        status=status,
+        valid=valid,
+        error_type="" if valid else status,
+        error_detail=error_detail,
+    )
+
+
+def _generate_text(
+    record: FaultPromptRecord,
+    *,
+    provider: str,
+    model: str,
+) -> str:
     if provider == "anthropic":
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise SystemExit("ANTHROPIC_API_KEY is required for --provider anthropic")
-        return {
-            record.prompt_id: _anthropic_message(record, api_key=api_key, model=model)
-            for record in records
-        }
+        return _anthropic_message(record, api_key=api_key, model=model)
     if provider == "openai":
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise SystemExit("OPENAI_API_KEY is required for --provider openai")
-        return {
-            record.prompt_id: _openai_response(record, api_key=api_key, model=model)
-            for record in records
-        }
+        return _openai_response(record, api_key=api_key, model=model)
     raise ValueError(f"Unsupported provider: {provider}")
 
 
@@ -266,29 +320,154 @@ def _sanitize_error_detail(detail: str) -> str:
     return re.sub(r"sk-[A-Za-z0-9_*.-]+", "sk-***", detail)
 
 
+def _validate_generated_output(text: str) -> tuple[str, bool, str]:
+    stripped = text.strip()
+    lowered = stripped.casefold()
+    if not stripped:
+        return "empty_output", False, "Provider returned no text."
+    if len(stripped) < 12:
+        return "malformed_output", False, "Provider output is too short."
+    malformed_markers = (
+        "as an ai",
+        "i can't help",
+        "i cannot help",
+        "i'm sorry, but",
+        "analysis:",
+        "explanation:",
+    )
+    if any(marker in lowered for marker in malformed_markers):
+        return "malformed_output", False, "Provider returned a refusal or analysis."
+    return "ok", True, ""
+
+
+def _valid_outputs_by_prompt_id(
+    output_records: Sequence[Mapping[str, object]],
+) -> dict[str, str]:
+    return {
+        str(record.get("prompt_id", "")): str(record.get("text", "")).strip()
+        for record in output_records
+        if bool(record.get("valid", False)) and str(record.get("text", "")).strip()
+    }
+
+
+def _output_summary(
+    output_records: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
+    status_counts: dict[str, int] = {}
+    for record in output_records:
+        status = str(record.get("status") or "unknown")
+        status_counts[status] = status_counts.get(status, 0) + 1
+    valid_outputs = sum(1 for record in output_records if bool(record.get("valid")))
+    return {
+        "raw_outputs": len(output_records),
+        "valid_outputs": valid_outputs,
+        "invalid_outputs": len(output_records) - valid_outputs,
+        "status_counts": dict(sorted(status_counts.items())),
+    }
+
+
 def _write_output_records(
     records: Sequence[FaultPromptRecord],
-    outputs: dict[str, str],
+    outputs: Mapping[str, str] | Sequence[Mapping[str, object]],
     path: Path,
+    *,
+    provider: str = "",
+    model: str = "",
 ) -> int:
-    output_records = [
-        {
-            "prompt_id": record.prompt_id,
-            "base_contrast_id": record.base_contrast_id,
-            "variant": record.variant,
-            "label": record.label,
-            "primary_fault_class": record.primary_fault_class,
-            "future_options_tested": str(
-                record.metadata.get("future_options_tested", "")
-            ),
-            "future_option_contract": str(
-                record.metadata.get("future_option_contract", "")
-            ),
-            "text": outputs.get(record.prompt_id, ""),
-        }
-        for record in records
-    ]
+    output_by_prompt_id = _output_records_by_prompt_id(
+        outputs,
+        provider=provider,
+        model=model,
+    )
+    output_records = []
+    for record in records:
+        raw_output = output_by_prompt_id.get(record.prompt_id)
+        if raw_output is None:
+            raw_output = _raw_output_record(
+                record,
+                text="",
+                provider=provider,
+                model=model,
+                status="missing_output",
+                valid=False,
+                error_type="missing_output",
+                error_detail="No output row was produced for this prompt.",
+            )
+        output_records.append(_raw_output_record_for_prompt(record, raw_output))
     return write_jsonl(output_records, path)
+
+
+def _output_records_by_prompt_id(
+    outputs: Mapping[str, str] | Sequence[Mapping[str, object]],
+    *,
+    provider: str,
+    model: str,
+) -> dict[str, Mapping[str, object]]:
+    if isinstance(outputs, Mapping):
+        records: dict[str, Mapping[str, object]] = {}
+        for prompt_id, text in outputs.items():
+            status, valid, error_detail = _validate_generated_output(text)
+            records[str(prompt_id)] = {
+                "prompt_id": str(prompt_id),
+                "provider": provider,
+                "model": model,
+                "status": status,
+                "valid": valid,
+                "error_type": "" if valid else status,
+                "error_detail": error_detail,
+                "text": text,
+                "text_length": len(text.strip()),
+            }
+        return records
+    return {str(record.get("prompt_id", "")): record for record in outputs}
+
+
+def _raw_output_record_for_prompt(
+    record: FaultPromptRecord,
+    raw_output: Mapping[str, object],
+) -> dict[str, object]:
+    return _raw_output_record(
+        record,
+        text=str(raw_output.get("text", "")),
+        provider=str(raw_output.get("provider", "")),
+        model=str(raw_output.get("model", "")),
+        status=str(raw_output.get("status", "unknown")),
+        valid=bool(raw_output.get("valid", False)),
+        error_type=str(raw_output.get("error_type", "")),
+        error_detail=str(raw_output.get("error_detail", "")),
+    )
+
+
+def _raw_output_record(
+    record: FaultPromptRecord,
+    *,
+    text: str,
+    provider: str,
+    model: str,
+    status: str,
+    valid: bool,
+    error_type: str,
+    error_detail: str,
+) -> dict[str, object]:
+    return {
+        "prompt_id": record.prompt_id,
+        "base_contrast_id": record.base_contrast_id,
+        "variant": record.variant,
+        "label": record.label,
+        "primary_fault_class": record.primary_fault_class,
+        "future_options_tested": str(record.metadata.get("future_options_tested", "")),
+        "future_option_contract": str(
+            record.metadata.get("future_option_contract", "")
+        ),
+        "provider": provider,
+        "model": model,
+        "status": status,
+        "valid": valid,
+        "error_type": error_type,
+        "error_detail": error_detail,
+        "text": text,
+        "text_length": len(text.strip()),
+    }
 
 
 def _write_json(report: dict[str, object], path: Path) -> None:
