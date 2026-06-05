@@ -12,6 +12,7 @@ import numpy as np
 
 from social_cohesion_vectors.experiments.causal_steering import (
     score_steered_generations,
+    steering_promotion_gate,
 )
 
 
@@ -38,34 +39,48 @@ def shape_steering_telemetry_report(
         baseline_strength=baseline_strength,
         positive_strength=positive_strength,
     )
+    summary = {
+        "traces": len(trace_rows),
+        "strengths": strengths,
+        "prompt_count": len(by_prompt),
+        "mean_absolute_delta_error": _mean(
+            abs(row["mean_projection_delta"] - row["strength"])
+            for row in trace_rows
+            if row["event_count"] > 0
+        ),
+        "positive_minus_negative_post_projection_delta": _mean(
+            row["post_projection_margin"] for row in prompt_margins
+        ),
+        "positive_minus_baseline_post_projection_delta": _mean(
+            row["post_projection_positive_minus_baseline"] for row in prompt_margins
+        ),
+        "positive_minus_negative_mean_score_delta": _mean(
+            row["score_margin"] for row in prompt_margins
+        ),
+        "positive_minus_baseline_mean_score_delta": _mean(
+            row["score_positive_minus_baseline"] for row in prompt_margins
+        ),
+        "positive_minus_negative_score_delta": _mean(
+            row["score_margin"] for row in prompt_margins
+        ),
+        "positive_minus_baseline_score_delta": _mean(
+            row["score_positive_minus_baseline"] for row in prompt_margins
+        ),
+        "positive_minus_negative_mean_slack_delta": _mean(
+            row["slack_margin"] for row in prompt_margins
+        ),
+        "positive_minus_negative_mean_autonomy_delta": _mean(
+            row["autonomy_margin"] for row in prompt_margins
+        ),
+    }
     return {
         "experiment": "steering_hidden_projection_telemetry",
         "description": (
             "Records projection-before and projection-after values at the actual "
             "activation-steering hook during greedy generation."
         ),
-        "summary": {
-            "traces": len(trace_rows),
-            "strengths": strengths,
-            "prompt_count": len(by_prompt),
-            "mean_absolute_delta_error": _mean(
-                abs(row["mean_projection_delta"] - row["strength"])
-                for row in trace_rows
-                if row["event_count"] > 0
-            ),
-            "positive_minus_negative_post_projection_delta": _mean(
-                row["post_projection_margin"] for row in prompt_margins
-            ),
-            "positive_minus_baseline_post_projection_delta": _mean(
-                row["post_projection_positive_minus_baseline"] for row in prompt_margins
-            ),
-            "positive_minus_negative_score_delta": _mean(
-                row["score_margin"] for row in prompt_margins
-            ),
-            "positive_minus_baseline_score_delta": _mean(
-                row["score_positive_minus_baseline"] for row in prompt_margins
-            ),
-        },
+        "summary": summary,
+        "promotion_gate": steering_promotion_gate(summary),
         "strengths": [
             _strength_row(strength, rows)
             for strength, rows in sorted(by_strength.items())
@@ -97,6 +112,7 @@ def render_telemetry_markdown(report: Mapping[str, Any]) -> str:
     """Render a steering telemetry report."""
 
     summary = _mapping(report.get("summary"))
+    promotion = _mapping(report.get("promotion_gate"))
     lines = [
         "# Steering Hidden Projection Telemetry",
         "",
@@ -114,7 +130,16 @@ def render_telemetry_markdown(report: Mapping[str, Any]) -> str:
         "- Positive-minus-baseline post-hook projection delta: "
         f"{float(summary.get('positive_minus_baseline_post_projection_delta', 0.0)):+.4f}",
         "- Positive-minus-negative text-score delta: "
-        f"{float(summary.get('positive_minus_negative_score_delta', 0.0)):+.4f}",
+        f"{float(summary.get('positive_minus_negative_mean_score_delta', 0.0)):+.4f}",
+        "- Positive-minus-negative slack delta: "
+        f"{float(summary.get('positive_minus_negative_mean_slack_delta', 0.0)):+.4f}",
+        f"- Promotion status: {promotion.get('status', 'unknown')}",
+        "",
+        "## Promotion Gate",
+        "",
+        f"- Status: {promotion.get('status', 'unknown')}",
+        f"- Promoted: {bool(promotion.get('promoted', False))}",
+        f"- Reasons: {_join_or_none(promotion.get('reasons'))}",
         "",
         "## Strength Means",
         "",
@@ -171,6 +196,7 @@ def _trace_row(trace: Mapping[str, Any]) -> dict[str, Any]:
         ),
         "cohesion_score": float(trace.get("cohesion_score", 0.0)),
         "autonomy_safety": float(components.get("autonomy_safety", 0.0)),
+        "slack_preservation": float(components.get("slack_preservation", 0.0)),
         "generated_text": str(trace.get("generated_text", "")),
         "first_token": _first_token(trace),
     }
@@ -229,6 +255,10 @@ def _prompt_margins(
                 - float(negative["cohesion_score"]),
                 "score_positive_minus_baseline": float(positive["cohesion_score"])
                 - float(baseline["cohesion_score"]),
+                "slack_margin": float(positive["slack_preservation"])
+                - float(negative["slack_preservation"]),
+                "autonomy_margin": float(positive["autonomy_safety"])
+                - float(negative["autonomy_safety"]),
             }
         )
     return rows
@@ -261,3 +291,8 @@ def _mapping(value: object) -> Mapping[str, Any]:
 
 def _sequence(value: object) -> Sequence[object]:
     return value if isinstance(value, Sequence) and not isinstance(value, str) else ()
+
+
+def _join_or_none(value: object) -> str:
+    items = [str(item) for item in _sequence(value) if str(item)]
+    return ", ".join(items) if items else "none"
