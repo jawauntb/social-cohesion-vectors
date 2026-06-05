@@ -285,6 +285,11 @@ GUARDRAIL_FUTURE_OPTIONS: Mapping[str, tuple[str, ...]] = {
     "truth": ("evidence_access",),
     "verification": ("evidence_access",),
 }
+GENERATED_FAULT_REQUIRED_AUDITS: tuple[str, ...] = (
+    "lexical_leakage",
+    "component_margin",
+    "fault_heldout_transfer",
+)
 
 
 def generated_fault_examples(
@@ -535,7 +540,8 @@ def shape_generated_fault_report(
     slack_margins = [
         float(pair.metadata.get("slack_preservation_margin", 0.0)) for pair in pairs
     ]
-    return {
+    taxonomy = taxonomy_summary(pair.scenario_id for pair in pairs)
+    report: dict[str, Any] = {
         "experiment": "generated_fault_class_examples",
         "description": (
             "Deterministic offline stand-ins for LLM-authored pseudo-cohesion "
@@ -547,6 +553,8 @@ def shape_generated_fault_report(
             "examples": len(examples),
             "scored_runs": len(scored_runs),
             "pairs": len(pairs),
+            "expected_pairs": len(variants)
+            * int(taxonomy_summary().get("annotated_contrasts", 0)),
             "base_contrasts": len({base_contrast_id(pair.scenario_id) for pair in pairs}),
             "primary_fault_classes": len(
                 {pair.metadata.get("primary_fault_class") for pair in pairs}
@@ -561,17 +569,139 @@ def shape_generated_fault_report(
             if slack_margins
             else 0.0,
         },
-        "taxonomy": taxonomy_summary(pair.scenario_id for pair in pairs),
+        "taxonomy": taxonomy,
         "primary_fault_counts": dict(sorted(primary_counts.items())),
         "fault_class_counts": dict(sorted(fault_counts.items())),
         "pairs": [pair.model_dump(mode="json") for pair in pairs],
     }
+    report["activation_readiness"] = generated_fault_activation_readiness(report)
+    return report
+
+
+def generated_fault_activation_readiness(
+    report: Mapping[str, Any],
+    *,
+    require_audits: bool = True,
+    max_cue_solved_rate: float = 0.1,
+    min_component_score_accuracy: float = 1.0,
+) -> dict[str, Any]:
+    """Return the activation-readiness gate for a generated fault report."""
+
+    completed_audits = _completed_generated_fault_audits(report)
+    blocking_reasons = [
+        *_core_generated_fault_blockers(report),
+        *_api_generated_fault_blockers(report),
+        *_audit_generated_fault_blockers(
+            report,
+            max_cue_solved_rate=max_cue_solved_rate,
+            min_component_score_accuracy=min_component_score_accuracy,
+        ),
+    ]
+    pending_audits = [
+        audit
+        for audit in GENERATED_FAULT_REQUIRED_AUDITS
+        if require_audits and audit not in completed_audits
+    ]
+    if blocking_reasons:
+        status = "blocked"
+    elif pending_audits:
+        status = "needs_audits"
+    else:
+        status = "ready_for_activation"
+    return {
+        "status": status,
+        "core_gates_pass": not blocking_reasons,
+        "required_audits": list(GENERATED_FAULT_REQUIRED_AUDITS)
+        if require_audits
+        else [],
+        "completed_audits": completed_audits,
+        "pending_audits": pending_audits,
+        "blocking_reasons": blocking_reasons,
+        "gate_thresholds": {
+            "max_cue_solved_rate": max_cue_solved_rate,
+            "min_component_score_accuracy": min_component_score_accuracy,
+        },
+        "claim_boundary": (
+            "Activation or SAE claims should not be trusted until this status is "
+            "ready_for_activation; human and neural claims remain out of scope."
+        ),
+    }
+
+
+def _core_generated_fault_blockers(report: Mapping[str, Any]) -> list[str]:
+    summary = _mapping(report.get("summary"))
+    pairs = int(summary.get("pairs", 0))
+    expected_pairs = int(summary.get("expected_pairs", 0))
+    reasons: list[str] = []
+    if pairs <= 0:
+        reasons.append("no_pairwise_examples")
+    if expected_pairs and pairs < expected_pairs:
+        reasons.append("incomplete_pair_coverage")
+    if int(summary.get("scorer_prefers_genuine", 0)) < pairs:
+        reasons.append("scorer_gate_failed")
+    if int(summary.get("slack_prefers_genuine", 0)) < pairs:
+        reasons.append("slack_gate_failed")
+    if float(summary.get("min_slack_preservation_margin", 0.0)) <= 0.0:
+        reasons.append("slack_margin_nonpositive")
+    return reasons
+
+
+def _api_generated_fault_blockers(report: Mapping[str, Any]) -> list[str]:
+    api_generation = _mapping(report.get("api_generation"))
+    if int(api_generation.get("invalid_outputs", 0)) > 0:
+        return ["api_invalid_outputs"]
+    return []
+
+
+def _audit_generated_fault_blockers(
+    report: Mapping[str, Any],
+    *,
+    max_cue_solved_rate: float,
+    min_component_score_accuracy: float,
+) -> list[str]:
+    reasons: list[str] = []
+    lexical_summary = _mapping(
+        _generated_fault_audit(report, "lexical_leakage").get("summary")
+    )
+    if (
+        lexical_summary
+        and float(lexical_summary.get("cue_solved_rate", 0.0)) > max_cue_solved_rate
+    ):
+        reasons.append("lexical_leakage_gate_failed")
+    component_summary = _mapping(
+        _generated_fault_audit(report, "component_margin").get("summary")
+    )
+    if (
+        component_summary
+        and float(component_summary.get("score_accuracy", 0.0))
+        < min_component_score_accuracy
+    ):
+        reasons.append("component_margin_gate_failed")
+    return reasons
+
+
+def _completed_generated_fault_audits(report: Mapping[str, Any]) -> list[str]:
+    audit_bundle = _mapping(report.get("audit_bundle"))
+    completed: list[str] = []
+    for audit in GENERATED_FAULT_REQUIRED_AUDITS:
+        if audit in audit_bundle or audit in report:
+            completed.append(audit)
+    return completed
+
+
+def _generated_fault_audit(
+    report: Mapping[str, Any],
+    audit_name: str,
+) -> Mapping[str, Any]:
+    audit_bundle = _mapping(report.get("audit_bundle"))
+    return _mapping(audit_bundle.get(audit_name) or report.get(audit_name))
 
 
 def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
     """Render generated fault dataset coverage as markdown."""
 
     summary = _mapping(report.get("summary"))
+    readiness = _mapping(report.get("activation_readiness"))
     lines = [
         "# Generated Fault-Class Pseudo-Cohesion Dataset",
         "",
@@ -584,6 +714,7 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
         f"- Examples: {int(summary.get('examples', 0))}",
         f"- Scored runs: {int(summary.get('scored_runs', 0))}",
         f"- Pairwise examples: {int(summary.get('pairs', 0))}",
+        f"- Expected pairwise examples: {int(summary.get('expected_pairs', 0))}",
         f"- Base contrasts: {int(summary.get('base_contrasts', 0))}",
         f"- Primary fault classes: {int(summary.get('primary_fault_classes', 0))}",
         f"- Scorer prefers genuine: {int(summary.get('scorer_prefers_genuine', 0))}",
@@ -593,6 +724,16 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
         f"{float(summary.get('mean_slack_preservation_margin', 0.0)):+.3f}",
         f"- Min slack-preservation margin: "
         f"{float(summary.get('min_slack_preservation_margin', 0.0)):+.3f}",
+        f"- Activation readiness: {readiness.get('status', 'unknown')}",
+        "",
+        "## Activation Readiness",
+        "",
+        f"- Status: {readiness.get('status', 'unknown')}",
+        f"- Core gates pass: {bool(readiness.get('core_gates_pass', False))}",
+        f"- Blocking reasons: {_join_or_none(readiness.get('blocking_reasons'))}",
+        f"- Pending audits: {_join_or_none(readiness.get('pending_audits'))}",
+        f"- Completed audits: {_join_or_none(readiness.get('completed_audits'))}",
+        f"- Claim boundary: {readiness.get('claim_boundary', '')}",
         "",
         "## Primary Fault Coverage",
         "",
@@ -612,6 +753,19 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
     )
     for fault_class, count in _mapping(report.get("fault_class_counts")).items():
         lines.append(f"| {fault_class} | {int(count)} |")
+    api_generation = _mapping(report.get("api_generation"))
+    if api_generation:
+        lines.extend(
+            [
+                "",
+                "## API Generation",
+                "",
+                f"- Raw outputs: {int(api_generation.get('raw_outputs', 0))}",
+                f"- Valid outputs: {int(api_generation.get('valid_outputs', 0))}",
+                f"- Invalid outputs: {int(api_generation.get('invalid_outputs', 0))}",
+                f"- Status counts: {_format_status_counts(api_generation)}",
+            ]
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -848,6 +1002,20 @@ def _sequence(value: object) -> list[str]:
     if isinstance(value, list | tuple):
         return [str(item) for item in value]
     return []
+
+
+def _join_or_none(value: object) -> str:
+    items = [item for item in _sequence(value) if item]
+    return ", ".join(items) if items else "none"
+
+
+def _format_status_counts(api_generation: Mapping[str, Any]) -> str:
+    status_counts = _mapping(api_generation.get("status_counts"))
+    if not status_counts:
+        return "none"
+    return ", ".join(
+        f"{status}={int(count)}" for status, count in sorted(status_counts.items())
+    )
 
 
 def _mean(values: Sequence[float]) -> float:
