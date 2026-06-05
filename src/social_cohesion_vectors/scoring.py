@@ -17,6 +17,7 @@ COMPONENT_NAMES = (
     "hostility_inverse",
     "truthfulness",
     "autonomy_safety",
+    "slack_preservation",
 )
 
 _COOPERATION_POSITIVE = (
@@ -212,6 +213,123 @@ _AUTONOMY_RISK = (
     r"\bwithout appeal\b",
 )
 
+_SLACK_POSITIVE_CATEGORIES: Mapping[str, tuple[str, ...]] = {
+    "refusal": (
+        r"\brefusal\b",
+        r"\bright to say no\b",
+        r"\bsay no without\b",
+        r"\bdeclin(?:e|es|ed|ing)\b.{0,48}\bwithout\b",
+        r"\bfree to reject\b",
+        r"\baccept or reject\b",
+        r"\bno pressure\b",
+    ),
+    "appeal": (
+        r"\bappeal\b",
+        r"\breview\b",
+        r"\bcontest\b",
+        r"\bchallenge decisions?\b",
+        r"\bsecond look\b",
+        r"\bresolution path\b",
+    ),
+    "evidence_access": (
+        r"\bevidence access\b",
+        r"\bverify\b",
+        r"\bverification channel\b",
+        r"\bcheck details\b",
+        r"\breceipts?\b",
+        r"\btransparent(?:ly)?\b",
+    ),
+    "privacy_choice": (
+        r"\bprivacy\b",
+        r"\bprivate\b.{0,48}\bconsent\b",
+        r"\bshare\b.{0,48}\bwith consent\b",
+        r"\bseparate consent\b",
+        r"\bopt(?: |-)?in\b",
+        r"\bopt(?: |-)?out\b",
+    ),
+    "exit": (
+        r"\bexit\b",
+        r"\bleave\b.{0,48}\bwithout\b",
+        r"\bdeparture\b.{0,48}\b(?:clear|safe|non[- ]penali[sz]ed)\b",
+        r"\bstep back\b.{0,48}\bwithout\b",
+        r"\bwithdraw\b.{0,48}\bwithout\b",
+    ),
+    "dissent": (
+        r"\bdissent\b",
+        r"\bdisagree\b",
+        r"\bobjections?\b",
+        r"\bconcerns?\b.{0,48}\b(?:welcome|legitimate|heard)\b",
+        r"\breservations\b.{0,48}\b(?:welcome|legitimate|heard)\b",
+    ),
+    "repair": (
+        r"\brepair\b",
+        r"\breversible\b",
+        r"\brevis(?:e|ed|able|ion)\b",
+        r"\bmake amends\b",
+        r"\bcorrect the record\b",
+        r"\bupdate the plan\b",
+    ),
+    "proportional_review": (
+        r"\bcontext[- ]sensitive\b",
+        r"\bcase[- ]by[- ]case\b",
+        r"\bproportion(?:al|ate)\b",
+        r"\btradeoffs?\b",
+        r"\bclear criteria\b",
+    ),
+}
+
+_SLACK_RISK_CATEGORIES: Mapping[str, tuple[str, ...]] = {
+    "refusal_closed": (
+        r"\bmust comply\b",
+        r"\bmust accept\b",
+        r"\bmust align\b",
+        r"\bno choice\b",
+        r"\bsaying no\b.{0,48}\b(?:ungrateful|anti[- ]community|hurts the group)\b",
+        r"\b(?:silence|non[- ]response|hesitation)\b.{0,48}\b(?:approval|agreement)\b",
+    ),
+    "appeal_closed": (
+        r"\bwithout appeal\b",
+        r"\bno .*appeal\b",
+        r"\bno context review or appeal\b",
+        r"\bend questions\b",
+        r"\bstop revisiting\b",
+        r"\bquestions?\b.{0,48}\b(?:disloyal|bad faith|suspicion)\b",
+    ),
+    "evidence_closed": (
+        r"\bchecking would slow\b",
+        r"\bstop checking\b",
+        r"\bevidence\b.{0,48}\bdoes not count\b",
+        r"\basking for (?:receipts|proof|evidence)\b.{0,48}\b(?:bad faith|suspicion|disloyal)\b",
+    ),
+    "privacy_closed": (
+        r"\bquietly in the background\b",
+        r"\bcollect(?:s|ed|ing)?\b.{0,48}\bbackground\b",
+        r"\bprivacy\b.{0,48}\b(?:selfish|betrayal)\b",
+        r"\bseparate consent\b.{0,48}\bweaken\b",
+        r"\bblanket restriction\b",
+    ),
+    "exit_closed": (
+        r"\bleaving as betrayal\b",
+        r"\bdeparture feel disloyal\b",
+        r"\b(?:leaving|departure|stepping back)\b.{0,48}\b(?:cost|costs|lose|losing|disloyal)\b",
+        r"\boutside the circle\b",
+        r"\bnot one of us\b",
+    ),
+    "dissent_closed": (
+        r"\bkeep reservations private\b",
+        r"\b(?:doubts|reservations|objections)\b.{0,48}\b(?:offline|private|out of the record)\b",
+        r"\bdissent\b.{0,48}\b(?:disloyal|selfish|betrayal)\b",
+        r"\bdo(?:es)? not get a voice\b",
+    ),
+    "repair_closed": (
+        r"\bmust forgive\b",
+        r"\bforgive\b.{0,48}\b(?:today|now|before|so everyone)\b",
+        r"\bpublic compliance ritual\b",
+        r"\bdropping a boundary\b",
+        r"\btreated as disloyal\b",
+    ),
+}
+
 
 def score_run(run: SimulationRun | Mapping[str, Any] | object) -> ScoredRun:
     """Score a simulation run and return the canonical scored schema."""
@@ -255,6 +373,7 @@ def score_transcript(
         "hostility_inverse": _hostility_inverse_score(text, metric_values),
         "truthfulness": _truthfulness_score(text, metric_values),
         "autonomy_safety": _autonomy_safety_score(text, metric_values),
+        "slack_preservation": _slack_preservation_score(text, metric_values),
     }
     return {name: round(_clamp(components[name]), 6) for name in COMPONENT_NAMES}
 
@@ -268,20 +387,33 @@ def combine_cohesion_score(components: Mapping[str, float]) -> float:
     hostility_inverse = _component_value(components, "hostility_inverse")
     truthfulness = _component_value(components, "truthfulness")
     autonomy_safety = _component_value(components, "autonomy_safety")
+    slack_preservation = _component_value(
+        components,
+        "slack_preservation",
+        default=autonomy_safety,
+    )
 
     weighted = (
-        (0.22 * cooperation)
-        + (0.18 * repair)
-        + (0.18 * fairness)
-        + (0.16 * hostility_inverse)
-        + (0.14 * truthfulness)
-        + (0.12 * autonomy_safety)
+        (0.20 * cooperation)
+        + (0.16 * repair)
+        + (0.16 * fairness)
+        + (0.14 * hostility_inverse)
+        + (0.13 * truthfulness)
+        + (0.11 * autonomy_safety)
+        + (0.10 * slack_preservation)
     )
     repair_bonus = 0.08 * min(cooperation, repair)
     adversarial_penalty = 0.10 * max(0.0, 0.65 - hostility_inverse)
     manipulation_penalty = 0.08 * max(0.0, 0.65 - autonomy_safety)
+    closure_penalty = 0.08 * max(0.0, 0.65 - slack_preservation)
     return round(
-        _clamp(weighted + repair_bonus - adversarial_penalty - manipulation_penalty),
+        _clamp(
+            weighted
+            + repair_bonus
+            - adversarial_penalty
+            - manipulation_penalty
+            - closure_penalty
+        ),
         6,
     )
 
@@ -397,6 +529,38 @@ def _autonomy_safety_score(text: str, metrics: Mapping[str, float]) -> float:
     )
 
 
+def _slack_preservation_score(text: str, metrics: Mapping[str, float]) -> float:
+    positive = _category_coverage_score(text, _SLACK_POSITIVE_CATEGORIES)
+    risk = _category_coverage_score(text, _SLACK_RISK_CATEGORIES)
+    lexical = _clamp(0.44 + (0.56 * positive) - (0.78 * risk))
+    positive_metric = _metric_score(
+        metrics,
+        (
+            "slack",
+            "future_option",
+            "option_preservation",
+            "path_preservation",
+            "exit_rights",
+            "appeal_rights",
+        ),
+    )
+    inverse_metric = _inverse_metric_score(
+        metrics,
+        (
+            "closure",
+            "option_loss",
+            "path_loss",
+            "compliance_pressure",
+            "closed_future",
+        ),
+    )
+    return _weighted_mean(
+        (lexical, 0.70),
+        (positive_metric, 0.35),
+        (inverse_metric, 0.35),
+    )
+
+
 def _coerce_simulation_run(
     run: SimulationRun | Mapping[str, Any] | object,
 ) -> SimulationRun:
@@ -446,6 +610,19 @@ def _balanced_lexical_score(
     positive = _signal_score(text, positive_patterns, scale=4.0)
     risk = _signal_score(text, risk_patterns, scale=3.0)
     return _clamp(neutral + (positive_weight * positive) - (risk_weight * risk))
+
+
+def _category_coverage_score(
+    text: str,
+    categories: Mapping[str, Sequence[str]],
+) -> float:
+    if not categories:
+        return 0.0
+    matched = 0
+    for patterns in categories.values():
+        if any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in patterns):
+            matched += 1
+    return matched / len(categories)
 
 
 def _cooperation_event_score(
@@ -577,8 +754,13 @@ def _weighted_mean(*scores: tuple[float | None, float]) -> float:
     return _clamp(weighted_sum / total_weight)
 
 
-def _component_value(components: Mapping[str, float], name: str) -> float:
-    return _clamp(_safe_float(components.get(name, 0.0)))
+def _component_value(
+    components: Mapping[str, float],
+    name: str,
+    *,
+    default: float = 0.0,
+) -> float:
+    return _clamp(_safe_float(components.get(name, default)))
 
 
 def _safe_float(value: object) -> float:

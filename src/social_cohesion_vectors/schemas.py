@@ -24,6 +24,15 @@ InterventionKind = Literal[
 ]
 
 StrategyProfile = Literal["cooperative", "self_protective", "adversarial"]
+ScoreComponentName = Literal[
+    "cooperation",
+    "repair",
+    "fairness",
+    "hostility_inverse",
+    "truthfulness",
+    "autonomy_safety",
+    "slack_preservation",
+]
 
 
 class AgentProfile(BaseModel):
