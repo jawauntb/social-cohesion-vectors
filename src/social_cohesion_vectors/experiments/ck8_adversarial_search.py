@@ -100,6 +100,7 @@ def run_ck8_adversarial_search(
                 trials=trials,
                 adversary_weights=adversary_weights,
                 thresholds=config.thresholds,
+                min_trial_score=config.min_trial_score,
             )
             for recipe in population
         ]
@@ -160,6 +161,7 @@ def evaluate_ck8_recipe(
     trials: Sequence[CK7CandidateTrial],
     adversary_weights: Mapping[str, float],
     thresholds: CK7GateThresholds,
+    min_trial_score: float = 0.68,
 ) -> dict[str, Any]:
     """Evaluate one recipe with deterministic surrogate metrics."""
 
@@ -191,14 +193,25 @@ def evaluate_ck8_recipe(
         gate_report=gate_report,
         component_stats=component_stats,
     )
+    tournament_metrics = _tournament_metrics(
+        recipe,
+        pressure_scores=pressure_scores,
+        score_report=score_report,
+        side_effect_flags=side_effect_flags,
+        component_stats=component_stats,
+        min_trial_score=min_trial_score,
+    )
     return {
         "recipe": recipe,
         "recipe_id": recipe.recipe_id,
         "recipe_label": recipe.label,
+        "evidence_status": "dry_run_batch_selection_prior",
         "surrogate_fitness": round(fitness, 6),
         "weighted_pressure_score": round(weighted_score, 6),
         "passed_gates": passed_gates,
         "surrogate_gate_decision": _surrogate_gate_decision(gate_report),
+        "tournament_decision": _tournament_decision(tournament_metrics),
+        "tournament_metrics": tournament_metrics,
         "gate_report": gate_report,
         "score_report": score_report,
         "telemetry_report": telemetry_report,
@@ -259,23 +272,29 @@ def render_ck8_adversarial_search_markdown(report: Mapping[str, Any]) -> str:
         f"- Best candidate: `{summary.get('best_recipe_id', '')}`",
         "- Best surrogate fitness: "
         f"{float(summary.get('best_surrogate_fitness', 0.0)):.3f}",
+        "- Best bottom-tail pressure score: "
+        f"{float(summary.get('best_bottom_tail_pressure_score', 0.0)):.3f}",
+        f"- Best tournament decision: `{summary.get('best_tournament_decision', '')}`",
         f"- Claim boundary: {report.get('claim_boundary', CLAIM_BOUNDARY)}",
         "",
         "## Top Candidates",
         "",
-        "| Rank | Recipe | Family | Fitness | Pressure | Gates | Surrogate decision |",
-        "| ---: | --- | --- | ---: | ---: | ---: | --- |",
+        "| Rank | Recipe | Family | Fitness | Pressure | Worst | Tail | Slack | Decision |",
+        "| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for index, row in enumerate(_sequence(report.get("top_candidates")), start=1):
         row_map = _mapping(row)
+        metrics = _mapping(row_map.get("tournament_metrics"))
         lines.append(
             "| "
             f"{index} | `{row_map.get('recipe_id', '')}` | "
             f"{row_map.get('family', '')} | "
             f"{float(row_map.get('surrogate_fitness', 0.0)):.3f} | "
             f"{float(row_map.get('weighted_pressure_score', 0.0)):.3f} | "
-            f"{int(row_map.get('passed_gates', 0))}/5 | "
-            f"{row_map.get('surrogate_gate_decision', '')} |"
+            f"{float(metrics.get('worst_pressure_score', 0.0)):.3f} | "
+            f"{float(metrics.get('bottom_tail_pressure_score', 0.0)):.3f} | "
+            f"{float(metrics.get('slack_delta', 0.0)):.3f} | "
+            f"{row_map.get('tournament_decision', '')} |"
         )
     lines.extend(
         [
@@ -311,10 +330,13 @@ def render_ck8_adversarial_search_markdown(report: Mapping[str, Any]) -> str:
             "",
             "## Interpretation",
             "",
-            "A top CK-8 row is a recipe to try next, not an effect. The next "
-            "step is to run the top recipe specs in the CK-7 Modal assay once "
-            "the durable CK-1 and CK-4.5 vector artifacts exist, then re-score "
-            "with real generations and CK-7 promotion gates.",
+            "A top CK-8 row is a recipe to try next, not an effect. Tail-risk "
+            "scores are dry-run bottom-quartile pressure scores, so higher "
+            "means the recipe is less brittle against the current opponent "
+            "suite. The next step is to run the top recipe specs in the CK-7 "
+            "Modal assay once the durable CK-1 and CK-4.5 vector artifacts "
+            "exist, then re-score with real generations and CK-7 promotion "
+            "gates.",
             "",
         ]
     )
@@ -374,10 +396,25 @@ def _shape_report(
             "iterations": config.iterations,
             "unique_candidates": _count_unique_candidates(iterations, final_ranked),
             "best_recipe_id": best.get("recipe_id", ""),
+            "best_evidence_status": best.get(
+                "evidence_status",
+                "dry_run_batch_selection_prior",
+            ),
             "best_surrogate_fitness": best.get("surrogate_fitness", 0.0),
             "best_surrogate_gate_decision": best.get(
                 "surrogate_gate_decision",
                 "hold",
+            ),
+            "best_tournament_decision": best.get("tournament_decision", "hold"),
+            "best_bottom_tail_pressure_score": _mapping(
+                best.get("tournament_metrics")
+            ).get("bottom_tail_pressure_score", 0.0),
+            "best_worst_pressure_score": _mapping(
+                best.get("tournament_metrics")
+            ).get("worst_pressure_score", 0.0),
+            "best_slack_delta": _mapping(best.get("tournament_metrics")).get(
+                "slack_delta",
+                0.0,
             ),
             "next_step": (
                 "Run top recipe specs with the CK-7 Modal generation assay once "
@@ -563,6 +600,197 @@ def _surrogate_gate_decision(gate_report: Mapping[str, Any]) -> str:
     if str(summary.get("promotion_decision", "hold")) == "promote":
         return "passes"
     return "hold"
+
+
+def _tournament_metrics(
+    recipe: CocktailRecipeSpec,
+    *,
+    pressure_scores: Sequence[Mapping[str, Any]],
+    score_report: Mapping[str, Any],
+    side_effect_flags: Sequence[Mapping[str, Any]],
+    component_stats: Mapping[str, float],
+    min_trial_score: float,
+) -> dict[str, Any]:
+    scores = sorted(float(row.get("score", 0.0)) for row in pressure_scores)
+    weighted = _weighted_mean(
+        [float(row.get("score", 0.0)) for row in pressure_scores],
+        [float(row.get("weight", 1.0)) for row in pressure_scores],
+    )
+    mean_score = sum(scores) / len(scores) if scores else 0.0
+    median_score = _median(scores)
+    worst_score = scores[0] if scores else 0.0
+    tail_count = max(1, (len(scores) + 3) // 4) if scores else 0
+    bottom_tail_score = (
+        sum(scores[:tail_count]) / tail_count if tail_count > 0 else 0.0
+    )
+    worst_targets = _worst_failure_targets(pressure_scores, worst_score)
+    pseudo_delta = float(
+        _mapping(score_report.get("summary")).get(
+            "candidate_minus_baseline_mean_pseudo_risk_delta",
+            0.0,
+        )
+    )
+    side_effect_risk = _side_effect_risk(side_effect_flags, component_stats)
+    complexity_cost = _complexity_cost(recipe, component_stats)
+    slack_delta = _slack_delta(
+        weighted_score=weighted,
+        worst_score=worst_score,
+        bottom_tail_score=bottom_tail_score,
+        pseudo_delta=pseudo_delta,
+        side_effect_risk=side_effect_risk,
+        complexity_cost=complexity_cost,
+        min_trial_score=min_trial_score,
+    )
+    score_spread = (scores[-1] - scores[0]) if len(scores) >= 2 else 0.0
+    findings = _tournament_findings(
+        recipe,
+        worst_targets=worst_targets,
+        slack_delta=slack_delta,
+    )
+    return {
+        "mean_pressure_score": round(mean_score, 6),
+        "median_pressure_score": round(median_score, 6),
+        "worst_pressure_score": round(worst_score, 6),
+        "bottom_tail_pressure_score": round(bottom_tail_score, 6),
+        "tail_risk_score": round(bottom_tail_score, 6),
+        "weighted_pressure_score": round(weighted, 6),
+        "score_spread": round(score_spread, 6),
+        "min_trial_score": round(min_trial_score, 6),
+        "slack_delta": round(slack_delta, 6),
+        "side_effect_risk": round(side_effect_risk, 6),
+        "complexity_cost": round(complexity_cost, 6),
+        "pseudo_risk_delta": round(pseudo_delta, 6),
+        "worst_failure_targets": worst_targets,
+        "findings": findings,
+    }
+
+
+def _tournament_decision(metrics: Mapping[str, Any]) -> str:
+    findings = [
+        str(_mapping(row).get("finding_id", ""))
+        for row in _sequence(metrics.get("findings"))
+    ]
+    if "control_recipe_prior" in findings:
+        return "reject_control"
+    if float(metrics.get("side_effect_risk", 0.0)) >= 1.0:
+        return "hold_side_effect"
+    if float(metrics.get("slack_delta", 0.0)) < 0.0:
+        return "hold_slack_loss"
+    if float(metrics.get("worst_pressure_score", 0.0)) < float(
+        metrics.get("min_trial_score", 0.68)
+    ):
+        return "hold_tail_risk"
+    return "assay_prior"
+
+
+def _median(values: Sequence[float]) -> float:
+    if not values:
+        return 0.0
+    midpoint = len(values) // 2
+    if len(values) % 2:
+        return values[midpoint]
+    return (values[midpoint - 1] + values[midpoint]) / 2.0
+
+
+def _worst_failure_targets(
+    pressure_scores: Sequence[Mapping[str, Any]],
+    worst_score: float,
+) -> list[str]:
+    tolerance = 1e-9
+    return sorted(
+        {
+            str(row.get("failure_target", ""))
+            for row in pressure_scores
+            if float(row.get("score", 0.0)) <= worst_score + tolerance
+        }
+    )
+
+
+def _side_effect_risk(
+    side_effect_flags: Sequence[Mapping[str, Any]],
+    component_stats: Mapping[str, float],
+) -> float:
+    flag_risk = sum(float(_mapping(flag).get("severity", 0.0)) for flag in side_effect_flags)
+    return min(
+        2.0,
+        flag_risk
+        + component_stats["control_penalty"]
+        + component_stats["negative_strength_penalty"] * 2.0
+        + component_stats["overdrive_penalty"],
+    )
+
+
+def _complexity_cost(
+    recipe: CocktailRecipeSpec,
+    component_stats: Mapping[str, float],
+) -> float:
+    component_cost = max(0, len(recipe.components) - 3) * 0.015
+    dose_cost = max(0.0, component_stats["absolute_strength_sum"] - 1.50) * 0.02
+    negative_cost = component_stats["negative_strength_count"] * 0.04
+    return min(0.30, component_cost + dose_cost + negative_cost)
+
+
+def _slack_delta(
+    *,
+    weighted_score: float,
+    worst_score: float,
+    bottom_tail_score: float,
+    pseudo_delta: float,
+    side_effect_risk: float,
+    complexity_cost: float,
+    min_trial_score: float,
+) -> float:
+    return (
+        0.30 * (weighted_score - min_trial_score)
+        + 0.35 * (worst_score - min_trial_score)
+        + 0.35 * (bottom_tail_score - min_trial_score)
+        + 0.50 * max(-pseudo_delta, 0.0)
+        - 1.80 * max(pseudo_delta, 0.0)
+        - 0.05 * side_effect_risk
+        - 0.50 * complexity_cost
+    )
+
+
+def _tournament_findings(
+    recipe: CocktailRecipeSpec,
+    *,
+    worst_targets: Sequence[str],
+    slack_delta: float,
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    family = _recipe_family(recipe.recipe_id)
+    if _control_type(recipe.recipe_id) is not None:
+        findings.append(
+            {
+                "finding_id": "control_recipe_prior",
+                "notes": "Control recipes remain falsification probes, not candidates.",
+            }
+        )
+    if family == "guardrail_bundle":
+        findings.append(
+            {
+                "finding_id": "guardrail_only_prior",
+                "notes": (
+                    "Guardrail-only strength is a tournament finding to compare "
+                    "against CK-1 cocktails, not causal evidence."
+                ),
+            }
+        )
+    if worst_targets:
+        findings.append(
+            {
+                "finding_id": "worst_case_targets",
+                "notes": ", ".join(worst_targets),
+            }
+        )
+    if slack_delta < 0.0:
+        findings.append(
+            {
+                "finding_id": "slack_loss",
+                "notes": "Dry-run proxy says the recipe closes more options than it opens.",
+            }
+        )
+    return findings
 
 
 def _mutate_population(
@@ -911,11 +1139,14 @@ def _public_evaluation(row: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "recipe_id": row["recipe_id"],
         "recipe_label": row["recipe_label"],
+        "evidence_status": row["evidence_status"],
         "family": row["family"],
         "surrogate_fitness": row["surrogate_fitness"],
         "weighted_pressure_score": row["weighted_pressure_score"],
         "passed_gates": row["passed_gates"],
         "surrogate_gate_decision": row["surrogate_gate_decision"],
+        "tournament_decision": row["tournament_decision"],
+        "tournament_metrics": row["tournament_metrics"],
         "side_effect_flags": row["side_effect_flags"],
         "pressure_scores": row["pressure_scores"],
         "recipe_spec": row["recipe_spec"],
@@ -970,6 +1201,20 @@ def _rank_evaluations(
     return sorted(
         [dict(row) for row in evaluations],
         key=lambda row: (
+            _tournament_rank_bucket(row),
+            float(
+                _mapping(row.get("tournament_metrics")).get(
+                    "bottom_tail_pressure_score",
+                    0.0,
+                )
+            ),
+            float(
+                _mapping(row.get("tournament_metrics")).get(
+                    "worst_pressure_score",
+                    0.0,
+                )
+            ),
+            float(_mapping(row.get("tournament_metrics")).get("slack_delta", 0.0)),
             float(row.get("surrogate_fitness", 0.0)),
             float(row.get("weighted_pressure_score", 0.0)),
             int(row.get("passed_gates", 0)),
@@ -977,6 +1222,21 @@ def _rank_evaluations(
         ),
         reverse=True,
     )
+
+
+def _tournament_rank_bucket(row: Mapping[str, Any]) -> int:
+    decision = str(row.get("tournament_decision", ""))
+    if decision == "assay_prior":
+        return 4
+    if decision == "hold_tail_risk":
+        return 3
+    if decision == "hold_slack_loss":
+        return 2
+    if decision == "hold_side_effect":
+        return 1
+    if decision == "reject_control":
+        return 0
+    return 2
 
 
 def _limit_population(
