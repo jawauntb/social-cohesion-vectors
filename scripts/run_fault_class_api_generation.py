@@ -19,6 +19,7 @@ from social_cohesion_vectors.experiments.fault_generation import (
     FaultPromptRecord,
     build_fault_prompt_records,
     fault_examples_from_prompt_outputs,
+    generated_fault_activation_readiness,
     pairwise_examples_from_generated_fault_examples,
     render_generated_fault_markdown,
     scored_runs_from_generated_fault_examples,
@@ -63,6 +64,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     prompts = activation_prompts_from_pairs(pairs)
     report = shape_generated_fault_report(examples, variants=variants)
     report["api_generation"] = _output_summary(output_records)
+    report["activation_readiness"] = generated_fault_activation_readiness(report)
 
     counts = {
         "raw_outputs": _write_output_records(

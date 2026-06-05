@@ -8,6 +8,7 @@ from social_cohesion_vectors.experiments.fault_generation import (
     export_generated_fault_dataset,
     fault_examples_from_prompt_outputs,
     future_options_for_contrast,
+    generated_fault_activation_readiness,
     generated_fault_examples,
     pairwise_examples_from_generated_fault_examples,
     render_generated_fault_markdown,
@@ -61,13 +62,81 @@ def test_generated_fault_report_summarizes_fault_coverage() -> None:
 
     assert report["summary"]["examples"] == 60
     assert report["summary"]["pairs"] == 30
+    assert report["summary"]["expected_pairs"] == 30
     assert report["taxonomy"]["annotated_contrasts"] == 30
     assert report["summary"]["slack_prefers_genuine"] == 30
     assert report["summary"]["mean_slack_preservation_margin"] > 0.0
+    assert report["activation_readiness"]["status"] == "needs_audits"
+    assert report["activation_readiness"]["core_gates_pass"] is True
     assert report["primary_fault_counts"]["consent_bypass"] >= 1
     assert "Generated Fault-Class" in markdown
     assert "Mean slack-preservation margin" in markdown
+    assert "Activation readiness: needs_audits" in markdown
     assert "consent_bypass" in markdown
+
+
+def test_generated_fault_readiness_requires_audit_bundle() -> None:
+    examples = generated_fault_examples(variants=DEFAULT_VARIANTS[:1])
+    report = shape_generated_fault_report(
+        examples,
+        variants=DEFAULT_VARIANTS[:1],
+    )
+
+    report["audit_bundle"] = {
+        "lexical_leakage": {"summary": {"cue_solved_rate": 0.0}},
+        "component_margin": {"summary": {"score_accuracy": 1.0}},
+        "fault_heldout_transfer": {"summary": []},
+    }
+    readiness = generated_fault_activation_readiness(report)
+
+    assert readiness["status"] == "ready_for_activation"
+    assert readiness["completed_audits"] == [
+        "lexical_leakage",
+        "component_margin",
+        "fault_heldout_transfer",
+    ]
+    assert readiness["pending_audits"] == []
+
+
+def test_generated_fault_readiness_blocks_invalid_api_outputs() -> None:
+    examples = generated_fault_examples(variants=DEFAULT_VARIANTS[:1])
+    report = shape_generated_fault_report(
+        examples,
+        variants=DEFAULT_VARIANTS[:1],
+    )
+    report["api_generation"] = {
+        "raw_outputs": 60,
+        "valid_outputs": 59,
+        "invalid_outputs": 1,
+        "status_counts": {"ok": 59, "empty_output": 1},
+    }
+    report["activation_readiness"] = generated_fault_activation_readiness(report)
+    markdown = render_generated_fault_markdown(report)
+
+    assert report["activation_readiness"]["status"] == "blocked"
+    assert "api_invalid_outputs" in report["activation_readiness"]["blocking_reasons"]
+    assert "API Generation" in markdown
+    assert "empty_output=1" in markdown
+
+
+def test_generated_fault_readiness_blocks_failing_audit_bundle() -> None:
+    examples = generated_fault_examples(variants=DEFAULT_VARIANTS[:1])
+    report = shape_generated_fault_report(
+        examples,
+        variants=DEFAULT_VARIANTS[:1],
+    )
+    report["audit_bundle"] = {
+        "lexical_leakage": {"summary": {"cue_solved_rate": 0.2}},
+        "component_margin": {"summary": {"score_accuracy": 0.99}},
+        "fault_heldout_transfer": {"summary": []},
+    }
+    readiness = generated_fault_activation_readiness(report)
+
+    assert readiness["status"] == "blocked"
+    assert readiness["blocking_reasons"] == [
+        "lexical_leakage_gate_failed",
+        "component_margin_gate_failed",
+    ]
 
 
 def test_cue_balanced_generation_removes_simple_lexical_shortcut() -> None:
