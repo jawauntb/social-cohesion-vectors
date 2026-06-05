@@ -7,6 +7,7 @@ from social_cohesion_vectors.experiments.fault_generation import (
     build_fault_prompt_records,
     export_generated_fault_dataset,
     fault_examples_from_prompt_outputs,
+    future_options_for_contrast,
     generated_fault_examples,
     pairwise_examples_from_generated_fault_examples,
     render_generated_fault_markdown,
@@ -37,6 +38,17 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
     assert all(pair.metadata["source"] == "generated_fault_class_offline" for pair in pairs)
     assert all(pair.metadata["primary_fault_class"] for pair in pairs)
     assert all("fault_classes" in pair.metadata for pair in pairs)
+    assert all(pair.metadata["slack_options_tested"] for pair in pairs)
+    assert all(
+        float(pair.metadata["slack_preservation_margin"]) > 0.0 for pair in pairs
+    )
+    assert all(
+        pair.metadata["slack_options_tested"]
+        == ",".join(future_options_for_contrast(pair.scenario_id))
+        for pair in pairs
+    )
+    assert all(record.metadata["future_options_tested"] for record in prompt_records)
+    assert all("Future options tested:" in record.user_prompt for record in prompt_records)
 
 
 def test_generated_fault_report_summarizes_fault_coverage() -> None:
@@ -50,8 +62,11 @@ def test_generated_fault_report_summarizes_fault_coverage() -> None:
     assert report["summary"]["examples"] == 60
     assert report["summary"]["pairs"] == 30
     assert report["taxonomy"]["annotated_contrasts"] == 30
+    assert report["summary"]["slack_prefers_genuine"] == 30
+    assert report["summary"]["mean_slack_preservation_margin"] > 0.0
     assert report["primary_fault_counts"]["consent_bypass"] >= 1
     assert "Generated Fault-Class" in markdown
+    assert "Mean slack-preservation margin" in markdown
     assert "consent_bypass" in markdown
 
 
@@ -96,7 +111,9 @@ def test_export_generated_fault_dataset_writes_all_artifacts(tmp_path) -> None:
         "prompt_records": 60,
     }
     assert len(read_jsonl(tmp_path / "scored.jsonl")) == 60
-    assert len(read_jsonl(tmp_path / "pairs.jsonl")) == 30
+    pair_records = read_jsonl(tmp_path / "pairs.jsonl")
+    assert len(pair_records) == 30
+    assert pair_records[0]["metadata"]["slack_options_tested"]
     assert len(read_jsonl(tmp_path / "prompts.jsonl")) == 60
     assert (tmp_path / "report.md").read_text(encoding="utf-8").startswith("#")
 
@@ -129,3 +146,4 @@ def test_fault_examples_from_prompt_outputs_preserve_api_provenance() -> None:
     assert all(example.category.endswith("__anthropic") for example in examples)
     assert pairs[0].metadata["source"] == "generated_fault_class_anthropic"
     assert str(pairs[0].metadata["generated_variant"]).endswith("_anthropic")
+    assert pairs[0].metadata["slack_options_tested"]

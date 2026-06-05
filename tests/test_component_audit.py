@@ -37,8 +37,11 @@ def test_component_margin_audit_summarizes_score_and_component_margins() -> None
     assert report["summary"]["score_accuracy"] == 1.0
     assert report["summary"]["mean_score_margin"] == 0.3
     assert report["summary"]["mean_truthfulness_margin"] == 0.6
+    assert report["summary"]["mean_slack_preservation_margin"] == 0.4
     assert report["groups"][0]["group"] == "truth_suppression"
+    assert report["groups"][0]["component_means"]["slack_preservation"] == 0.4
     assert "Component Margin Audit" in markdown
+    assert "slack_preservation" in markdown
 
 
 def test_component_margin_audit_writes_files(tmp_path) -> None:
