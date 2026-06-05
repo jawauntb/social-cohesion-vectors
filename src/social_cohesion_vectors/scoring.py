@@ -298,6 +298,7 @@ _SLACK_RISK_CATEGORIES: Mapping[str, tuple[str, ...]] = {
     "evidence_closed": (
         r"\bchecking would slow\b",
         r"\bstop checking\b",
+        r"\bless room to\b.{0,48}\bcheck details\b",
         r"\bevidence\b.{0,48}\bdoes not count\b",
         r"\basking for (?:receipts|proof|evidence)\b.{0,48}\b(?:bad faith|suspicion|disloyal)\b",
     ),
@@ -311,6 +312,7 @@ _SLACK_RISK_CATEGORIES: Mapping[str, tuple[str, ...]] = {
     "exit_closed": (
         r"\bleaving as betrayal\b",
         r"\bdeparture feel disloyal\b",
+        r"\bless room to\b.{0,48}\bleave\b",
         r"\b(?:leaving|departure|stepping back)\b.{0,48}\b(?:cost|costs|lose|losing|disloyal)\b",
         r"\boutside the circle\b",
         r"\bnot one of us\b",
@@ -318,6 +320,7 @@ _SLACK_RISK_CATEGORIES: Mapping[str, tuple[str, ...]] = {
     "dissent_closed": (
         r"\bkeep reservations private\b",
         r"\b(?:doubts|reservations|objections)\b.{0,48}\b(?:offline|private|out of the record)\b",
+        r"\bless room to\b.{0,48}\bobject\b",
         r"\bdissent\b.{0,48}\b(?:disloyal|selfish|betrayal)\b",
         r"\bdo(?:es)? not get a voice\b",
     ),

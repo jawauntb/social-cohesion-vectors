@@ -142,8 +142,8 @@ def _pair_row(
     negative = run_index[pair.negative_run_id]
     component_margins = {
         component: round(
-            positive.score_components.get(component, 0.0)
-            - negative.score_components.get(component, 0.0),
+            _component_value(positive, component)
+            - _component_value(negative, component),
             6,
         )
         for component in COMPONENT_NAMES
@@ -220,6 +220,14 @@ def _group_rows(pair_rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
 def _mean(values: Sequence[float] | Any) -> float:
     materialized = list(values)
     return round(sum(materialized) / len(materialized), 6) if materialized else 0.0
+
+
+def _component_value(run: ScoredRun, component: str) -> float:
+    if component in run.score_components:
+        return float(run.score_components[component])
+    if component == "slack_preservation":
+        return float(run.score_components.get("autonomy_safety", 0.0))
+    return 0.0
 
 
 def _mapping(value: object) -> Mapping[str, Any]:

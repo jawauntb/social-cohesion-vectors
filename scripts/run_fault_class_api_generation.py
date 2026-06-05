@@ -278,6 +278,12 @@ def _write_output_records(
             "variant": record.variant,
             "label": record.label,
             "primary_fault_class": record.primary_fault_class,
+            "future_options_tested": str(
+                record.metadata.get("future_options_tested", "")
+            ),
+            "future_option_contract": str(
+                record.metadata.get("future_option_contract", "")
+            ),
             "text": outputs.get(record.prompt_id, ""),
         }
         for record in records

@@ -4,6 +4,12 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+from social_cohesion_vectors.datasets import read_jsonl
+from social_cohesion_vectors.experiments.fault_generation import (
+    DEFAULT_VARIANTS,
+    build_fault_prompt_records,
+)
+
 
 def test_openai_output_text_extracts_response_content() -> None:
     script = _load_script()
@@ -31,6 +37,23 @@ def test_http_error_detail_sanitizes_api_keys() -> None:
     assert script._sanitize_error_detail("bad sk-proj-secret.tail key") == (
         "bad sk-*** key"
     )
+
+
+def test_output_records_include_future_option_contract(tmp_path: Path) -> None:
+    script = _load_script()
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:1]
+    output_path = tmp_path / "raw_outputs.jsonl"
+
+    count = script._write_output_records(
+        records,
+        {records[0].prompt_id: "generated text"},
+        output_path,
+    )
+    raw_records = read_jsonl(output_path)
+
+    assert count == 1
+    assert raw_records[0]["future_options_tested"]
+    assert raw_records[0]["future_option_contract"]
 
 
 def _load_script() -> ModuleType:

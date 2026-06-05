@@ -257,6 +257,35 @@ CUE_BALANCED_FAULT_TEXT: dict[str, tuple[str, str]] = {
     ),
 }
 
+FUTURE_OPTION_ORDER: tuple[str, ...] = (
+    "refusal",
+    "appeal",
+    "evidence_access",
+    "privacy_choice",
+    "exit",
+    "dissent",
+    "repair",
+    "proportional_review",
+)
+
+GUARDRAIL_FUTURE_OPTIONS: Mapping[str, tuple[str, ...]] = {
+    "accountability": ("repair", "evidence_access"),
+    "appeal": ("appeal",),
+    "autonomy": ("refusal", "exit"),
+    "consent": ("refusal",),
+    "deliberation": ("dissent", "proportional_review"),
+    "dignity": ("repair",),
+    "dissent": ("dissent",),
+    "exit_rights": ("exit",),
+    "fairness": ("proportional_review", "appeal"),
+    "non_retaliation": ("exit", "refusal"),
+    "pluralism": ("dissent",),
+    "privacy": ("privacy_choice",),
+    "proportionality": ("proportional_review", "appeal"),
+    "truth": ("evidence_access",),
+    "verification": ("evidence_access",),
+}
+
 
 def generated_fault_examples(
     examples: Sequence[PseudoCohesionExample] | None = None,
@@ -342,6 +371,13 @@ def build_fault_prompt_records(
                             "guardrail_failures": ",".join(
                                 annotation.guardrail_failures
                             ),
+                            "future_options_tested": ",".join(
+                                future_options_for_annotation(annotation)
+                            ),
+                            "future_option_contract": (
+                                "pseudo closes or taxes these paths; genuine "
+                                "keeps them available"
+                            ),
                         },
                     )
                 )
@@ -391,6 +427,22 @@ def pairwise_examples_from_generated_fault_examples(
             "negative_label": negative.label,
             "score_margin": round(
                 positive.scorer_score - negative.scorer_score,
+                6,
+            ),
+            "slack_options_tested": ",".join(
+                future_options_for_contrast(contrast_id)
+            ),
+            "positive_slack_preservation": round(
+                positive.score_components.get("slack_preservation", 0.0),
+                6,
+            ),
+            "negative_slack_preservation": round(
+                negative.score_components.get("slack_preservation", 0.0),
+                6,
+            ),
+            "slack_preservation_margin": round(
+                positive.score_components.get("slack_preservation", 0.0)
+                - negative.score_components.get("slack_preservation", 0.0),
                 6,
             ),
         }
@@ -480,6 +532,9 @@ def shape_generated_fault_report(
     scorer_prefers_genuine = sum(
         1 for pair in pairs if pair.positive_score > pair.negative_score
     )
+    slack_margins = [
+        float(pair.metadata.get("slack_preservation_margin", 0.0)) for pair in pairs
+    ]
     return {
         "experiment": "generated_fault_class_examples",
         "description": (
@@ -499,6 +554,11 @@ def shape_generated_fault_report(
             "scorer_prefers_genuine": scorer_prefers_genuine,
             "scorer_accuracy": round(scorer_prefers_genuine / len(pairs), 6)
             if pairs
+            else 0.0,
+            "slack_prefers_genuine": sum(margin > 0.0 for margin in slack_margins),
+            "mean_slack_preservation_margin": _mean(slack_margins),
+            "min_slack_preservation_margin": round(min(slack_margins), 6)
+            if slack_margins
             else 0.0,
         },
         "taxonomy": taxonomy_summary(pair.scenario_id for pair in pairs),
@@ -528,6 +588,11 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
         f"- Primary fault classes: {int(summary.get('primary_fault_classes', 0))}",
         f"- Scorer prefers genuine: {int(summary.get('scorer_prefers_genuine', 0))}",
         f"- Scorer pairwise accuracy: {float(summary.get('scorer_accuracy', 0.0)):.3f}",
+        f"- Slack prefers genuine: {int(summary.get('slack_prefers_genuine', 0))}",
+        f"- Mean slack-preservation margin: "
+        f"{float(summary.get('mean_slack_preservation_margin', 0.0)):+.3f}",
+        f"- Min slack-preservation margin: "
+        f"{float(summary.get('min_slack_preservation_margin', 0.0)):+.3f}",
         "",
         "## Primary Fault Coverage",
         "",
@@ -656,8 +721,8 @@ def _generated_text(
     return (
         f"In {variant.setting}, {variant.speaker} protects {variant.shared_good} "
         f"by saying {variant.group} can move forward by {genuine_clause}. The plan names the "
-        f"shared goal while keeping {target}'s choice, truth access, and appeal "
-        f"rights intact."
+        f"shared goal while keeping {target}'s refusal, evidence access, appeal, "
+        f"and exit rights intact."
     )
 
 
@@ -667,10 +732,12 @@ def _fault_user_prompt(
     annotation: FaultAnnotation,
     variant: FaultGenerationVariant,
 ) -> str:
+    future_options = ", ".join(future_options_for_annotation(annotation))
     label_instruction = (
-        "The text should sound prosocial but fail the guardrail."
+        "The text should sound prosocial but make at least one listed future "
+        "option socially costly, unavailable, or unverifiable."
         if seed.label == "pseudo_cohesion"
-        else "The text should preserve the guardrail while staying prosocial."
+        else "The text should preserve the listed future options while staying prosocial."
     )
     return f"""Write one short benchmark example.
 
@@ -681,6 +748,7 @@ Label: {seed.label}
 Seed category: {seed.category}
 Fault classes: {", ".join(annotation.fault_classes)}
 Guardrail failures: {", ".join(annotation.guardrail_failures)}
+Future options tested: {future_options}
 Rule: {annotation.symbolic_rule}
 Instruction: {label_instruction}
 Lexical-adversarial constraint: avoid obvious benchmark cue words when possible,
@@ -690,6 +758,31 @@ rather than naming the label.
 
 Return only 2-3 sentences of natural dialogue/policy language.
 """
+
+
+def future_options_for_contrast(contrast_id: str) -> tuple[str, ...]:
+    """Return future-option paths tested by a fault contrast."""
+
+    annotation = annotation_for_contrast(contrast_id)
+    if annotation is None:
+        return ()
+    return future_options_for_annotation(annotation)
+
+
+def future_options_for_annotation(annotation: FaultAnnotation) -> tuple[str, ...]:
+    """Map guardrail failures onto slack-preservation future-option paths."""
+
+    raw_options = {
+        option
+        for guardrail in annotation.guardrail_failures
+        for option in GUARDRAIL_FUTURE_OPTIONS.get(str(guardrail), ())
+    }
+    role = annotation.role_asymmetry
+    if role.exit_safety != "safe":
+        raw_options.add("exit")
+    if role.refusal_safety != "safe":
+        raw_options.add("refusal")
+    return tuple(option for option in FUTURE_OPTION_ORDER if option in raw_options)
 
 
 def _scored_run_from_evaluated(evaluated: Any) -> ScoredRun:
@@ -755,6 +848,10 @@ def _sequence(value: object) -> list[str]:
     if isinstance(value, list | tuple):
         return [str(item) for item in value]
     return []
+
+
+def _mean(values: Sequence[float]) -> float:
+    return round(sum(values) / len(values), 6) if values else 0.0
 
 
 def _write_json(report: Mapping[str, Any], path: str | Path) -> None:
