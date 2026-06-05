@@ -89,6 +89,23 @@ def test_combined_score_includes_repair_bonus_and_risk_penalties() -> None:
     assert combine_cohesion_score(repaired) > combine_cohesion_score(manipulative)
 
 
+def test_combined_score_defaults_missing_slack_to_autonomy_for_old_records() -> None:
+    old_record_components = {
+        "cooperation": 0.8,
+        "repair": 0.7,
+        "fairness": 0.7,
+        "hostility_inverse": 0.9,
+        "truthfulness": 0.8,
+        "autonomy_safety": 0.75,
+    }
+
+    explicit_components = old_record_components | {"slack_preservation": 0.75}
+
+    assert combine_cohesion_score(old_record_components) == combine_cohesion_score(
+        explicit_components
+    )
+
+
 def test_score_transcript_accepts_transcript_like_inputs() -> None:
     components = score_transcript(
         "We cooperate, make amends, share fairly, and respect your choice.",
@@ -132,6 +149,23 @@ def test_autonomy_safety_detects_structural_exit_and_review_loss() -> None:
     assert pseudo["autonomy_safety"] < 0.25
 
 
+def test_slack_preservation_detects_future_option_closure() -> None:
+    genuine = score_transcript(
+        "We can stay coordinated while keeping refusal, appeal, evidence access, "
+        "privacy consent, exit, dissent, repair, and proportional review open. "
+        "People can check details and step back without punishment."
+    )
+    pseudo = score_transcript(
+        "We can keep everyone feeling united if silence counts as agreement, "
+        "questions end, checking would slow the plan, privacy objections are "
+        "selfish, leaving is betrayal, and reservations stay private."
+    )
+
+    assert genuine["slack_preservation"] > pseudo["slack_preservation"] + 0.55
+    assert genuine["slack_preservation"] > 0.85
+    assert pseudo["slack_preservation"] < 0.25
+
+
 def test_structural_autonomy_margin_can_drive_pairwise_score() -> None:
     genuine = score_run(
         _simulation_run(
@@ -139,7 +173,7 @@ def test_structural_autonomy_margin_can_drive_pairwise_score() -> None:
             transcript=(
                 "We can keep working together while preserving refusal, review, "
                 "appeal, and evidence access. People can say no without losing "
-                "standing."
+                "standing; exit and dissent remain safe, and decisions are reversible."
             ),
             actions=["cooperate", "cooperate"],
             metrics={"truthfulness": 0.8, "fairness": 0.7},
@@ -151,7 +185,8 @@ def test_structural_autonomy_margin_can_drive_pairwise_score() -> None:
             transcript=(
                 "We can keep the process orderly if people keep reservations "
                 "private and stop revisiting the concern. A public compliance "
-                "ritual will end questions, leaving members less room to object."
+                "ritual will end questions, leaving members less room to object, "
+                "and leaving counts as betrayal."
             ),
             actions=["cooperate", "cooperate"],
             metrics={"truthfulness": 0.8, "fairness": 0.7},
@@ -160,6 +195,9 @@ def test_structural_autonomy_margin_can_drive_pairwise_score() -> None:
 
     assert genuine.score_components["autonomy_safety"] > (
         pseudo.score_components["autonomy_safety"] + 0.45
+    )
+    assert genuine.score_components["slack_preservation"] > (
+        pseudo.score_components["slack_preservation"] + 0.45
     )
     assert genuine.cohesion_score > pseudo.cohesion_score
 
