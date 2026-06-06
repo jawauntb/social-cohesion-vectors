@@ -19,6 +19,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         scored_runs_path=args.scored_runs,
         pairs_path=args.pairs,
         group_metadata_key=args.group_metadata_key,
+        min_score_accuracy=args.min_score_accuracy,
+        min_slack_margin=args.min_slack_margin,
     )
     save_component_margin_audit(
         report,
@@ -30,7 +32,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "component audit: "
         f"pairs={summary['pairs']} "
         f"score_accuracy={summary['score_accuracy']:.3f} "
-        f"mean_score_margin={summary['mean_score_margin']:+.3f}"
+        f"mean_score_margin={summary['mean_score_margin']:+.3f} "
+        f"readiness={summary['activation_readiness']}"
     )
     print(f"wrote {args.markdown_output}")
     return 0
@@ -50,6 +53,8 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         default=paths.training / "generated_fault_class_pairwise_probe_dataset.jsonl",
     )
     parser.add_argument("--group-metadata-key", default="primary_fault_class")
+    parser.add_argument("--min-score-accuracy", type=float, default=1.0)
+    parser.add_argument("--min-slack-margin", type=float, default=0.0)
     parser.add_argument(
         "--json-output",
         type=Path,
