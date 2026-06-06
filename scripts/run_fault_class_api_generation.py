@@ -62,7 +62,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     prompts = activation_prompts_from_pairs(pairs)
     report = shape_generated_fault_report(examples, variants=variants)
-    report["api_generation"] = _output_summary(output_records)
+    api_summary = _output_summary(output_records)
+    report["api_generation"] = api_summary
+    report["summary"]["api_invalid_outputs"] = api_summary["invalid_outputs"]
+    report["summary"]["api_generation_ready"] = (
+        api_summary["invalid_outputs"] == 0
+        and bool(report["summary"].get("pair_construction_ready", False))
+    )
 
     counts = {
         "raw_outputs": _write_output_records(

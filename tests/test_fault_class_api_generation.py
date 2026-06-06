@@ -9,6 +9,9 @@ from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
     DEFAULT_VARIANTS,
     build_fault_prompt_records,
+    fault_examples_from_prompt_outputs,
+    render_generated_fault_markdown,
+    shape_generated_fault_report,
 )
 
 
@@ -146,6 +149,49 @@ def test_output_summary_counts_valid_and_invalid_rows() -> None:
             "request_error": 1,
         },
     }
+
+
+def test_api_generation_summary_marks_invalid_or_incomplete_runs_not_ready() -> None:
+    script = _load_script()
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:2]
+    output_records = [
+        {
+            "prompt_id": records[0].prompt_id,
+            "text": "API-authored one-sided benchmark example.",
+            "valid": True,
+            "status": "ok",
+        },
+        {
+            "prompt_id": records[1].prompt_id,
+            "text": "",
+            "valid": False,
+            "status": "empty_output",
+        },
+    ]
+    examples = fault_examples_from_prompt_outputs(
+        records,
+        script._valid_outputs_by_prompt_id(output_records),
+        provider="openai",
+        model="test-model",
+    )
+    report = shape_generated_fault_report(
+        examples,
+        variants=DEFAULT_VARIANTS[:1],
+    )
+    api_summary = script._output_summary(output_records)
+    report["api_generation"] = api_summary
+    report["summary"]["api_invalid_outputs"] = api_summary["invalid_outputs"]
+    report["summary"]["api_generation_ready"] = (
+        api_summary["invalid_outputs"] == 0
+        and report["summary"]["pair_construction_ready"]
+    )
+    markdown = render_generated_fault_markdown(report)
+
+    assert report["summary"]["api_generation_ready"] is False
+    assert report["summary"]["api_invalid_outputs"] == 1
+    assert report["summary"]["pair_construction_ready"] is False
+    assert "API Output Audit" in markdown
+    assert "empty_output" in markdown
 
 
 def _load_script() -> ModuleType:

@@ -9,6 +9,7 @@ from social_cohesion_vectors.experiments.fault_generation import (
     fault_examples_from_prompt_outputs,
     future_options_for_contrast,
     generated_fault_examples,
+    pairing_audit_for_generated_fault_examples,
     pairwise_examples_from_generated_fault_examples,
     render_generated_fault_markdown,
     scored_runs_from_generated_fault_examples,
@@ -49,6 +50,7 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
     )
     assert all(record.metadata["future_options_tested"] for record in prompt_records)
     assert all("Future options tested:" in record.user_prompt for record in prompt_records)
+    assert pairing_audit_for_generated_fault_examples(examples)["ready"] is True
 
 
 def test_generated_fault_report_summarizes_fault_coverage() -> None:
@@ -67,6 +69,7 @@ def test_generated_fault_report_summarizes_fault_coverage() -> None:
     assert report["primary_fault_counts"]["consent_bypass"] >= 1
     assert "Generated Fault-Class" in markdown
     assert "Mean slack-preservation margin" in markdown
+    assert "Pair construction ready: True" in markdown
     assert "consent_bypass" in markdown
 
 
@@ -147,3 +150,30 @@ def test_fault_examples_from_prompt_outputs_preserve_api_provenance() -> None:
     assert pairs[0].metadata["source"] == "generated_fault_class_anthropic"
     assert str(pairs[0].metadata["generated_variant"]).endswith("_anthropic")
     assert pairs[0].metadata["slack_options_tested"]
+
+
+def test_fault_prompt_outputs_report_incomplete_pair_audit() -> None:
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:1]
+    outputs = {records[0].prompt_id: "API-authored one-sided benchmark example."}
+
+    examples = fault_examples_from_prompt_outputs(
+        records,
+        outputs,
+        provider="openai",
+        model="test-model",
+    )
+    pairs = pairwise_examples_from_generated_fault_examples(examples)
+    report = shape_generated_fault_report(
+        examples,
+        variants=DEFAULT_VARIANTS[:1],
+    )
+    markdown = render_generated_fault_markdown(report)
+
+    assert pairs == []
+    assert report["summary"]["pair_construction_ready"] is False
+    assert report["summary"]["incomplete_pair_contrasts"] == 1
+    assert report["pairing_audit"]["incomplete"][0]["missing_labels"] == [
+        "genuine_cohesion"
+    ]
+    assert "Pair Construction Audit" in markdown
+    assert "genuine_cohesion" in markdown
