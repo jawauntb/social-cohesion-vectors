@@ -19,6 +19,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         scored_runs_path=args.scored_runs,
         pairs_path=args.pairs,
         metadata_key=args.metadata_key,
+        min_metadata_groups=args.min_metadata_groups,
+        min_test_pairs_per_fold=args.min_test_pairs_per_fold,
     )
     save_fault_heldout_reports(
         report,
@@ -31,7 +33,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"scored_runs={inputs['scored_runs']} "
         f"pairs={inputs['pairs']} "
         f"fault_classes={inputs['fault_classes']} "
-        f"fold_rows={len(report['folds'])}"
+        f"fold_rows={len(report['folds'])} "
+        f"readiness={report['readiness']['status']}"
     )
     print(f"wrote {args.markdown_output}")
     return 0
@@ -55,6 +58,8 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         default="primary_fault_class",
         help="Pair metadata key to hold out.",
     )
+    parser.add_argument("--min-metadata-groups", type=int, default=2)
+    parser.add_argument("--min-test-pairs-per-fold", type=int, default=1)
     parser.add_argument(
         "--json-output",
         type=Path,
