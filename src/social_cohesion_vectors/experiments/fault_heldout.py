@@ -24,6 +24,8 @@ def run_fault_heldout_transfer_from_files(
     scored_runs_path: str | Path,
     pairs_path: str | Path,
     metadata_key: str = "primary_fault_class",
+    min_metadata_groups: int = 2,
+    min_test_pairs_per_fold: int = 1,
 ) -> dict[str, Any]:
     """Load generated fault artifacts and run held-out fault-class transfer."""
 
@@ -31,6 +33,8 @@ def run_fault_heldout_transfer_from_files(
         scored_runs=load_scored_runs_jsonl(scored_runs_path),
         pairs=load_pairwise_examples_jsonl(pairs_path),
         metadata_key=metadata_key,
+        min_metadata_groups=min_metadata_groups,
+        min_test_pairs_per_fold=min_test_pairs_per_fold,
         input_paths={
             "scored_runs": str(scored_runs_path),
             "pairs": str(pairs_path),
@@ -43,6 +47,8 @@ def run_fault_heldout_transfer(
     scored_runs: Sequence[ScoredRun],
     pairs: Sequence[PairwiseExample],
     metadata_key: str = "primary_fault_class",
+    min_metadata_groups: int = 2,
+    min_test_pairs_per_fold: int = 1,
     input_paths: Mapping[str, str | None] | None = None,
 ) -> dict[str, Any]:
     """Train on all but one fault class and evaluate on the held-out class."""
@@ -53,6 +59,16 @@ def run_fault_heldout_transfer(
         run_index=run_index,
         metadata_key=metadata_key,
         split_name="fault_class",
+    )
+    metadata_values = _metadata_values(pairs, metadata_key)
+    summary = summarize_fold_results(folds)
+    readiness = _transfer_readiness(
+        pairs=pairs,
+        folds=folds,
+        metadata_key=metadata_key,
+        metadata_values=metadata_values,
+        min_metadata_groups=min_metadata_groups,
+        min_test_pairs_per_fold=min_test_pairs_per_fold,
     )
     return {
         "experiment": "fault_heldout_transfer",
@@ -66,9 +82,18 @@ def run_fault_heldout_transfer(
             "scored_runs": len(scored_runs),
             "pairs": len(pairs),
             "indexed_runs": len(run_index),
-            "fault_classes": len(_metadata_values(pairs, metadata_key)),
+            "fault_classes": len(metadata_values),
+            "metadata_values": sorted(metadata_values),
+            "missing_metadata_pairs": _missing_metadata_pair_count(
+                pairs,
+                metadata_key,
+            ),
+            "source_counts": _source_counts(pairs),
+            "min_metadata_groups": min_metadata_groups,
+            "min_test_pairs_per_fold": min_test_pairs_per_fold,
         },
-        "summary": summarize_fold_results(folds),
+        "summary": summary,
+        "readiness": readiness,
         "folds": folds,
     }
 
@@ -104,12 +129,58 @@ def render_fault_heldout_markdown(report: Mapping[str, Any]) -> str:
         f"- Pairwise examples: {int(inputs.get('pairs', 0))}",
         f"- Fault classes: {int(inputs.get('fault_classes', 0))}",
         f"- Metadata key: `{inputs.get('metadata_key', '')}`",
+        f"- Missing metadata pairs: {int(inputs.get('missing_metadata_pairs', 0))}",
+        f"- Transfer readiness: "
+        f"`{_mapping(report.get('readiness')).get('status', 'not_ready')}`",
+        f"- Ready for downstream claims: "
+        f"{bool(_mapping(report.get('readiness')).get('ready', False))}",
         "",
-        "## Summary",
+        "## Readiness Gates",
         "",
-        "| Split | Baseline | Folds | Test pairs | Mean test accuracy | Mean test margin | Mean train accuracy |",
-        "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Gate | Value | Threshold | Passed |",
+        "| --- | ---: | ---: | --- |",
     ]
+    readiness = _mapping(report.get("readiness"))
+    for gate in _sequence(readiness.get("gates")):
+        gate_map = _mapping(gate)
+        lines.append(
+            "| "
+            f"{gate_map.get('gate_id', '')} | "
+            f"{float(gate_map.get('value', 0.0)):.3f} | "
+            f"{float(gate_map.get('threshold', 0.0)):.3f} | "
+            f"{bool(gate_map.get('passed', False))} |"
+        )
+    failed_groups = _sequence(readiness.get("failed_metadata_values"))
+    if failed_groups:
+        lines.extend(
+            [
+                "",
+                "Not ready for downstream claims: held-out folds are incomplete "
+                f"for {', '.join(str(group) for group in failed_groups)}.",
+            ]
+        )
+    source_counts = _mapping(inputs.get("source_counts"))
+    if source_counts:
+        lines.extend(
+            [
+                "",
+                "## Source Coverage",
+                "",
+                "| Source | Pairs |",
+                "| --- | ---: |",
+            ]
+        )
+        for source, count in sorted(source_counts.items()):
+            lines.append(f"| `{source}` | {int(count)} |")
+    lines.extend(
+        [
+            "",
+            "## Summary",
+            "",
+            "| Split | Baseline | Folds | Test pairs | Mean test accuracy | Mean test margin | Mean train accuracy |",
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
     for row in _sequence(report.get("summary")):
         row_map = _mapping(row)
         fold_rows = [
@@ -166,6 +237,112 @@ def _metadata_values(
             continue
         values.update(part.strip() for part in str(raw).split(",") if part.strip())
     return values
+
+
+def _missing_metadata_pair_count(
+    pairs: Sequence[PairwiseExample],
+    metadata_key: str,
+) -> int:
+    return sum(1 for pair in pairs if not str(pair.metadata.get(metadata_key, "")).strip())
+
+
+def _source_counts(pairs: Sequence[PairwiseExample]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for pair in pairs:
+        source = str(pair.metadata.get("source", "unknown") or "unknown")
+        counts[source] = counts.get(source, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _transfer_readiness(
+    *,
+    pairs: Sequence[PairwiseExample],
+    folds: Sequence[Mapping[str, Any]],
+    metadata_key: str,
+    metadata_values: set[str],
+    min_metadata_groups: int,
+    min_test_pairs_per_fold: int,
+) -> dict[str, Any]:
+    missing_metadata_pairs = _missing_metadata_pair_count(pairs, metadata_key)
+    held_out_values = {str(fold.get("held_out", "")) for fold in folds}
+    failed_metadata_values = sorted(
+        value
+        for value in metadata_values
+        if _min_test_pairs_for_held_out(folds, value) < min_test_pairs_per_fold
+    )
+    skipped_pairs = sum(
+        int(_mapping(fold.get("train")).get("skipped_pairs", 0))
+        + int(_mapping(fold.get("test")).get("skipped_pairs", 0))
+        for fold in folds
+    )
+    gates = [
+        {
+            "gate_id": "non_empty_pairs",
+            "value": float(len(pairs)),
+            "threshold": 1.0,
+            "passed": len(pairs) > 0,
+        },
+        {
+            "gate_id": "metadata_group_count",
+            "value": float(len(metadata_values)),
+            "threshold": float(min_metadata_groups),
+            "passed": len(metadata_values) >= min_metadata_groups,
+        },
+        {
+            "gate_id": "metadata_values_have_folds",
+            "value": float(len(held_out_values & metadata_values)),
+            "threshold": float(len(metadata_values)),
+            "passed": metadata_values <= held_out_values,
+        },
+        {
+            "gate_id": "min_test_pairs_per_fold",
+            "value": float(
+                min(
+                    (
+                        _min_test_pairs_for_held_out(folds, value)
+                        for value in metadata_values
+                    ),
+                    default=0,
+                )
+            ),
+            "threshold": float(min_test_pairs_per_fold),
+            "passed": not failed_metadata_values,
+        },
+        {
+            "gate_id": "missing_metadata_pairs",
+            "value": float(missing_metadata_pairs),
+            "threshold": 0.0,
+            "passed": missing_metadata_pairs == 0,
+        },
+        {
+            "gate_id": "skipped_pairs",
+            "value": float(skipped_pairs),
+            "threshold": 0.0,
+            "passed": skipped_pairs == 0,
+        },
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "transfer_ready" if ready else "not_ready_for_transfer_claims",
+        "ready": ready,
+        "min_metadata_groups": min_metadata_groups,
+        "min_test_pairs_per_fold": min_test_pairs_per_fold,
+        "failed_metadata_values": failed_metadata_values,
+        "source_counts": _source_counts(pairs),
+        "gates": gates,
+    }
+
+
+def _min_test_pairs_for_held_out(
+    folds: Sequence[Mapping[str, Any]],
+    held_out: str,
+) -> int:
+    counts = [
+        int(_mapping(fold.get("test")).get("n_pairs", 0))
+        for fold in folds
+        if str(fold.get("held_out", "")) == held_out
+    ]
+    return min(counts) if counts else 0
 
 
 def _weighted_mean_margin(rows: Sequence[object]) -> float:
