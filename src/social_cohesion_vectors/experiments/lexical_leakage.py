@@ -18,6 +18,7 @@ def run_lexical_leakage_report_from_file(
     pairs_path: str | Path,
     *,
     group_metadata_key: str = "primary_fault_class",
+    max_cue_solved_rate: float = 0.10,
 ) -> dict[str, Any]:
     """Load pairwise examples and summarize lexical cue leakage."""
 
@@ -25,6 +26,7 @@ def run_lexical_leakage_report_from_file(
         pairs=load_pairwise_examples_jsonl(pairs_path),
         group_metadata_key=group_metadata_key,
         input_path=str(pairs_path),
+        max_cue_solved_rate=max_cue_solved_rate,
     )
 
 
@@ -33,6 +35,7 @@ def run_lexical_leakage_report(
     pairs: Sequence[PairwiseExample],
     group_metadata_key: str = "primary_fault_class",
     input_path: str | None = None,
+    max_cue_solved_rate: float = 0.10,
 ) -> dict[str, Any]:
     """Summarize how often simple cue counts already separate pair labels."""
 
@@ -40,6 +43,14 @@ def run_lexical_leakage_report(
     solved = sum(1 for row in pair_rows if float(row["cue_margin"]) > 0.0)
     tied = sum(1 for row in pair_rows if float(row["cue_margin"]) == 0.0)
     inverted = sum(1 for row in pair_rows if float(row["cue_margin"]) < 0.0)
+    cue_solved_rate = round(solved / len(pairs), 6) if pairs else 0.0
+    groups = _group_rows(pair_rows)
+    readiness = _activation_readiness(
+        pairs=len(pairs),
+        cue_solved_rate=cue_solved_rate,
+        groups=groups,
+        max_cue_solved_rate=max_cue_solved_rate,
+    )
     return {
         "experiment": "lexical_leakage_report",
         "description": (
@@ -57,10 +68,13 @@ def run_lexical_leakage_report(
             "cue_solved_pairs": solved,
             "cue_tied_pairs": tied,
             "cue_inverted_pairs": inverted,
-            "cue_solved_rate": round(solved / len(pairs), 6) if pairs else 0.0,
+            "cue_solved_rate": cue_solved_rate,
             "mean_cue_margin": _mean(float(row["cue_margin"]) for row in pair_rows),
+            "activation_readiness": readiness["status"],
+            "ready_for_activation": readiness["ready"],
         },
-        "groups": _group_rows(pair_rows),
+        "readiness": readiness,
+        "groups": groups,
         "pairs": pair_rows,
     }
 
@@ -98,12 +112,42 @@ def render_lexical_leakage_markdown(report: Mapping[str, Any]) -> str:
         f"- Cue-inverted pairs: {int(summary.get('cue_inverted_pairs', 0))}",
         f"- Cue-solved rate: {float(summary.get('cue_solved_rate', 0.0)):.3f}",
         f"- Mean cue margin: {float(summary.get('mean_cue_margin', 0.0)):.3f}",
+        f"- Activation readiness: `{summary.get('activation_readiness', 'not_ready')}`",
+        f"- Ready for activation: {bool(summary.get('ready_for_activation', False))}",
         "",
-        "## Groups",
+        "## Readiness Gates",
         "",
-        "| Group | Pairs | Cue-solved | Mean cue margin |",
-        "| --- | ---: | ---: | ---: |",
+        "| Gate | Value | Threshold | Passed |",
+        "| --- | ---: | ---: | --- |",
     ]
+    readiness = _mapping(report.get("readiness"))
+    for gate in _sequence(readiness.get("gates")):
+        gate_map = _mapping(gate)
+        lines.append(
+            "| "
+            f"{gate_map.get('gate_id', '')} | "
+            f"{float(gate_map.get('value', 0.0)):.3f} | "
+            f"{float(gate_map.get('threshold', 0.0)):.3f} | "
+            f"{bool(gate_map.get('passed', False))} |"
+        )
+    failed_groups = _sequence(readiness.get("failed_groups"))
+    if failed_groups:
+        lines.extend(
+            [
+                "",
+                "Not ready for activation: lexical cues solve one or more "
+                f"groups ({', '.join(str(group) for group in failed_groups)}).",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Groups",
+            "",
+            "| Group | Pairs | Cue-solved | Cue-solved rate | Mean cue margin |",
+            "| --- | ---: | ---: | ---: | ---: |",
+        ]
+    )
     for row in _sequence(report.get("groups")):
         row_map = _mapping(row)
         lines.append(
@@ -111,6 +155,7 @@ def render_lexical_leakage_markdown(report: Mapping[str, Any]) -> str:
             f"{row_map.get('group', '')} | "
             f"{int(row_map.get('pairs', 0))} | "
             f"{int(row_map.get('cue_solved_pairs', 0))} | "
+            f"{float(row_map.get('cue_solved_rate', 0.0)):.3f} | "
             f"{float(row_map.get('mean_cue_margin', 0.0)):.3f} |"
         )
     lines.extend(
@@ -173,10 +218,58 @@ def _group_rows(pair_rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
                 "group": group,
                 "pairs": len(group_rows),
                 "cue_solved_pairs": solved,
+                "cue_solved_rate": round(solved / len(group_rows), 6)
+                if group_rows
+                else 0.0,
                 "mean_cue_margin": _mean(float(row["cue_margin"]) for row in group_rows),
             }
         )
     return rows
+
+
+def _activation_readiness(
+    *,
+    pairs: int,
+    cue_solved_rate: float,
+    groups: Sequence[Mapping[str, Any]],
+    max_cue_solved_rate: float,
+) -> dict[str, Any]:
+    failed_groups = [
+        str(row.get("group", ""))
+        for row in groups
+        if float(row.get("cue_solved_rate", 0.0)) > max_cue_solved_rate
+    ]
+    gates = [
+        {
+            "gate_id": "non_empty_pairs",
+            "value": float(pairs),
+            "threshold": 1.0,
+            "passed": pairs > 0,
+        },
+        {
+            "gate_id": "overall_cue_solved_rate",
+            "value": cue_solved_rate,
+            "threshold": max_cue_solved_rate,
+            "passed": cue_solved_rate <= max_cue_solved_rate,
+        },
+        {
+            "gate_id": "group_cue_solved_rate",
+            "value": max(
+                (float(row.get("cue_solved_rate", 0.0)) for row in groups),
+                default=0.0,
+            ),
+            "threshold": max_cue_solved_rate,
+            "passed": not failed_groups,
+        },
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "activation_ready" if ready else "not_ready_for_activation",
+        "ready": ready,
+        "max_cue_solved_rate": max_cue_solved_rate,
+        "failed_groups": failed_groups,
+        "gates": gates,
+    }
 
 
 def _term_count(text: str, terms: Sequence[str]) -> int:
