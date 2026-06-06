@@ -463,6 +463,51 @@ def pairwise_examples_from_generated_fault_examples(
     return pairs
 
 
+def pairing_audit_for_generated_fault_examples(
+    examples: Sequence[PseudoCohesionExample],
+) -> dict[str, Any]:
+    """Summarize whether generated examples have complete contrast pairs."""
+
+    by_contrast: dict[str, set[str]] = defaultdict(set)
+    for example in examples:
+        by_contrast[example.contrast_id].add(example.label)
+
+    incomplete: list[dict[str, Any]] = []
+    missing_genuine = 0
+    missing_pseudo = 0
+    required_labels = ("genuine_cohesion", "pseudo_cohesion")
+    for contrast_id in sorted(by_contrast):
+        present = by_contrast[contrast_id]
+        missing = [label for label in required_labels if label not in present]
+        if not missing:
+            continue
+        missing_genuine += int("genuine_cohesion" in missing)
+        missing_pseudo += int("pseudo_cohesion" in missing)
+        incomplete.append(
+            {
+                "contrast_id": contrast_id,
+                "base_contrast_id": base_contrast_id(contrast_id),
+                "generated_variant": _variant_from_contrast_id(contrast_id),
+                "generated_style": _style_from_contrast_id(contrast_id),
+                "primary_fault_class": _primary_fault_class(contrast_id),
+                "present_labels": sorted(present),
+                "missing_labels": missing,
+                "status": "incomplete_pair",
+            }
+        )
+
+    complete = len(by_contrast) - len(incomplete)
+    return {
+        "ready": not incomplete,
+        "total_contrasts": len(by_contrast),
+        "complete_contrasts": complete,
+        "incomplete_contrasts": len(incomplete),
+        "missing_genuine_count": missing_genuine,
+        "missing_pseudo_count": missing_pseudo,
+        "incomplete": incomplete,
+    }
+
+
 def fault_examples_from_prompt_outputs(
     records: Sequence[FaultPromptRecord],
     outputs: Mapping[str, str],
@@ -521,6 +566,7 @@ def shape_generated_fault_report(
     """Summarize generated fault-class examples and pair coverage."""
 
     pairs = pairwise_examples_from_generated_fault_examples(examples, style=style)
+    pairing_audit = pairing_audit_for_generated_fault_examples(examples)
     scored_runs = scored_runs_from_generated_fault_examples(examples)
     fault_counts: dict[str, int] = defaultdict(int)
     primary_counts: dict[str, int] = defaultdict(int)
@@ -547,6 +593,9 @@ def shape_generated_fault_report(
             "examples": len(examples),
             "scored_runs": len(scored_runs),
             "pairs": len(pairs),
+            "pair_construction_ready": pairing_audit["ready"],
+            "complete_pair_contrasts": pairing_audit["complete_contrasts"],
+            "incomplete_pair_contrasts": pairing_audit["incomplete_contrasts"],
             "base_contrasts": len({base_contrast_id(pair.scenario_id) for pair in pairs}),
             "primary_fault_classes": len(
                 {pair.metadata.get("primary_fault_class") for pair in pairs}
@@ -564,6 +613,7 @@ def shape_generated_fault_report(
         "taxonomy": taxonomy_summary(pair.scenario_id for pair in pairs),
         "primary_fault_counts": dict(sorted(primary_counts.items())),
         "fault_class_counts": dict(sorted(fault_counts.items())),
+        "pairing_audit": pairing_audit,
         "pairs": [pair.model_dump(mode="json") for pair in pairs],
     }
 
@@ -584,6 +634,8 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
         f"- Examples: {int(summary.get('examples', 0))}",
         f"- Scored runs: {int(summary.get('scored_runs', 0))}",
         f"- Pairwise examples: {int(summary.get('pairs', 0))}",
+        f"- Pair construction ready: {bool(summary.get('pair_construction_ready', True))}",
+        f"- Incomplete pair contrasts: {int(summary.get('incomplete_pair_contrasts', 0))}",
         f"- Base contrasts: {int(summary.get('base_contrasts', 0))}",
         f"- Primary fault classes: {int(summary.get('primary_fault_classes', 0))}",
         f"- Scorer prefers genuine: {int(summary.get('scorer_prefers_genuine', 0))}",
@@ -612,6 +664,46 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
     )
     for fault_class, count in _mapping(report.get("fault_class_counts")).items():
         lines.append(f"| {fault_class} | {int(count)} |")
+
+    api_generation = _mapping(report.get("api_generation"))
+    if api_generation:
+        lines.extend(
+            [
+                "",
+                "## API Output Audit",
+                "",
+                f"- Raw outputs: {int(api_generation.get('raw_outputs', 0))}",
+                f"- Valid outputs: {int(api_generation.get('valid_outputs', 0))}",
+                f"- Invalid outputs: {int(api_generation.get('invalid_outputs', 0))}",
+                "",
+                "| Output status | Count |",
+                "| --- | ---: |",
+            ]
+        )
+        for status, count in _mapping(api_generation.get("status_counts")).items():
+            lines.append(f"| {status} | {int(count)} |")
+
+    pairing_audit = _mapping(report.get("pairing_audit"))
+    incomplete = _sequence_of_mappings(pairing_audit.get("incomplete"))
+    if incomplete:
+        lines.extend(
+            [
+                "",
+                "## Pair Construction Audit",
+                "",
+                "| Contrast | Missing labels | Primary fault |",
+                "| --- | --- | --- |",
+            ]
+        )
+        for row in incomplete[:12]:
+            lines.append(
+                "| "
+                f"`{row.get('contrast_id', '')}` | "
+                f"{', '.join(_sequence(row.get('missing_labels')))} | "
+                f"{row.get('primary_fault_class', '')} |"
+            )
+        if len(incomplete) > 12:
+            lines.append(f"| ... | {len(incomplete) - 12} more | ... |")
     return "\n".join(lines) + "\n"
 
 
@@ -848,6 +940,12 @@ def _sequence(value: object) -> list[str]:
     if isinstance(value, list | tuple):
         return [str(item) for item in value]
     return []
+
+
+def _sequence_of_mappings(value: object) -> list[Mapping[str, Any]]:
+    if not isinstance(value, list | tuple):
+        return []
+    return [item for item in value if isinstance(item, Mapping)]
 
 
 def _mean(values: Sequence[float]) -> float:
