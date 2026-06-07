@@ -16,6 +16,50 @@ coefficient-1.0 toy baseline, then records the observed movement.
 The record is compute-only. It does not claim biological, pharmacological,
 neural, human, therapeutic, or receptor-level effects.
 
+## Regime Transition Records
+
+Regime-transition records are adjacent to, but separate from, CK perturbation
+records. They describe changes in the scientific contract itself: benchmark
+upgrades, scorer components, audit gates, new artifact types, and claim
+boundaries. They are intended for the self-revising discovery layer where old
+artifacts are preserved, new verifiers are introduced, rejected alternatives
+remain visible, and residual content records what the new regime exposed beyond
+transporting old evidence.
+
+Regime records use `src/social_cohesion_vectors/regime_records.py` and contain:
+
+- `record_id`: stable deterministic id for the regime change.
+- `title`: short human-readable transition title.
+- `status`: `proposed`, `accepted`, `rejected`, or `superseded`.
+- `source_id`: plan, report, or artifact path that motivated the record.
+- `claim_boundary`: compute-only scope statement. By default, regime records do
+  not claim human, neural, clinical, deployment, or real-world social effects.
+- `old_regime` and `new_regime`: JSON objects describing the old and new
+  scientific schema, benchmark contract, scorer components, or audit posture.
+- `preserved_artifacts`: old artifacts carried forward into the new regime.
+- `new_artifact_types`: artifact types that the new regime can now express.
+- `new_verifiers`: gates or checks introduced by the new regime.
+- `rejected_alternatives`: explicit alternatives rejected by the transition.
+- `gates`: gate records with `gate_id`, `status`, optional metric/threshold,
+  observed value, and note.
+- `residual_content`: findings not explained by simply transporting old
+  artifacts into the new regime. Legacy input named `residual_findings` is still
+  accepted and normalized to `residual_content`.
+- `notes`: optional additional provenance notes.
+
+Use:
+
+```bash
+uv run python scripts/export_regime_transition_records.py \
+  docs/research/regime_records.json \
+  --output data/reports/regime_transition_records.jsonl \
+  --markdown-output data/reports/regime_transition_records.md
+```
+
+The Markdown report lists gates, rejected alternatives, residual content, and
+the claim boundary for each transition so benchmark/scorer/audit changes do not
+silently become human or neural validation claims.
+
 ## Fields
 
 - `transition_id`: deterministic `{prompt_id}::{baseline}->{perturbation}` id.
