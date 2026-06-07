@@ -9,6 +9,7 @@ from pathlib import Path
 from social_cohesion_vectors.regime_records import (
     load_regime_transition_records,
     summarize_regime_transition_records,
+    write_regime_transition_markdown,
     write_regime_transition_records,
 )
 
@@ -17,6 +18,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     records = load_regime_transition_records(args.input)
     count = write_regime_transition_records(records, args.output)
+    if args.markdown_output is not None:
+        write_regime_transition_markdown(records, args.markdown_output)
     summary = summarize_regime_transition_records(records)
     print(
         f"wrote {args.output} records={count} "
@@ -39,6 +42,12 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         type=Path,
         default=Path("data/reports/regime_transition_records.jsonl"),
         help="Output canonical JSONL path.",
+    )
+    parser.add_argument(
+        "--markdown-output",
+        type=Path,
+        default=None,
+        help="Optional human-readable Markdown output path.",
     )
     return parser.parse_args(argv)
 
