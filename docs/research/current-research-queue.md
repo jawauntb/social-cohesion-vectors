@@ -203,8 +203,8 @@ Implementation should probably follow existing audit patterns:
 3. Keep the accepted Qwen7B generated/control direction-transfer report on the
    expanded control as the current cross-benchmark alignment baseline.
 4. Preserve SmolLM2 layer `-2` as the active out-of-family diagnostic model.
-5. Add or use per-pair failure reporting for generated/control direction
-   transfer so the failing SmolLM2 cases are first-class audit artifacts.
+5. Use the per-pair failure tables in generated/control direction-transfer
+   reports so the failing SmolLM2 cases are first-class audit artifacts.
 6. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
