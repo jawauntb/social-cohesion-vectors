@@ -370,6 +370,109 @@ def run_pair_bridge_direction_audit_from_files(
     }
 
 
+def run_bridge_set_sufficiency_audit_from_files(
+    *,
+    source_activation_npz: str | Path,
+    source_pairs_path: str | Path,
+    target_activation_npz: str | Path,
+    target_pairs_path: str | Path,
+    source_name: str = "source",
+    target_name: str = "target",
+    source_group_key: str = "source",
+    target_group_key: str = "source",
+    bridge_stratum_key: str = "slack_options_tested",
+    composition_keys: Sequence[str] = ("source", "primary_fault_class"),
+    bridge_pair_count: int = 6,
+    min_pairwise_accuracy: float = 1.0,
+    min_margin: float = 0.0,
+) -> dict[str, Any]:
+    """Evaluate intentionally constructed bridge-pair sets."""
+
+    if bridge_pair_count < 1:
+        raise ValueError("bridge_pair_count must be at least 1.")
+
+    source = _load_domain_dataset(
+        name=source_name,
+        activation_npz=source_activation_npz,
+        pairs_path=source_pairs_path,
+        group_key=source_group_key,
+    )
+    target = _load_domain_dataset(
+        name=target_name,
+        activation_npz=target_activation_npz,
+        pairs_path=target_pairs_path,
+        group_key=target_group_key,
+    )
+    _validate_shared_dim(source, target)
+
+    target_bridge_set_folds = _bridge_set_sufficiency_folds(
+        train_primary=source,
+        train_secondary=target,
+        held_out_dataset=target,
+        bridge_stratum_key=bridge_stratum_key,
+        composition_keys=composition_keys,
+        bridge_pair_count=bridge_pair_count,
+    )
+    source_bridge_set_folds = _bridge_set_sufficiency_folds(
+        train_primary=target,
+        train_secondary=source,
+        held_out_dataset=source,
+        bridge_stratum_key=bridge_stratum_key,
+        composition_keys=composition_keys,
+        bridge_pair_count=bridge_pair_count,
+    )
+    readiness = _bridge_set_readiness(
+        source_bridge_set_folds=source_bridge_set_folds,
+        target_bridge_set_folds=target_bridge_set_folds,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+    )
+    return {
+        "experiment": "bridge_set_sufficiency_audit",
+        "description": (
+            "Constructs one fixed-size same-domain bridge-pair set per held-out "
+            "source family using procedural-path and composition coverage, then "
+            "evaluates held-out source-family transfer."
+        ),
+        "inputs": {
+            "source_name": source_name,
+            "target_name": target_name,
+            "source_activation_npz": str(source_activation_npz),
+            "source_pairs_path": str(source_pairs_path),
+            "target_activation_npz": str(target_activation_npz),
+            "target_pairs_path": str(target_pairs_path),
+            "source_group_key": source_group_key,
+            "target_group_key": target_group_key,
+            "bridge_stratum_key": bridge_stratum_key,
+            "composition_keys": list(composition_keys),
+            "bridge_pair_count": int(bridge_pair_count),
+            "activation_dim": int(source.activations.shape[1]),
+            "source_pairs": len(_unique_pair_ids(source)),
+            "target_pairs": len(_unique_pair_ids(target)),
+            "source_groups": len(_groups(source)),
+            "target_groups": len(_groups(target)),
+            "min_pairwise_accuracy": float(min_pairwise_accuracy),
+            "min_margin": float(min_margin),
+        },
+        "summary": _bridge_set_summary(
+            source_bridge_set_folds=source_bridge_set_folds,
+            target_bridge_set_folds=target_bridge_set_folds,
+            readiness=readiness,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+        ),
+        "readiness": readiness,
+        "source_bridge_set_folds": source_bridge_set_folds,
+        "target_bridge_set_folds": target_bridge_set_folds,
+        "interpretation_guardrail": (
+            "A bridge-set sufficiency pass supports a text-benchmark activation "
+            "diagnostic for intentionally constructed bridge sets. It does not "
+            "establish a human, neural, clinical, deployment, or causal "
+            "steering claim."
+        ),
+    }
+
+
 def save_heldout_domain_direction_audit_report(
     report: Mapping[str, Any],
     *,
@@ -423,6 +526,25 @@ def save_pair_bridge_direction_audit_report(
     json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     markdown_output.write_text(
         render_pair_bridge_direction_audit_markdown(report),
+        encoding="utf-8",
+    )
+
+
+def save_bridge_set_sufficiency_audit_report(
+    report: Mapping[str, Any],
+    *,
+    json_path: str | Path,
+    markdown_path: str | Path,
+) -> None:
+    """Write JSON and Markdown bridge-set sufficiency reports."""
+
+    json_output = Path(json_path)
+    markdown_output = Path(markdown_path)
+    json_output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output.parent.mkdir(parents=True, exist_ok=True)
+    json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    markdown_output.write_text(
+        render_bridge_set_sufficiency_audit_markdown(report),
         encoding="utf-8",
     )
 
@@ -601,6 +723,74 @@ def render_pair_bridge_direction_audit_markdown(report: Mapping[str, Any]) -> st
             "## Failed Sampled Folds",
             "",
             *_failed_pair_bridge_fold_table(report),
+            "",
+            "## Interpretation Guardrail",
+            "",
+            str(report.get("interpretation_guardrail", "")),
+            "",
+        ]
+    )
+
+
+def render_bridge_set_sufficiency_audit_markdown(
+    report: Mapping[str, Any],
+) -> str:
+    """Render a bridge-set sufficiency audit as Markdown."""
+
+    inputs = _mapping(report.get("inputs"))
+    summary = _mapping(report.get("summary"))
+    return "\n".join(
+        [
+            "# Bridge Set Sufficiency Audit",
+            "",
+            str(report.get("description", "")),
+            "",
+            "## Inputs",
+            "",
+            f"- Source benchmark: `{inputs.get('source_name', '')}`",
+            f"- Target benchmark: `{inputs.get('target_name', '')}`",
+            f"- Source group key: `{inputs.get('source_group_key', '')}`",
+            f"- Target group key: `{inputs.get('target_group_key', '')}`",
+            f"- Bridge stratum key: `{inputs.get('bridge_stratum_key', '')}`",
+            f"- Composition keys: "
+            f"`{', '.join(str(key) for key in _sequence(inputs.get('composition_keys')))}`",
+            f"- Bridge pair count: {int(inputs.get('bridge_pair_count', 0))}",
+            f"- Activation dim: {int(inputs.get('activation_dim', 0))}",
+            f"- Source pairs/groups: {int(inputs.get('source_pairs', 0))}/"
+            f"{int(inputs.get('source_groups', 0))}",
+            f"- Target pairs/groups: {int(inputs.get('target_pairs', 0))}/"
+            f"{int(inputs.get('target_groups', 0))}",
+            "",
+            "## Summary",
+            "",
+            f"- Readiness: `{summary.get('readiness', 'not_ready')}`",
+            f"- Ready for bridge-set claims: "
+            f"{bool(summary.get('ready_for_bridge_set_claims', False))}",
+            f"- Source min accuracy/margin: "
+            f"{float(summary.get('source_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('source_min_margin', 0.0)):+.3f}",
+            f"- Target min accuracy/margin: "
+            f"{float(summary.get('target_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('target_min_margin', 0.0)):+.3f}",
+            f"- Source path-complete folds: "
+            f"{int(summary.get('source_path_complete_folds', 0))}/"
+            f"{int(summary.get('source_fold_count', 0))}",
+            f"- Target path-complete folds: "
+            f"{int(summary.get('target_path_complete_folds', 0))}/"
+            f"{int(summary.get('target_fold_count', 0))}",
+            f"- Failed fold count: {int(summary.get('failed_fold_count', 0))}",
+            "",
+            "## Target Bridge Sets",
+            "",
+            *_bridge_set_fold_table(report.get("target_bridge_set_folds")),
+            "",
+            "## Source Bridge Sets",
+            "",
+            *_bridge_set_fold_table(report.get("source_bridge_set_folds")),
+            "",
+            "## Failed Bridge Sets",
+            "",
+            *_failed_bridge_set_table(report),
             "",
             "## Interpretation Guardrail",
             "",
@@ -835,6 +1025,97 @@ def _pair_bridge_ablation_folds(
                         **evaluation,
                     }
                 )
+    return folds
+
+
+def _bridge_set_sufficiency_folds(
+    *,
+    train_primary: _DomainDataset,
+    train_secondary: _DomainDataset,
+    held_out_dataset: _DomainDataset,
+    bridge_stratum_key: str,
+    composition_keys: Sequence[str],
+    bridge_pair_count: int,
+) -> list[dict[str, Any]]:
+    folds: list[dict[str, Any]] = []
+    for held_out_group in _groups(held_out_dataset):
+        held_out_pairs = {
+            pair_id
+            for pair_id, group in held_out_dataset.pair_groups.items()
+            if group == held_out_group
+        }
+        bridge_candidates = sorted(
+            pair_id
+            for pair_id, group in train_secondary.pair_groups.items()
+            if group != held_out_group
+        )
+        if bridge_pair_count > len(bridge_candidates):
+            msg = (
+                f"Cannot choose {bridge_pair_count} bridge pairs for "
+                f"{held_out_group}; only {len(bridge_candidates)} candidates exist."
+            )
+            raise ValueError(msg)
+        bridge_pairs = _construct_bridge_pair_set(
+            train_secondary,
+            candidate_pairs=bridge_candidates,
+            pair_count=bridge_pair_count,
+            stratum_key=bridge_stratum_key,
+            composition_keys=composition_keys,
+        )
+        bridge_pair_set = set(bridge_pairs)
+        train_parts = (
+            _training_part(train_primary, _unique_pair_ids(train_primary)),
+            _training_part(train_secondary, bridge_pair_set),
+        )
+        train_activations = np.concatenate([part[0] for part in train_parts], axis=0)
+        train_labels = np.concatenate([part[1] for part in train_parts], axis=0)
+        direction = train_direction_from_arrays(
+            train_activations,
+            labels=train_labels,
+        ).direction
+        evaluation = _evaluate_pairwise_projection(
+            held_out_dataset,
+            direction=direction,
+            pair_ids=held_out_pairs,
+        )
+        bridge_path_values = _bridge_path_values(
+            train_secondary,
+            bridge_pair_set,
+            stratum_key=bridge_stratum_key,
+        )
+        candidate_path_values = _bridge_path_values(
+            train_secondary,
+            set(bridge_candidates),
+            stratum_key=bridge_stratum_key,
+        )
+        missing_path_values = sorted(set(candidate_path_values) - set(bridge_path_values))
+        folds.append(
+            {
+                "held_out_dataset": held_out_dataset.name,
+                "held_out_group": held_out_group,
+                "train_primary_dataset": train_primary.name,
+                "train_secondary_dataset": train_secondary.name,
+                "train_primary_pairs": len(_unique_pair_ids(train_primary)),
+                "candidate_bridge_pairs": len(bridge_candidates),
+                "bridge_pair_count": len(bridge_pairs),
+                "bridge_pairs": list(bridge_pairs),
+                "bridge_strata": _bridge_strata(
+                    train_secondary,
+                    bridge_pair_set,
+                    stratum_key=bridge_stratum_key,
+                ),
+                "bridge_path_values": bridge_path_values,
+                "candidate_path_values": candidate_path_values,
+                "missing_path_values": missing_path_values,
+                "path_complete": not missing_path_values,
+                "coverage_values": _coverage_values(
+                    train_secondary,
+                    bridge_pair_set,
+                    composition_keys=composition_keys,
+                ),
+                **evaluation,
+            }
+        )
     return folds
 
 
@@ -1098,6 +1379,93 @@ def _pair_bridge_readiness(
     }
 
 
+def _bridge_set_readiness(
+    *,
+    source_bridge_set_folds: Sequence[Mapping[str, Any]],
+    target_bridge_set_folds: Sequence[Mapping[str, Any]],
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> dict[str, Any]:
+    all_folds = [*source_bridge_set_folds, *target_bridge_set_folds]
+    failed_folds = _failed_fold_count(
+        all_folds,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+    )
+    gates = [
+        _gate("folds_present", float(len(all_folds)), 1.0),
+        _gate(
+            "min_pairwise_accuracy_per_fold",
+            min(_fold_values(all_folds, "pairwise_accuracy"), default=0.0),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            "min_margin_per_fold",
+            min(_fold_values(all_folds, "min_margin"), default=0.0),
+            min_margin,
+        ),
+        _gate("failed_fold_count", -float(failed_folds), 0.0),
+        _gate(
+            "path_complete_folds",
+            float(sum(bool(fold.get("path_complete", False)) for fold in all_folds)),
+            float(len(all_folds)),
+        ),
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "bridge_set_ready" if ready else "not_ready",
+        "ready": ready,
+        "gates": gates,
+    }
+
+
+def _bridge_set_summary(
+    *,
+    source_bridge_set_folds: Sequence[Mapping[str, Any]],
+    target_bridge_set_folds: Sequence[Mapping[str, Any]],
+    readiness: Mapping[str, Any],
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> dict[str, Any]:
+    all_folds = [*source_bridge_set_folds, *target_bridge_set_folds]
+    return {
+        "readiness": str(readiness.get("status", "not_ready")),
+        "ready_for_bridge_set_claims": bool(readiness.get("ready", False)),
+        "source_fold_count": len(source_bridge_set_folds),
+        "target_fold_count": len(target_bridge_set_folds),
+        "source_min_accuracy": min(
+            _fold_values(source_bridge_set_folds, "pairwise_accuracy"),
+            default=0.0,
+        ),
+        "source_min_margin": min(
+            _fold_values(source_bridge_set_folds, "min_margin"),
+            default=0.0,
+        ),
+        "target_min_accuracy": min(
+            _fold_values(target_bridge_set_folds, "pairwise_accuracy"),
+            default=0.0,
+        ),
+        "target_min_margin": min(
+            _fold_values(target_bridge_set_folds, "min_margin"),
+            default=0.0,
+        ),
+        "source_path_complete_folds": sum(
+            bool(fold.get("path_complete", False)) for fold in source_bridge_set_folds
+        ),
+        "target_path_complete_folds": sum(
+            bool(fold.get("path_complete", False)) for fold in target_bridge_set_folds
+        ),
+        "failed_fold_count": _failed_fold_count(
+            all_folds,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+        ),
+        "failed_pair_count": sum(
+            int(fold.get("failed_pair_count", 0)) for fold in all_folds
+        ),
+    }
+
+
 def _exists_ready(rows: Sequence[Mapping[str, Any]]) -> float:
     return 1.0 if any(bool(row.get("ready", False)) for row in rows) else 0.0
 
@@ -1224,6 +1592,71 @@ def _pair_bridge_subsets(
     return subsets, False
 
 
+def _construct_bridge_pair_set(
+    dataset: _DomainDataset,
+    *,
+    candidate_pairs: Sequence[str],
+    pair_count: int,
+    stratum_key: str,
+    composition_keys: Sequence[str],
+) -> tuple[str, ...]:
+    selected: list[str] = []
+    remaining = sorted(candidate_pairs)
+    covered_paths: set[str] = set()
+    covered_values: dict[str, set[str]] = {key: set() for key in composition_keys}
+    while remaining and len(selected) < pair_count:
+        best_pair = max(
+            remaining,
+            key=lambda pair_id: _bridge_pair_selection_score(
+                dataset,
+                pair_id=pair_id,
+                selected_pairs=selected,
+                covered_paths=covered_paths,
+                covered_values=covered_values,
+                stratum_key=stratum_key,
+                composition_keys=composition_keys,
+            ),
+        )
+        selected.append(best_pair)
+        remaining.remove(best_pair)
+        covered_paths.update(
+            _bridge_path_values(dataset, {best_pair}, stratum_key=stratum_key)
+        )
+        for key in composition_keys:
+            covered_values[key].update(_metadata_values(dataset, best_pair, key=key))
+    return tuple(selected)
+
+
+def _bridge_pair_selection_score(
+    dataset: _DomainDataset,
+    *,
+    pair_id: str,
+    selected_pairs: Sequence[str],
+    covered_paths: set[str],
+    covered_values: Mapping[str, set[str]],
+    stratum_key: str,
+    composition_keys: Sequence[str],
+) -> tuple[int, int, int, int, str]:
+    paths = set(_bridge_path_values(dataset, {pair_id}, stratum_key=stratum_key))
+    new_paths = len(paths - covered_paths)
+    new_coverage_values = 0
+    redundancy = 0
+    for key in composition_keys:
+        values = set(_metadata_values(dataset, pair_id, key=key))
+        new_coverage_values += len(values - covered_values.get(key, set()))
+        for selected_pair in selected_pairs:
+            selected_values = set(_metadata_values(dataset, selected_pair, key=key))
+            if values & selected_values:
+                redundancy += 1
+    return (
+        new_paths,
+        new_coverage_values,
+        len(paths),
+        -redundancy,
+        pair_id,
+    )
+
+
 def _combination_count(item_count: int, choose_count: int) -> int:
     if choose_count < 0 or choose_count > item_count:
         return 0
@@ -1303,6 +1736,16 @@ def _pair_stratum(
     return ",".join(sorted(parts)) if parts else raw_value
 
 
+def _metadata_values(
+    dataset: _DomainDataset,
+    pair_id: str,
+    *,
+    key: str,
+) -> list[str]:
+    raw_value = dataset.pair_metadata.get(pair_id, {}).get(key, "")
+    return _split_metadata_values(raw_value)
+
+
 def _bridge_strata(
     dataset: _DomainDataset,
     pair_ids: set[str],
@@ -1325,6 +1768,24 @@ def _bridge_path_values(
         raw_value = dataset.pair_metadata.get(pair_id, {}).get(stratum_key, "")
         values.update(_split_metadata_values(raw_value))
     return sorted(values)
+
+
+def _coverage_values(
+    dataset: _DomainDataset,
+    pair_ids: set[str],
+    *,
+    composition_keys: Sequence[str],
+) -> dict[str, list[str]]:
+    return {
+        key: sorted(
+            {
+                value
+                for pair_id in pair_ids
+                for value in _metadata_values(dataset, pair_id, key=key)
+            }
+        )
+        for key in composition_keys
+    }
 
 
 def _split_metadata_values(raw_value: object) -> list[str]:
@@ -1521,6 +1982,69 @@ def _failed_pair_bridge_fold_table(
             f"{int(fold.get('failed_pair_count', 0))} |"
         )
     return lines
+
+
+def _bridge_set_fold_table(raw_folds: object) -> list[str]:
+    folds = [_mapping(fold) for fold in _sequence(raw_folds)]
+    lines = [
+        "| Held-out group | Bridge pairs | Accuracy | Min margin | Path complete | Missing paths | Coverage values |",
+        "| --- | ---: | ---: | ---: | --- | --- | --- |",
+    ]
+    for fold in folds:
+        lines.append(
+            "| "
+            f"`{fold.get('held_out_group', '')}` | "
+            f"{int(fold.get('bridge_pair_count', 0))} | "
+            f"{float(fold.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(fold.get('min_margin', 0.0)):+.3f} | "
+            f"{bool(fold.get('path_complete', False))} | "
+            f"`{', '.join(str(path) for path in _sequence(fold.get('missing_path_values')))}` | "
+            f"`{_coverage_summary(fold.get('coverage_values'))}` |"
+        )
+    return lines
+
+
+def _failed_bridge_set_table(report: Mapping[str, Any]) -> list[str]:
+    inputs = _mapping(report.get("inputs"))
+    min_pairwise_accuracy = float(inputs.get("min_pairwise_accuracy", 1.0))
+    min_margin = float(inputs.get("min_margin", 0.0))
+    lines = [
+        "| Held-out dataset | Held-out group | Accuracy | Min margin | Failed pairs | Missing paths |",
+        "| --- | --- | ---: | ---: | ---: | --- |",
+    ]
+    for fold in [
+        *(_mapping(item) for item in _sequence(report.get("target_bridge_set_folds"))),
+        *(_mapping(item) for item in _sequence(report.get("source_bridge_set_folds"))),
+    ]:
+        if (
+            not _fold_failed(
+                fold,
+                min_pairwise_accuracy=min_pairwise_accuracy,
+                min_margin=min_margin,
+            )
+            and bool(fold.get("path_complete", False))
+        ):
+            continue
+        lines.append(
+            "| "
+            f"`{fold.get('held_out_dataset', '')}` | "
+            f"`{fold.get('held_out_group', '')}` | "
+            f"{float(fold.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(fold.get('min_margin', 0.0)):+.3f} | "
+            f"{int(fold.get('failed_pair_count', 0))} | "
+            f"`{', '.join(str(path) for path in _sequence(fold.get('missing_path_values')))}` |"
+        )
+    if len(lines) == 2:
+        return ["No failed bridge sets."]
+    return lines
+
+
+def _coverage_summary(raw_coverage_values: object) -> str:
+    coverage_values = _mapping(raw_coverage_values)
+    return "; ".join(
+        f"{key}={','.join(str(value) for value in _sequence(values))}"
+        for key, values in sorted(coverage_values.items())
+    )
 
 
 def _mapping(value: object) -> Mapping[str, Any]:
