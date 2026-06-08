@@ -217,6 +217,72 @@ def test_generate_output_record_retains_request_errors() -> None:
     assert "sk-***" in str(output["error_detail"])
 
 
+def test_generate_output_records_skips_after_fatal_auth_error() -> None:
+    script = _load_script()
+    script_any = cast(Any, script)
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:3]
+    original = script_any._generate_text
+    calls: list[str] = []
+
+    def fail(*args: object, **kwargs: object) -> str:
+        calls.append("called")
+        raise RuntimeError(
+            "OpenAI request failed: 401 "
+            '{"error":{"code":"invalid_api_key","message":"bad sk-secret-key"}}'
+        )
+
+    try:
+        script_any._generate_text = fail
+        outputs = script._generate_output_records(
+            records,
+            provider="openai",
+            model="test-model",
+        )
+    finally:
+        script_any._generate_text = original
+
+    assert calls == ["called"]
+    assert [output["status"] for output in outputs] == [
+        "request_error",
+        "request_skipped_after_fatal_error",
+        "request_skipped_after_fatal_error",
+    ]
+    assert [output["valid"] for output in outputs] == [False, False, False]
+    assert outputs[0]["error_type"] == "RuntimeError"
+    assert outputs[1]["error_type"] == "skipped_after_fatal_request_error"
+    assert "invalid_api_key" in str(outputs[1]["error_detail"])
+    assert "sk-***" in str(outputs[1]["error_detail"])
+
+
+def test_generate_output_records_continues_after_nonfatal_request_error() -> None:
+    script = _load_script()
+    script_any = cast(Any, script)
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:2]
+    original = script_any._generate_text
+    calls = 0
+
+    def sometimes_fail(*args: object, **kwargs: object) -> str:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("OpenAI request failed: 500 temporary server error")
+        return "API-authored benchmark text with enough content."
+
+    try:
+        script_any._generate_text = sometimes_fail
+        outputs = script._generate_output_records(
+            records,
+            provider="openai",
+            model="test-model",
+        )
+    finally:
+        script_any._generate_text = original
+
+    assert calls == 2
+    assert [output["status"] for output in outputs] == ["request_error", "ok"]
+    assert [output["valid"] for output in outputs] == [False, True]
+
+
 def test_output_summary_counts_valid_and_invalid_rows() -> None:
     script = _load_script()
 
