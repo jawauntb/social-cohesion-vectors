@@ -16,14 +16,23 @@ findings and decisions get summarized here or in dated notes under
 ## Current State
 
 The current bottleneck is no longer practical availability, source diversity,
-source-held-out lexical leakage, fault-class lexical leakage, or activation
-extraction for the generated-text benchmark. The newest four-source generated
-benchmark reaches `bundle_ready` with zero audit warnings and activation
-metadata transfer accepted. The active bottleneck is now replication outside
-the single Qwen2.5-0.5B generated-benchmark setting.
+source-held-out lexical leakage, fault-class lexical leakage, activation
+extraction, or same-family model replication for the generated-text benchmark.
+The newest four-source generated benchmark reaches `bundle_ready` with zero
+audit warnings and activation metadata transfer accepted on both
+Qwen2.5-0.5B and Qwen2.5-7B. The active bottleneck is now whether the
+procedural-justice distinction survives a small non-generated control benchmark
+or, secondarily, a meaningfully different model family.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-qwen7b-replication-run.md`: the zero-warning
+  four-source generated benchmark replicated on `Qwen/Qwen2.5-7B-Instruct`.
+  The full layer `-2` audit bundle is `bundle_ready` with zero warnings,
+  activation metadata transfer accepted at `1.000` mean test accuracy over 40
+  test pairs, mean margin `+41.175`, and minimum fold margin `+0.212`. Layers
+  `-1`, `-4`, and `-8` are withheld because each had one leave-one-pair-out
+  error.
 - `docs/research/2026-06-08-cross-fault-lexical-hardening-run.md`: a fourth
   cross-fault lexical source family, `cross_fault_lexical_repair_v1`,
   preserved all strict local repair gates and produced a four-source bundle
@@ -81,20 +90,19 @@ Recent accepted findings:
   stayed at `4/10` and all gates stayed at `2/10`. The remaining blockers are
   `autonomy_after_conflict`, `belonging_norms`, and `fair_allocation`.
 
-Activation extraction and lexical controls are no longer blocked for the
-generated-text benchmark. However, activation results remain generated-text
-claims until they replicate across another model setting and preferably a
-non-generated control benchmark.
+Activation extraction, lexical controls, and same-family model replication are
+no longer blocked for the generated-text benchmark. However, activation results
+remain generated-text claims until they also pass a non-generated control
+benchmark and, preferably, a cross-family model replication.
 
 ## Active Objective
 
-Replicate the zero-warning generated benchmark outside the current
-Qwen2.5-0.5B setting.
+Add a small non-generated procedural-justice control benchmark.
 
-The next operation should run the four-source lexical-controlled activation
-bundle on a second model setting, with Qwen2.5-7B as the natural next target,
-or introduce a small non-generated control benchmark with the same
-procedural-justice availability paths. It must still preserve:
+The next operation should introduce hand-authored or otherwise non-generated
+control examples with the same future-option paths: usable voice, evidence
+access, appeal, dissent, non-retaliatory exit, accountability, and
+proportionate repair under pressure. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -114,7 +122,8 @@ generated benchmark with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- a second accepted model setting or non-generated control benchmark;
+- a non-generated control benchmark, or a documented failed attempt with clear
+  residuals;
 - a dated research note interpreting accepted, rejected, and caveated
   replication runs.
 
@@ -136,13 +145,14 @@ Implementation should probably follow existing audit patterns:
 
 1. Reuse the four-source `cross_fault_lexical_repair_v1` bundle as the current
    generated-text baseline.
-2. Run activation extraction and layer sweep for a second model setting,
-   preferably `Qwen/Qwen2.5-7B-Instruct`.
-3. Rerun the full audit bundle with the best accepted layer candidate.
-4. If a second model setting passes, consider a small non-generated control
-   benchmark before any human validation planning.
-5. Add a dated run note with accepted, rejected, and caveated replication
-   results.
+2. Add a small non-generated procedural-justice control benchmark with the same
+   future-option paths and explicit generated/non-generated provenance.
+3. Run the existing lexical, slack, availability, source-diversity, and
+   activation-transfer checks on the control benchmark where applicable.
+4. If the control benchmark passes or fails informatively, consider a
+   cross-family model replication next.
+5. Compare the accepted Qwen0.5B and Qwen7B directions only after the control
+   benchmark plan is documented.
 
 ## Decision Gates
 
