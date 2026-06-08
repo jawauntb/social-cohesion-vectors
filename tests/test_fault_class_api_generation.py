@@ -8,6 +8,9 @@ from typing import Any, cast
 
 from social_cohesion_vectors.datasets import read_jsonl, write_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_HARD_NEGATIVE_CONTRACT_VERSION,
+    API_TARGET_WORD_COUNT_MAX,
+    API_TARGET_WORD_COUNT_MIN,
     DEFAULT_VARIANTS,
     FaultPromptRecord,
     build_fault_prompt_records,
@@ -79,6 +82,12 @@ def test_output_records_include_future_option_contract(tmp_path: Path) -> None:
     assert count == 1
     assert raw_records[0]["future_options_tested"]
     assert raw_records[0]["future_option_contract"]
+    assert (
+        raw_records[0]["prompt_contract_version"]
+        == API_HARD_NEGATIVE_CONTRACT_VERSION
+    )
+    assert raw_records[0]["target_word_count_min"] == API_TARGET_WORD_COUNT_MIN
+    assert raw_records[0]["target_word_count_max"] == API_TARGET_WORD_COUNT_MAX
     assert raw_records[0]["status"] == "ok"
     assert raw_records[0]["valid"] is True
 

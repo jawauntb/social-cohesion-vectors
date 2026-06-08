@@ -52,6 +52,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         else DEFAULT_VARIANTS
     )
     records = build_fault_prompt_records(variants=variants)
+    if args.offset:
+        records = records[args.offset :]
     if args.limit is not None:
         records = records[: args.limit]
     mode = "replay" if args.input_raw_outputs is not None else "live"
@@ -165,6 +167,12 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         "--model",
         default=None,
         help="Provider model id. Defaults to ANTHROPIC_MODEL or OPENAI_MODEL.",
+    )
+    parser.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Skip this many prompt records before applying --limit.",
     )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--variants", nargs="+", choices=variant_names, default=None)
@@ -739,6 +747,11 @@ def _raw_output_record(
         "variant": record.variant,
         "label": record.label,
         "primary_fault_class": record.primary_fault_class,
+        "prompt_contract_version": str(
+            record.metadata.get("prompt_contract_version", "")
+        ),
+        "target_word_count_min": record.metadata.get("target_word_count_min", ""),
+        "target_word_count_max": record.metadata.get("target_word_count_max", ""),
         "future_options_tested": str(record.metadata.get("future_options_tested", "")),
         "future_option_contract": str(
             record.metadata.get("future_option_contract", "")
