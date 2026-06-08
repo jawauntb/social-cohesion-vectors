@@ -17,15 +17,33 @@ findings and decisions get summarized here or in dated notes under
 
 The current bottleneck is no longer practical availability, source diversity,
 source-held-out lexical leakage, fault-class lexical leakage, activation
-extraction, or same-family model replication for the generated-text benchmark.
-The newest four-source generated benchmark reaches `bundle_ready` with zero
-audit warnings and activation metadata transfer accepted on both
-Qwen2.5-0.5B and Qwen2.5-7B. The active bottleneck is now whether the
-procedural-justice distinction survives a small non-generated control benchmark
-or, secondarily, a meaningfully different model family.
+extraction, same-family model replication for the generated-text benchmark, or
+the first small non-generated control benchmark. The newest four-source
+generated benchmark reaches `bundle_ready` with zero audit warnings and
+activation metadata transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. A
+small hand-authored procedural-justice control also reaches `control_bundle_ready`
+on both Qwen2.5-0.5B and Qwen2.5-7B, and the accepted Qwen7B generated/control
+directions transfer across benchmarks in both directions. The active bottleneck
+is now whether the pattern survives a meaningfully different model family or a
+larger non-generated control set.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-procedural-justice-control-run.md`: a
+  non-generated procedural-justice control benchmark now exports eight
+  hand-authored pairs across two source families and four cases. It clears all
+  pre-activation gates with zero audit warnings, availability accuracy `34/34`,
+  lexical cue-solved pairs `0/8`, source `lexical_only` held-out accuracy
+  `0.750`, and fault-class `lexical_only` held-out accuracy `0.500`.
+  Qwen2.5-0.5B layer `-1` and Qwen2.5-7B layer `-2` both reach
+  `control_bundle_ready` with activation metadata transfer accepted at `1.000`
+  mean test accuracy over eight test pairs. Same-prompt Qwen0.5B-to-Qwen7B
+  alignment on the control reaches linear CKA `0.845`, mutual kNN overlap
+  `0.781`, and pair-LOO mapped accuracy `1.000` in both directions. Qwen7B
+  generated/control direction transfer also passes in both directions:
+  generated direction on control accuracy `1.000` with minimum margin `+2.345`,
+  and control direction on generated accuracy `1.000` with minimum margin
+  `+4.572`.
 - `docs/research/2026-06-08-qwen7b-replication-run.md`: the zero-warning
   four-source generated benchmark replicated on `Qwen/Qwen2.5-7B-Instruct`.
   The full layer `-2` audit bundle is `bundle_ready` with zero warnings,
@@ -90,19 +108,20 @@ Recent accepted findings:
   stayed at `4/10` and all gates stayed at `2/10`. The remaining blockers are
   `autonomy_after_conflict`, `belonging_norms`, and `fair_allocation`.
 
-Activation extraction, lexical controls, and same-family model replication are
-no longer blocked for the generated-text benchmark. However, activation results
-remain generated-text claims until they also pass a non-generated control
-benchmark and, preferably, a cross-family model replication.
+Activation extraction, lexical controls, same-family model replication, the
+first non-generated control, and the first Qwen7B generated/control
+direction-transfer check are no longer blocked. However, activation results
+remain text-benchmark claims until the result survives an out-of-family model
+or larger control set, and human-facing gates are separately validated.
 
 ## Active Objective
 
-Add a small non-generated procedural-justice control benchmark.
+Audit out-of-family generalization and larger non-generated controls.
 
-The next operation should introduce hand-authored or otherwise non-generated
-control examples with the same future-option paths: usable voice, evidence
-access, appeal, dissent, non-retaliatory exit, accountability, and
-proportionate repair under pressure. It must still preserve:
+The next operation should run an out-of-family model replication if the
+activation pipeline supports a viable model, or expand the non-generated
+control to more hand-authored source families and cases. It must still
+preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -115,15 +134,18 @@ proportionate repair under pressure. It must still preserve:
 ## Definition Of Done
 
 The active objective is complete when the repo can produce a source-diverse
-generated benchmark with:
+generated benchmark and non-generated control with:
 
 - generated audit status still `bundle_ready`;
+- non-generated control status still `control_bundle_ready`;
 - score, slack, component, availability, source diversity, and activation
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- a non-generated control benchmark, or a documented failed attempt with clear
-  residuals;
+- an out-of-family model replication attempt or a larger non-generated control
+  expansion;
+- generated/control direction-transfer readiness for any model setting where
+  comparable accepted layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
   replication runs.
 
@@ -145,14 +167,14 @@ Implementation should probably follow existing audit patterns:
 
 1. Reuse the four-source `cross_fault_lexical_repair_v1` bundle as the current
    generated-text baseline.
-2. Add a small non-generated procedural-justice control benchmark with the same
-   future-option paths and explicit generated/non-generated provenance.
-3. Run the existing lexical, slack, availability, source-diversity, and
-   activation-transfer checks on the control benchmark where applicable.
-4. If the control benchmark passes or fails informatively, consider a
-   cross-family model replication next.
-5. Compare the accepted Qwen0.5B and Qwen7B directions only after the control
-   benchmark plan is documented.
+2. Reuse the `procedural_justice_control_v1` bundle as the current
+   non-generated control baseline.
+3. Keep the accepted Qwen7B generated/control direction-transfer report as the
+   current cross-benchmark alignment baseline.
+4. Run an out-of-family model replication if the activation pipeline supports a
+   viable model, or expand the non-generated control to more source families.
+5. Keep human validation parked until generated, non-generated, cross-setting,
+   and out-of-family gates agree.
 
 ## Decision Gates
 
@@ -177,8 +199,8 @@ Move to human validation only when:
 
 - generated and hand-authored benchmarks agree on the target distinction;
 - lexical and availability shortcuts are controlled;
-- activation directions transfer across held-out fault classes and at least two
-  model settings.
+- activation directions transfer across held-out fault classes, at least two
+  model settings, and preferably one out-of-family model.
 - the planned study measures autonomy, perceived manipulation, psychological
   safety, fairness/procedural justice, and willingness to verify, not only
   which message sounds more cooperative.
