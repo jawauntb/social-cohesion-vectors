@@ -13,7 +13,11 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from social_cohesion_vectors.config import get_config
-from social_cohesion_vectors.datasets import activation_prompts_from_pairs, write_jsonl
+from social_cohesion_vectors.datasets import (
+    activation_prompts_from_pairs,
+    read_jsonl,
+    write_jsonl,
+)
 from social_cohesion_vectors.experiments.fault_generation import (
     DEFAULT_VARIANTS,
     FaultPromptRecord,
@@ -23,6 +27,9 @@ from social_cohesion_vectors.experiments.fault_generation import (
     render_generated_fault_markdown,
     scored_runs_from_generated_fault_examples,
     shape_generated_fault_report,
+)
+from social_cohesion_vectors.experiments.generated_audit_bundle import (
+    run_generated_benchmark_audit_bundle,
 )
 
 ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
@@ -35,7 +42,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     variants = (
         tuple(
-            variant for variant in DEFAULT_VARIANTS if variant.name in set(args.variants)
+            variant
+            for variant in DEFAULT_VARIANTS
+            if variant.name in set(args.variants)
         )
         if args.variants
         else DEFAULT_VARIANTS
@@ -43,32 +52,51 @@ def main(argv: Sequence[str] | None = None) -> int:
     records = build_fault_prompt_records(variants=variants)
     if args.limit is not None:
         records = records[: args.limit]
-    output_records = _generate_output_records(
-        records,
-        provider=args.provider,
-        model=args.model,
+    mode = "replay" if args.input_raw_outputs is not None else "live"
+    if args.input_raw_outputs is None:
+        output_records = _generate_output_records(
+            records,
+            provider=args.provider,
+            model=args.model,
+        )
+    else:
+        output_records = _replay_output_records(
+            records,
+            read_jsonl(args.input_raw_outputs),
+            provider=args.provider,
+            model=args.model,
+        )
+    source = _output_source(
+        output_records,
+        fallback_provider=args.provider,
+        fallback_model=args.model,
     )
     outputs = _valid_outputs_by_prompt_id(output_records)
     examples = fault_examples_from_prompt_outputs(
         records,
         outputs,
-        provider=args.provider,
-        model=args.model,
+        provider=source["provider"],
+        model=source["model"],
     )
     scored_runs = scored_runs_from_generated_fault_examples(examples)
     pairs = pairwise_examples_from_generated_fault_examples(
         examples,
-        source=f"generated_fault_class_{args.provider}",
+        source=f"generated_fault_class_{source['provider']}",
     )
     prompts = activation_prompts_from_pairs(pairs)
     report = shape_generated_fault_report(examples, variants=variants)
     api_summary = _output_summary(output_records)
+    api_summary["mode"] = mode
+    api_summary["source_provider"] = source["provider"]
+    api_summary["source_model"] = source["model"]
+    api_summary["input_raw_outputs"] = (
+        str(args.input_raw_outputs) if args.input_raw_outputs is not None else None
+    )
     report["api_generation"] = api_summary
     report["summary"]["api_invalid_outputs"] = api_summary["invalid_outputs"]
-    report["summary"]["api_generation_ready"] = (
-        api_summary["invalid_outputs"] == 0
-        and bool(report["summary"].get("pair_construction_ready", False))
-    )
+    report["summary"]["api_generation_ready"] = api_summary[
+        "invalid_outputs"
+    ] == 0 and bool(report["summary"].get("pair_construction_ready", False))
 
     counts = {
         "raw_outputs": _write_output_records(
@@ -92,9 +120,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         render_generated_fault_markdown(report),
         encoding="utf-8",
     )
+    if args.audit_output_dir is not None:
+        audit_manifest = run_generated_benchmark_audit_bundle(
+            scored_runs_path=args.scored_runs_output,
+            pairs_path=args.pairs_output,
+            output_dir=args.audit_output_dir,
+            activation_npz=args.activation_npz,
+        )
+        report["audit_bundle"] = audit_manifest
+        report["summary"]["audit_bundle_status"] = str(
+            audit_manifest.get("summary", {}).get("status", "unknown")
+        )
+        report["summary"]["audit_bundle_ready"] = bool(
+            audit_manifest.get("summary", {}).get("ready", False)
+        )
+        _write_json(report, args.json_report_output)
+        args.markdown_report_output.write_text(
+            render_generated_fault_markdown(report),
+            encoding="utf-8",
+        )
     print(
         "api fault generation: "
-        f"provider={args.provider} model={args.model} "
+        f"mode={mode} provider={source['provider']} model={source['model']} "
         f"valid_outputs={report['api_generation']['valid_outputs']} "
         f"examples={counts['examples']} pairs={counts['pairwise_examples']} "
         f"prompts={counts['activation_prompts']}"
@@ -119,6 +166,16 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--variants", nargs="+", choices=variant_names, default=None)
+    parser.add_argument(
+        "--input-raw-outputs",
+        type=Path,
+        default=None,
+        help=(
+            "Replay an existing raw API-output JSONL instead of making live "
+            "provider calls. Rows may be full audit rows or minimal "
+            "{prompt_id, text} records."
+        ),
+    )
     parser.add_argument(
         "--raw-outputs",
         type=Path,
@@ -154,6 +211,13 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         type=Path,
         default=paths.reports / "api_fault_class_dataset.md",
     )
+    parser.add_argument(
+        "--audit-output-dir",
+        type=Path,
+        default=None,
+        help="Optional directory for the generated benchmark audit bundle.",
+    )
+    parser.add_argument("--activation-npz", type=Path, default=None)
     args = parser.parse_args(argv)
     args.model = args.model or _default_model(args.provider)
     return args
@@ -314,10 +378,10 @@ def _openai_output_text(body: Mapping[str, object]) -> str:
             if not isinstance(content, list):
                 continue
             for block in content:
-                if (
-                    isinstance(block, Mapping)
-                    and block.get("type") in {"output_text", "text"}
-                ):
+                if isinstance(block, Mapping) and block.get("type") in {
+                    "output_text",
+                    "text",
+                }:
                     text_parts.append(str(block.get("text", "")))
     return "\n".join(part for part in text_parts if part).strip()
 
@@ -353,6 +417,98 @@ def _valid_outputs_by_prompt_id(
         str(record.get("prompt_id", "")): str(record.get("text", "")).strip()
         for record in output_records
         if bool(record.get("valid", False)) and str(record.get("text", "")).strip()
+    }
+
+
+def _replay_output_records(
+    records: Sequence[FaultPromptRecord],
+    raw_rows: Sequence[Mapping[str, object]],
+    *,
+    provider: str,
+    model: str,
+) -> list[dict[str, object]]:
+    """Normalize saved API-output rows against the requested prompt contract."""
+
+    by_prompt_id = {
+        str(row.get("prompt_id", "")): _coerce_replay_row(
+            row,
+            provider=provider,
+            model=model,
+        )
+        for row in raw_rows
+        if str(row.get("prompt_id", ""))
+    }
+    output_records: list[dict[str, object]] = []
+    for record in records:
+        raw_output = by_prompt_id.get(record.prompt_id)
+        if raw_output is None:
+            raw_output = _raw_output_record(
+                record,
+                text="",
+                provider=provider,
+                model=model,
+                status="missing_output",
+                valid=False,
+                error_type="missing_output",
+                error_detail="No replay row was found for this prompt.",
+            )
+        output_records.append(_raw_output_record_for_prompt(record, raw_output))
+    return output_records
+
+
+def _coerce_replay_row(
+    row: Mapping[str, object],
+    *,
+    provider: str,
+    model: str,
+) -> dict[str, object]:
+    text = str(row.get("text", ""))
+    row_provider = str(row.get("provider") or provider)
+    row_model = str(row.get("model") or model)
+    if "valid" in row and row.get("status"):
+        valid = bool(row.get("valid", False))
+        status = str(row.get("status", "ok" if valid else "unknown"))
+        error_detail = str(row.get("error_detail", ""))
+        error_type = str(row.get("error_type", "" if valid else status))
+    else:
+        status, valid, error_detail = _validate_generated_output(text)
+        error_type = "" if valid else status
+    return {
+        "prompt_id": str(row.get("prompt_id", "")),
+        "provider": row_provider,
+        "model": row_model,
+        "status": status,
+        "valid": valid,
+        "error_type": error_type,
+        "error_detail": error_detail,
+        "text": text,
+        "text_length": len(text.strip()),
+    }
+
+
+def _output_source(
+    output_records: Sequence[Mapping[str, object]],
+    *,
+    fallback_provider: str,
+    fallback_model: str,
+) -> dict[str, str]:
+    providers = sorted(
+        {
+            str(record.get("provider", "")).strip()
+            for record in output_records
+            if str(record.get("provider", "")).strip()
+        }
+    )
+    models = sorted(
+        {
+            str(record.get("model", "")).strip()
+            for record in output_records
+            if str(record.get("model", "")).strip()
+        }
+    )
+    return {
+        "provider": providers[0] if len(providers) == 1 else fallback_provider,
+        "model": models[0] if len(models) == 1 else fallback_model,
     }
 
 

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 from types import ModuleType
 from typing import Any, cast
 
-from social_cohesion_vectors.datasets import read_jsonl
+from social_cohesion_vectors.datasets import read_jsonl, write_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
     DEFAULT_VARIANTS,
+    FaultPromptRecord,
     build_fault_prompt_records,
     fault_examples_from_prompt_outputs,
     render_generated_fault_markdown,
@@ -105,6 +107,91 @@ def test_valid_outputs_filter_excludes_invalid_rows() -> None:
     assert outputs == {"valid": "usable text"}
 
 
+def test_replay_output_records_normalizes_minimal_rows_and_missing() -> None:
+    script = _load_script()
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:2]
+
+    replayed = script._replay_output_records(
+        records,
+        [
+            {
+                "prompt_id": records[0].prompt_id,
+                "text": "Replay-authored benchmark example with enough content.",
+            },
+        ],
+        provider="openai",
+        model="replay-model",
+    )
+
+    assert [record["status"] for record in replayed] == ["ok", "missing_output"]
+    assert [record["valid"] for record in replayed] == [True, False]
+    assert replayed[0]["provider"] == "openai"
+    assert replayed[0]["model"] == "replay-model"
+    assert replayed[1]["error_detail"] == "No replay row was found for this prompt."
+
+
+def test_api_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    script = _load_script()
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])
+    raw_outputs = tmp_path / "raw" / "api_raw_outputs.jsonl"
+    output_paths = _api_output_paths(tmp_path)
+    write_jsonl(_minimal_replay_rows(records), raw_outputs)
+
+    exit_code = script.main(
+        [
+            "--provider",
+            "openai",
+            "--model",
+            "replay-model",
+            "--input-raw-outputs",
+            str(raw_outputs),
+            "--variants",
+            DEFAULT_VARIANTS[0].name,
+            "--raw-outputs",
+            str(output_paths["raw_outputs"]),
+            "--examples-output",
+            str(output_paths["examples"]),
+            "--scored-runs-output",
+            str(output_paths["scored_runs"]),
+            "--pairs-output",
+            str(output_paths["pairs"]),
+            "--prompts-output",
+            str(output_paths["prompts"]),
+            "--json-report-output",
+            str(output_paths["json_report"]),
+            "--markdown-report-output",
+            str(output_paths["markdown_report"]),
+            "--audit-output-dir",
+            str(output_paths["audit_dir"]),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "mode=replay" in captured.out
+    normalized_outputs = read_jsonl(output_paths["raw_outputs"])
+    pairs = read_jsonl(output_paths["pairs"])
+    prompts = read_jsonl(output_paths["prompts"])
+    report = json.loads(output_paths["json_report"].read_text(encoding="utf-8"))
+
+    assert len(normalized_outputs) == len(records)
+    assert {row["provider"] for row in normalized_outputs} == {"openai"}
+    assert {row["model"] for row in normalized_outputs} == {"replay-model"}
+    assert len(pairs) == 30
+    assert len(prompts) == 60
+    assert pairs[0]["metadata"]["source"] == "generated_fault_class_openai"
+    assert report["api_generation"]["mode"] == "replay"
+    assert report["summary"]["api_generation_ready"] is True
+    assert report["summary"]["pairs"] == 30
+    assert "audit_bundle" in report
+    assert (
+        output_paths["audit_dir"] / "generated_benchmark_audit_bundle.json"
+    ).exists()
+
+
 def test_generate_output_record_retains_request_errors() -> None:
     script = _load_script()
     script_any = cast(Any, script)
@@ -195,8 +282,10 @@ def test_api_generation_summary_marks_invalid_or_incomplete_runs_not_ready() -> 
 
 
 def _load_script() -> ModuleType:
-    path = Path(__file__).resolve().parents[1] / "scripts" / (
-        "run_fault_class_api_generation.py"
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / ("run_fault_class_api_generation.py")
     )
     spec = importlib.util.spec_from_file_location("fault_class_api_generation", path)
     if spec is None or spec.loader is None:
@@ -204,3 +293,37 @@ def _load_script() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _minimal_replay_rows(
+    records: list[FaultPromptRecord],
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for record in records:
+        if record.label == "genuine_cohesion":
+            text = (
+                f"In replay source, the group handles {record.primary_fault_class} "
+                "by keeping refusal, review, evidence access, privacy choice, "
+                "exit, dissent, and repair available."
+            )
+        else:
+            text = (
+                f"In replay source, the group sounds caring about "
+                f"{record.primary_fault_class} while making refusal, review, "
+                "evidence access, privacy choice, exit, dissent, or repair costly."
+            )
+        rows.append({"prompt_id": record.prompt_id, "text": text})
+    return rows
+
+
+def _api_output_paths(tmp_path: Path) -> dict[str, Path]:
+    return {
+        "raw_outputs": tmp_path / "raw" / "normalized_raw_outputs.jsonl",
+        "examples": tmp_path / "raw" / "examples.jsonl",
+        "scored_runs": tmp_path / "processed" / "scored.jsonl",
+        "pairs": tmp_path / "training" / "pairs.jsonl",
+        "prompts": tmp_path / "training" / "prompts.jsonl",
+        "json_report": tmp_path / "reports" / "dataset.json",
+        "markdown_report": tmp_path / "reports" / "dataset.md",
+        "audit_dir": tmp_path / "reports" / "audit_bundle",
+    }
