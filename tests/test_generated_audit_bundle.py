@@ -39,9 +39,10 @@ def test_generated_benchmark_audit_bundle_marks_missing_activation_as_skipped(
 
     assert manifest["summary"]["status"] == "bundle_incomplete"
     assert manifest["summary"]["ready"] is False
-    assert manifest["summary"]["ready_steps"] == 3
+    assert manifest["summary"]["ready_steps"] == 4
     assert manifest["summary"]["skipped_steps"] == 1
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
+    assert _step(manifest, "slack_preservation_audit")["ready"] is True
     assert _step(manifest, "fault_heldout_transfer")["ready"] is True
     assert "activation_npz_not_provided" in markdown
     assert (output_dir / "generated_benchmark_audit_bundle.json").exists()
@@ -71,8 +72,9 @@ def test_generated_benchmark_audit_bundle_writes_activation_regime_record(
 
     assert manifest["summary"]["status"] == "bundle_ready"
     assert manifest["summary"]["ready"] is True
-    assert manifest["summary"]["ready_steps"] == 5
+    assert manifest["summary"]["ready_steps"] == 6
     assert manifest["summary"]["skipped_steps"] == 0
+    assert _step(manifest, "slack_preservation_audit")["ready"] is True
     assert _step(manifest, "activation_metadata_transfer")["ready"] is True
     assert _step(manifest, "activation_transfer_regime_record")["ready"] is True
     records = load_regime_transition_records(
@@ -148,6 +150,10 @@ def _bundle_fixture_records() -> tuple[list[ScoredRun], list[PairwiseExample]]:
                 metadata={
                     "primary_fault_class": fault_class,
                     "fault_classes": f"{fault_class},shared_fault",
+                    "slack_options_tested": "refusal,appeal,evidence_access,privacy_choice,exit,dissent,repair,proportional_review",
+                    "positive_slack_preservation": 0.9,
+                    "negative_slack_preservation": 0.1,
+                    "slack_preservation_margin": 0.8,
                     "source": f"generated_fault_class_{provider}",
                     "provider": provider,
                     "generated_style": style,
