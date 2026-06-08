@@ -23,6 +23,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         min_pairs_per_source=args.min_pairs_per_source,
         min_groups_per_source=args.min_groups_per_source,
         min_shared_groups=args.min_shared_groups,
+        max_cross_source_duplicate_pairs=args.max_cross_source_duplicate_pairs,
     )
     save_source_diversity_audit(
         report,
@@ -36,7 +37,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"ready={summary['ready_for_activation']} "
         f"pairs={summary['pairs']} "
         f"sources={summary['sources']} "
-        f"shared_groups={summary['shared_groups']}"
+        f"shared_groups={summary['shared_groups']} "
+        f"cross_source_duplicates={summary['cross_source_duplicate_text_pairs']}"
     )
     print(f"wrote {args.markdown_output}")
     return 0
@@ -56,6 +58,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--min-pairs-per-source", type=int, default=2)
     parser.add_argument("--min-groups-per-source", type=int, default=2)
     parser.add_argument("--min-shared-groups", type=int, default=2)
+    parser.add_argument("--max-cross-source-duplicate-pairs", type=int, default=0)
     parser.add_argument(
         "--json-output",
         type=Path,
