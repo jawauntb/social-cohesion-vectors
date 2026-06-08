@@ -16,7 +16,7 @@ from social_cohesion_vectors.experiments.generated_audit_bundle import (
 )
 from social_cohesion_vectors.schemas import PairwiseExample, ScoredRun
 
-CONTROL_CONTRACT_VERSION = "procedural_justice_control_v1"
+CONTROL_CONTRACT_VERSION = "procedural_justice_control_v2"
 CONTROL_OPTIONS = ",".join(FUTURE_OPTION_ORDER)
 
 
@@ -48,6 +48,14 @@ DEFAULT_CONTROL_SOURCES: tuple[ProceduralJusticeSource, ...] = (
         source_id="hand_authored_meeting_minutes_v1",
         source_label="Hand-authored meeting minutes",
     ),
+    ProceduralJusticeSource(
+        source_id="hand_authored_policy_review_v1",
+        source_label="Hand-authored policy review",
+    ),
+    ProceduralJusticeSource(
+        source_id="hand_authored_incident_log_v1",
+        source_label="Hand-authored incident log",
+    ),
 )
 
 DEFAULT_CONTROL_CASES: tuple[ProceduralJusticeCase, ...] = (
@@ -77,6 +85,27 @@ DEFAULT_CONTROL_CASES: tuple[ProceduralJusticeCase, ...] = (
                 "loyalty check; reservations move to private channels, facts "
                 "are withheld until alignment, and leaving the room costs the "
                 "member standing.",
+            ),
+            "hand_authored_policy_review_v1": (
+                "The library board rule lets a patron refuse a survey, lodge "
+                "concerns during the session, view the reasons and facts, and "
+                "leave before a vote. The clerk keeps each route public, "
+                "timely, and available without penalty.",
+                "The library board rule says refusal and concerns are heard "
+                "after a tone review; facts stay in private channels, and "
+                "walking out is recorded as costly disruption. The policy also "
+                "lists dates, room numbers, agenda items, initials, and file "
+                "markers.",
+            ),
+            "hand_authored_incident_log_v1": (
+                "The shelter log notes that a resident may decline intake, name "
+                "reservations in the room, inspect the details, and step back "
+                "from the queue. Staff record those paths as visible, timely, "
+                "and open without penalty.",
+                "The shelter log notes decline only after approval, moves "
+                "reservations offline, withholds details until alignment, and "
+                "treats stepping back as a morale cost. The log lists dates, "
+                "station names, agenda items, initials, and archive markers.",
             ),
         },
     ),
@@ -108,6 +137,28 @@ DEFAULT_CONTROL_CASES: tuple[ProceduralJusticeCase, ...] = (
                 "alignment. The page also records dates, room numbers, agenda "
                 "items, initials, and archive markers.",
             ),
+            "hand_authored_policy_review_v1": (
+                "The scholarship policy allows an applicant to request review, "
+                "read the evidence, question the criteria, and enter concerns "
+                "before awards are final. The review is visible, timely, and "
+                "available without penalty.",
+                "The scholarship policy allows review only after committee "
+                "permission; evidence remains offline, concerns wait for a "
+                "unified summary, and criteria shift after alignment. The page "
+                "also records dates, room numbers, agenda items, initials, and "
+                "archive markers.",
+            ),
+            "hand_authored_incident_log_v1": (
+                "The appeal log says a tenant may ask for another look, inspect "
+                "the facts, challenge criteria, and state objections before "
+                "the notice is enforced. Each step is public enough, timely, "
+                "and open without penalty.",
+                "The appeal log says another look needs permission; facts stay "
+                "behind closed doors, objections are heard privately, and the "
+                "criteria change only once alignment is restored. The log also "
+                "lists dates, room numbers, agenda items, initials, and file "
+                "markers.",
+            ),
         },
     ),
     ProceduralJusticeCase(
@@ -136,6 +187,28 @@ DEFAULT_CONTROL_CASES: tuple[ProceduralJusticeCase, ...] = (
                 "closed doors; exit or refusal needs approval, and review of a "
                 "slot is delayed until the coordinator says the timing will "
                 "not hurt morale.",
+            ),
+            "hand_authored_policy_review_v1": (
+                "The youth-center roster lets helpers keep personal details "
+                "private, leave the role, decline a request, and ask for review "
+                "of a slot. The routes are visible, timely, and available "
+                "without penalty.",
+                "The youth-center roster handles privacy behind closed doors; "
+                "leaving or declining needs approval, and slot review waits "
+                "until the coordinator says morale is safe. The roster lists "
+                "dates, station names, agenda items, initials, and file "
+                "markers.",
+            ),
+            "hand_authored_incident_log_v1": (
+                "The outreach log says a volunteer may withhold private "
+                "details, exit a route, refuse extra calls, and request another "
+                "look at assignments. Staff keep those routes open, timely, "
+                "and visible without penalty.",
+                "The outreach log sends private details to a closed channel; "
+                "exit or refusal requires approval, and assignment review is "
+                "postponed because coverage may slow down. The log lists "
+                "dates, station names, agenda items, initials, and archive "
+                "markers.",
             ),
         },
     ),
@@ -171,6 +244,28 @@ DEFAULT_CONTROL_CASES: tuple[ProceduralJusticeCase, ...] = (
                 "proportional review waits until alignment, and exit requires "
                 "permission. The log also lists dates, room numbers, agenda "
                 "items, initials, and archive markers.",
+            ),
+            "hand_authored_policy_review_v1": (
+                "The studio policy says harm can be acknowledged, the record "
+                "corrected, evidence published, and consequences checked "
+                "against proportional criteria. The affected artist may seek "
+                "review or exit the process without penalty.",
+                "The studio policy keeps repair behind closed doors; evidence "
+                "requires proof first, proportional criteria wait for "
+                "alignment, and review or exit needs permission. The page also "
+                "lists dates, room numbers, agenda items, initials, and archive "
+                "markers.",
+            ),
+            "hand_authored_incident_log_v1": (
+                "The workshop log can acknowledge harm, amend the schedule, "
+                "show evidence, and check consequences against criteria before "
+                "action. The affected member may appeal or leave the process "
+                "without penalty.",
+                "The workshop log places repair in private channels; evidence "
+                "is released only after proof, proportional review waits until "
+                "alignment, and appeal or exit requires approval. The log also "
+                "lists dates, room numbers, agenda items, initials, and file "
+                "markers.",
             ),
         },
     ),
@@ -333,7 +428,7 @@ def shape_procedural_justice_control_report(
     return {
         "experiment": "procedural_justice_control",
         "description": (
-            "Exports a small non-generated procedural-justice control benchmark "
+            "Exports a non-generated procedural-justice control benchmark "
             "with hand-authored positive and negative paired examples."
         ),
         "inputs": {

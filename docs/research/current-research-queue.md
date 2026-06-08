@@ -17,18 +17,31 @@ findings and decisions get summarized here or in dated notes under
 
 The current bottleneck is no longer practical availability, source diversity,
 source-held-out lexical leakage, fault-class lexical leakage, activation
-extraction, same-family model replication for the generated-text benchmark, or
-the first small non-generated control benchmark. The newest four-source
-generated benchmark reaches `bundle_ready` with zero audit warnings and
-activation metadata transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. A
-small hand-authored procedural-justice control also reaches `control_bundle_ready`
-on both Qwen2.5-0.5B and Qwen2.5-7B, and the accepted Qwen7B generated/control
-directions transfer across benchmarks in both directions. The active bottleneck
-is now whether the pattern survives a meaningfully different model family or a
-larger non-generated control set.
+extraction, same-family model replication for the generated-text benchmark, the
+first small non-generated control benchmark, or a first expansion of that
+control. The newest four-source generated benchmark reaches `bundle_ready` with
+zero audit warnings and activation metadata transfer accepted on both
+Qwen2.5-0.5B and Qwen2.5-7B. The expanded hand-authored procedural-justice
+control reaches `control_bundle_ready` on both Qwen2.5-0.5B and Qwen2.5-7B, and
+the accepted Qwen7B generated/control directions transfer across benchmarks in
+both directions. The active bottleneck is now whether the pattern survives a
+meaningfully different model family.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-procedural-justice-control-expansion-run.md`: the
+  non-generated procedural-justice control expanded to 16 hand-authored pairs
+  across four source families while preserving zero audit warnings, all-eight
+  future-option coverage, availability accuracy `68/68`, lexical cue-solved
+  pairs `0/16`, fault-class `lexical_only` held-out accuracy `0.719`, and
+  source `lexical_only` held-out accuracy `0.781`. Qwen2.5-0.5B layer `-1` and
+  Qwen2.5-7B layer `-2` both reach `control_bundle_ready` with activation
+  metadata transfer accepted at `1.000` mean test accuracy over 16 test pairs.
+  Same-prompt Qwen0.5B-to-Qwen7B mapped transfer remains accepted in both
+  directions. Qwen7B generated/control direction transfer also passes in both
+  directions: generated direction on control accuracy `1.000` with minimum
+  margin `+2.345`, and control direction on generated accuracy `1.000` with
+  minimum margin `+1.700`.
 - `docs/research/2026-06-08-procedural-justice-control-run.md`: a
   non-generated procedural-justice control benchmark now exports eight
   hand-authored pairs across two source families and four cases. It clears all
@@ -109,19 +122,17 @@ Recent accepted findings:
   `autonomy_after_conflict`, `belonging_norms`, and `fair_allocation`.
 
 Activation extraction, lexical controls, same-family model replication, the
-first non-generated control, and the first Qwen7B generated/control
-direction-transfer check are no longer blocked. However, activation results
-remain text-benchmark claims until the result survives an out-of-family model
-or larger control set, and human-facing gates are separately validated.
+first non-generated control, its first source expansion, and the first Qwen7B
+generated/control direction-transfer check are no longer blocked. However,
+activation results remain text-benchmark claims until the result survives an
+out-of-family model, and human-facing gates are separately validated.
 
 ## Active Objective
 
-Audit out-of-family generalization and larger non-generated controls.
+Audit out-of-family generalization.
 
 The next operation should run an out-of-family model replication if the
-activation pipeline supports a viable model, or expand the non-generated
-control to more hand-authored source families and cases. It must still
-preserve:
+activation pipeline supports a viable model. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -129,6 +140,8 @@ preserve:
 - source and fault-class `lexical_only` held-out accuracy below the warning
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
+- generated/control direction-transfer checks where comparable accepted layers
+  exist;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -142,8 +155,7 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- an out-of-family model replication attempt or a larger non-generated control
-  expansion;
+- an out-of-family model replication attempt;
 - generated/control direction-transfer readiness for any model setting where
   comparable accepted layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -167,13 +179,16 @@ Implementation should probably follow existing audit patterns:
 
 1. Reuse the four-source `cross_fault_lexical_repair_v1` bundle as the current
    generated-text baseline.
-2. Reuse the `procedural_justice_control_v1` bundle as the current
+2. Reuse the `procedural_justice_control_v2` bundle as the current
    non-generated control baseline.
-3. Keep the accepted Qwen7B generated/control direction-transfer report as the
-   current cross-benchmark alignment baseline.
-4. Run an out-of-family model replication if the activation pipeline supports a
-   viable model, or expand the non-generated control to more source families.
-5. Keep human validation parked until generated, non-generated, cross-setting,
+3. Keep the accepted Qwen7B generated/control direction-transfer report on the
+   expanded control as the current cross-benchmark alignment baseline.
+4. Select a viable out-of-family model and run the same layer-sweep and full
+   audit flow on the expanded control first, then on the generated benchmark if
+   the model/layer result is promising.
+5. Run generated/control direction-transfer checks for any out-of-family model
+   setting where both benchmarks have accepted layers.
+6. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates

@@ -38,9 +38,9 @@ def test_procedural_justice_control_pipeline_exports_non_generated_control(
     )
     assert manifest["summary"]["ready_for_activation_extraction"] is True
     assert manifest["summary"]["ready_for_activation_claims"] is False
-    assert manifest["summary"]["pairwise_examples"] == 8
-    assert manifest["summary"]["activation_prompts"] == 16
-    assert manifest["summary"]["sources"] == 2
+    assert manifest["summary"]["pairwise_examples"] == 16
+    assert manifest["summary"]["activation_prompts"] == 32
+    assert manifest["summary"]["sources"] == 4
     assert manifest["summary"]["audit_not_ready_steps"] == 0
     assert manifest["summary"]["audit_skipped_steps"] == 1
     assert manifest["summary"]["audit_warning_count"] == 0
@@ -51,8 +51,8 @@ def test_procedural_justice_control_pipeline_exports_non_generated_control(
     assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "fault_heldout_transfer")["ready"] is True
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
-    assert len(pairs) == 8
-    assert len(prompts) == 16
+    assert len(pairs) == 16
+    assert len(prompts) == 32
     assert {row["metadata"]["artifact_class"] for row in pairs} == {
         "non_generated_control"
     }
