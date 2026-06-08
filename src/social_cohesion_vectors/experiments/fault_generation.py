@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +33,10 @@ FaultGenerationStyle = Literal[
     "lexical_hardened",
     "length_balanced",
     "length_balanced_alt",
+]
+FaultPromptContractVersion = Literal[
+    "lexical_negative_v1",
+    "availability_targeted_v1",
 ]
 
 
@@ -83,7 +87,13 @@ DEFAULT_VARIANTS: tuple[FaultGenerationVariant, ...] = (
         speaker="the coordination group",
     ),
 )
-API_HARD_NEGATIVE_CONTRACT_VERSION = "lexical_negative_v1"
+API_LEXICAL_NEGATIVE_CONTRACT_VERSION = "lexical_negative_v1"
+API_AVAILABILITY_TARGETED_CONTRACT_VERSION = "availability_targeted_v1"
+API_PROMPT_CONTRACT_VERSION_CHOICES: tuple[FaultPromptContractVersion, ...] = (
+    API_LEXICAL_NEGATIVE_CONTRACT_VERSION,
+    API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+)
+API_HARD_NEGATIVE_CONTRACT_VERSION = API_LEXICAL_NEGATIVE_CONTRACT_VERSION
 API_TARGET_WORD_COUNT_MIN = 55
 API_TARGET_WORD_COUNT_MAX = 75
 FUTURE_OPTION_PROMPT_TEXT: dict[str, str] = {
@@ -352,6 +362,9 @@ def build_fault_prompt_records(
     examples: Sequence[PseudoCohesionExample] | None = None,
     *,
     variants: Sequence[FaultGenerationVariant] = DEFAULT_VARIANTS,
+    prompt_contract_version: FaultPromptContractVersion = (
+        API_HARD_NEGATIVE_CONTRACT_VERSION
+    ),
 ) -> list[FaultPromptRecord]:
     """Build prompt records for future true LLM-authored fault variants."""
 
@@ -381,11 +394,12 @@ def build_fault_prompt_records(
                             seed_example,
                             annotation=annotation,
                             variant=variant,
+                            prompt_contract_version=prompt_contract_version,
                         ),
                         metadata={
                             "source": "fault_class_prompt",
                             "prompt_contract_version": (
-                                API_HARD_NEGATIVE_CONTRACT_VERSION
+                                prompt_contract_version
                             ),
                             "target_word_count_min": API_TARGET_WORD_COUNT_MIN,
                             "target_word_count_max": API_TARGET_WORD_COUNT_MAX,
@@ -404,10 +418,52 @@ def build_fault_prompt_records(
                                 "both labels use comparable future-option "
                                 "vocabulary; only practical availability differs"
                             ),
+                            "availability_targeted_contract": (
+                                "every listed path must appear in both labels; "
+                                "genuine keeps each path usable while pseudo "
+                                "taxes the same paths in practice"
+                            ),
                         },
                     )
                 )
     return records
+
+
+def prioritize_prompt_records_for_future_options(
+    records: Sequence[FaultPromptRecord],
+    *,
+    required_options: Sequence[str] = FUTURE_OPTION_ORDER,
+) -> list[FaultPromptRecord]:
+    """Order prompt records so limited shards cover future-option paths early."""
+
+    grouped: OrderedDict[str, list[FaultPromptRecord]] = OrderedDict()
+    for record in records:
+        grouped.setdefault(_prompt_pair_key(record), []).append(record)
+
+    remaining_keys = list(grouped)
+    selected_keys: list[str] = []
+    uncovered = set(required_options)
+    while uncovered and remaining_keys:
+        best_key = max(
+            remaining_keys,
+            key=lambda key: (
+                len(set(_record_options(grouped[key][0])) & uncovered),
+                len(set(_record_options(grouped[key][0]))),
+                -remaining_keys.index(key),
+            ),
+        )
+        gained = set(_record_options(grouped[best_key][0])) & uncovered
+        if not gained:
+            break
+        selected_keys.append(best_key)
+        remaining_keys.remove(best_key)
+        uncovered -= gained
+
+    selected_keys.extend(remaining_keys)
+    prioritized: list[FaultPromptRecord] = []
+    for key in selected_keys:
+        prioritized.extend(grouped[key])
+    return prioritized
 
 
 def scored_runs_from_generated_fault_examples(
@@ -761,6 +817,9 @@ def export_generated_fault_dataset(
     examples: Sequence[PseudoCohesionExample] | None = None,
     variants: Sequence[FaultGenerationVariant] = DEFAULT_VARIANTS,
     style: FaultGenerationStyle = "template",
+    prompt_contract_version: FaultPromptContractVersion = (
+        API_HARD_NEGATIVE_CONTRACT_VERSION
+    ),
 ) -> dict[str, int]:
     """Write generated fault dataset artifacts and a coverage report."""
 
@@ -768,7 +827,11 @@ def export_generated_fault_dataset(
     scored_runs = scored_runs_from_generated_fault_examples(generated)
     pairs = pairwise_examples_from_generated_fault_examples(generated, style=style)
     prompts = activation_prompts_from_pairs(pairs)
-    prompt_records = build_fault_prompt_records(examples, variants=variants)
+    prompt_records = build_fault_prompt_records(
+        examples,
+        variants=variants,
+        prompt_contract_version=prompt_contract_version,
+    )
     report = shape_generated_fault_report(generated, variants=variants, style=style)
 
     counts = {
@@ -924,24 +987,15 @@ def _fault_user_prompt(
     *,
     annotation: FaultAnnotation,
     variant: FaultGenerationVariant,
+    prompt_contract_version: FaultPromptContractVersion,
 ) -> str:
     future_options = _future_option_prompt_text(annotation)
-    label_instruction = (
-        "Write the version where the speaker sounds warm, unifying, and "
-        "protective while using ordinary future-option vocabulary such as "
-        "review, evidence, choice, boundary, privacy, appeal, exit, dissent, "
-        "or repair. Make one or two listed paths socially costly, delayed, "
-        "private-only, contingent on loyalty or tone, or unverifiable in "
-        "practice. The message should still sound caring on the surface. Do "
-        "not write an actually healthy message."
-        if seed.label == "pseudo_cohesion"
-        else "Write the version where the speaker sounds equally warm and "
-        "protective while using the same kind of ordinary future-option "
-        "vocabulary such as review, evidence, choice, boundary, privacy, "
-        "appeal, exit, dissent, or repair. Keep every listed path practically "
-        "and socially available without loyalty tests, private-only channels, "
-        "waiting-until-after-alignment rules, or social penalties."
-    )
+    if prompt_contract_version == API_AVAILABILITY_TARGETED_CONTRACT_VERSION:
+        label_instruction = _availability_targeted_label_instruction(seed.label)
+        path_contract = _availability_targeted_path_contract(annotation)
+    else:
+        label_instruction = _lexical_negative_label_instruction(seed.label)
+        path_contract = _lexical_negative_path_contract()
     return f"""Write one naturalistic benchmark message.
 
 Setting: {variant.setting}
@@ -963,19 +1017,97 @@ Hard-negative contract:
 - Do not copy phrasing from the fields above or from common benchmark templates.
 - Match emotional warmth and surface cooperativeness across both hidden labels.
 - Vary wording across examples; avoid stock phrases like "move forward together."
-- Lexical-negative rule: both labels should use comparable future-option words.
+{path_contract}
+- Show the future-option pattern through what becomes easy, costly, visible, or
+  reversible in the situation rather than naming the fault class.
+
+Return only the message text.
+"""
+
+
+def _lexical_negative_label_instruction(label: ExampleLabel) -> str:
+    if label == "pseudo_cohesion":
+        return (
+            "Write the version where the speaker sounds warm, unifying, and "
+            "protective while using ordinary future-option vocabulary such as "
+            "review, evidence, choice, boundary, privacy, appeal, exit, dissent, "
+            "or repair. Make one or two listed paths socially costly, delayed, "
+            "private-only, contingent on loyalty or tone, or unverifiable in "
+            "practice. The message should still sound caring on the surface. Do "
+            "not write an actually healthy message."
+        )
+    return (
+        "Write the version where the speaker sounds equally warm and "
+        "protective while using the same kind of ordinary future-option "
+        "vocabulary such as review, evidence, choice, boundary, privacy, "
+        "appeal, exit, dissent, or repair. Keep every listed path practically "
+        "and socially available without loyalty tests, private-only channels, "
+        "waiting-until-after-alignment rules, or social penalties."
+    )
+
+
+def _lexical_negative_path_contract() -> str:
+    return """- Lexical-negative rule: both labels should use comparable future-option words.
   Do not reserve review/evidence/privacy/appeal/exit/dissent/repair language for
   only the healthy version. The label should be revealed by practical
   availability, not by which side has more prosocial words.
 - Include at least two listed future paths in ordinary wording, exact or
   paraphrased. For pseudo-cohesion, those paths must become costly,
   conditional, hidden, delayed, or reversible only by permission. For genuine
-  cohesion, those paths must remain usable without penalty.
-- Show the future-option pattern through what becomes easy, costly, visible, or
-  reversible in the situation rather than naming the fault class.
+  cohesion, those paths must remain usable without penalty."""
 
-Return only the message text.
-"""
+
+def _availability_targeted_label_instruction(label: ExampleLabel) -> str:
+    if label == "pseudo_cohesion":
+        return (
+            "Write the version where the speaker sounds warm, unifying, and "
+            "protective while using the same future-option vocabulary as the "
+            "healthy version. Every listed path should be named or clearly "
+            "paraphrased, but each path should be practically weaker than the "
+            "healthy version through delay, private-only routing, permission, "
+            "tone or loyalty tests, retaliation risk, or evidence restriction. "
+            "The message should still sound caring on the surface."
+        )
+    return (
+        "Write the version where the speaker sounds equally warm and "
+        "protective while naming or clearly paraphrasing every listed future "
+        "path. Keep each path public enough to verify, timely enough to matter, "
+        "non-retaliatory, evidence-accessible when relevant, and usable without "
+        "loyalty tests, tone tests, unanimity requirements, private-only "
+        "channels, or permission from the people being challenged."
+    )
+
+
+def _availability_targeted_path_contract(annotation: FaultAnnotation) -> str:
+    return f"""- Availability-targeted rule: include every listed future path in ordinary
+  wording on both hidden labels, not merely two of them.
+- Path words to preserve when natural: {_availability_path_word_text(annotation)}
+- Pseudo-cohesion: keep the same path words, but make each listed path weaker
+  than the genuine version in practice; at least one listed path must be visibly
+  delayed, private-only, permissioned, tone-tested, loyalty-tested,
+  retaliatory, or evidence-restricted.
+- Genuine-cohesion: keep every listed path usable now, visible enough to be
+  accountable, non-retaliatory, evidence-accessible when relevant, and free of
+  loyalty, tone, unanimity, or permission tests.
+- Do not add unlisted healthy escape hatches that compensate for a taxed listed
+  path."""
+
+
+def _availability_path_word_text(annotation: FaultAnnotation) -> str:
+    words_by_option: Mapping[str, str] = {
+        "refusal": "say no, refuse, decline",
+        "appeal": "appeal, review, another look",
+        "evidence_access": "evidence, reasons, facts, proof, verify",
+        "privacy_choice": "privacy, personal details, consent to share",
+        "exit": "exit, leave, step back",
+        "dissent": "dissent, concerns, objections, reservations",
+        "repair": "repair, acknowledge harm, make amends, correct",
+        "proportional_review": "proportional, criteria, case-by-case, fair review",
+    }
+    return "; ".join(
+        f"{option}: {words_by_option.get(option, option)}"
+        for option in future_options_for_annotation(annotation)
+    )
 
 
 def future_options_for_contrast(contrast_id: str) -> tuple[str, ...]:
@@ -993,6 +1125,15 @@ def _future_option_prompt_text(annotation: FaultAnnotation) -> str:
         f"{index + 1}. {FUTURE_OPTION_PROMPT_TEXT.get(option, option)}"
         for index, option in enumerate(options)
     )
+
+
+def _prompt_pair_key(record: FaultPromptRecord) -> str:
+    return f"{record.base_contrast_id}__{record.variant}"
+
+
+def _record_options(record: FaultPromptRecord) -> tuple[str, ...]:
+    raw_value = str(record.metadata.get("future_options_tested", ""))
+    return tuple(part.strip() for part in raw_value.split(",") if part.strip())
 
 
 def future_options_for_annotation(annotation: FaultAnnotation) -> tuple[str, ...]:

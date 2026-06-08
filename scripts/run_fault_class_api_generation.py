@@ -19,11 +19,14 @@ from social_cohesion_vectors.datasets import (
     write_jsonl,
 )
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_HARD_NEGATIVE_CONTRACT_VERSION,
+    API_PROMPT_CONTRACT_VERSION_CHOICES,
     DEFAULT_VARIANTS,
     FaultPromptRecord,
     build_fault_prompt_records,
     fault_examples_from_prompt_outputs,
     pairwise_examples_from_generated_fault_examples,
+    prioritize_prompt_records_for_future_options,
     render_generated_fault_markdown,
     scored_runs_from_generated_fault_examples,
     shape_generated_fault_report,
@@ -51,7 +54,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.variants
         else DEFAULT_VARIANTS
     )
-    records = build_fault_prompt_records(variants=variants)
+    records = build_fault_prompt_records(
+        variants=variants,
+        prompt_contract_version=args.prompt_contract_version,
+    )
+    if args.availability_priority:
+        records = prioritize_prompt_records_for_future_options(records)
     if args.offset:
         records = records[args.offset :]
     if args.limit is not None:
@@ -176,6 +184,20 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--variants", nargs="+", choices=variant_names, default=None)
+    parser.add_argument(
+        "--availability-priority",
+        action="store_true",
+        help=(
+            "Order prompt pairs so limited shards cover all future-option "
+            "availability paths as early as possible."
+        ),
+    )
+    parser.add_argument(
+        "--prompt-contract-version",
+        choices=API_PROMPT_CONTRACT_VERSION_CHOICES,
+        default=API_HARD_NEGATIVE_CONTRACT_VERSION,
+        help="Prompt contract used to author generated benchmark examples.",
+    )
     parser.add_argument(
         "--input-raw-outputs",
         type=Path,
@@ -758,6 +780,9 @@ def _raw_output_record(
         ),
         "lexical_negative_contract": str(
             record.metadata.get("lexical_negative_contract", "")
+        ),
+        "availability_targeted_contract": str(
+            record.metadata.get("availability_targeted_contract", "")
         ),
         "provider": provider,
         "model": model,

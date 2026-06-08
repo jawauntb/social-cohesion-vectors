@@ -511,6 +511,9 @@ def _selected_output_records(
                     "lexical_negative_contract": str(
                         record.metadata.get("lexical_negative_contract", "")
                     ),
+                    "availability_targeted_contract": str(
+                        record.metadata.get("availability_targeted_contract", "")
+                    ),
                     "provider": str(raw_output.get("provider", "")),
                     "model": str(raw_output.get("model", "")),
                     "status": str(raw_output.get("status", "ok")),

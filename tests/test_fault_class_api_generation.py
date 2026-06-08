@@ -8,6 +8,7 @@ from typing import Any, cast
 
 from social_cohesion_vectors.datasets import read_jsonl, write_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     API_HARD_NEGATIVE_CONTRACT_VERSION,
     API_TARGET_WORD_COUNT_MAX,
     API_TARGET_WORD_COUNT_MIN,
@@ -83,6 +84,7 @@ def test_output_records_include_future_option_contract(tmp_path: Path) -> None:
     assert raw_records[0]["future_options_tested"]
     assert raw_records[0]["future_option_contract"]
     assert raw_records[0]["lexical_negative_contract"]
+    assert raw_records[0]["availability_targeted_contract"]
     assert (
         raw_records[0]["prompt_contract_version"]
         == API_HARD_NEGATIVE_CONTRACT_VERSION
@@ -179,6 +181,9 @@ def test_api_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
             str(raw_outputs),
             "--variants",
             DEFAULT_VARIANTS[0].name,
+            "--availability-priority",
+            "--prompt-contract-version",
+            API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
             "--raw-outputs",
             str(output_paths["raw_outputs"]),
             "--examples-output",
@@ -209,6 +214,9 @@ def test_api_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
     assert len(normalized_outputs) == len(records)
     assert {row["provider"] for row in normalized_outputs} == {"groq"}
     assert {row["model"] for row in normalized_outputs} == {"replay-model"}
+    assert {row["prompt_contract_version"] for row in normalized_outputs} == {
+        API_AVAILABILITY_TARGETED_CONTRACT_VERSION
+    }
     assert len(pairs) == 30
     assert len(prompts) == 60
     assert pairs[0]["metadata"]["source"] == "generated_fault_class_groq"

@@ -7,6 +7,7 @@ from types import ModuleType
 
 from social_cohesion_vectors.datasets import read_jsonl, write_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     DEFAULT_VARIANTS,
     FaultPromptRecord,
     build_fault_prompt_records,
@@ -55,6 +56,9 @@ def test_modal_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
             str(raw_outputs),
             "--variants",
             DEFAULT_VARIANTS[0].name,
+            "--availability-priority",
+            "--prompt-contract-version",
+            API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
             "--raw-outputs",
             str(output_paths["raw_outputs"]),
             "--examples-output",
@@ -85,7 +89,9 @@ def test_modal_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
     assert len(normalized_outputs) == len(records)
     assert {row["provider"] for row in normalized_outputs} == {"modal_hf"}
     assert {row["model"] for row in normalized_outputs} == {"test/open-model"}
-    assert normalized_outputs[0]["prompt_contract_version"]
+    assert {row["prompt_contract_version"] for row in normalized_outputs} == {
+        API_AVAILABILITY_TARGETED_CONTRACT_VERSION
+    }
     assert len(pairs) == 30
     assert len(prompts) == 60
     assert pairs[0]["metadata"]["source"] == "generated_fault_class_modal_hf"

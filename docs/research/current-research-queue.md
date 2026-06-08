@@ -28,20 +28,24 @@ Recent accepted findings:
   tournament still fail practical future-path availability. After availability
   was added to candidate selection, the first-20 candidate pool still produced
   only 1/10 selected pairs passing availability and 0/10 core gates.
+- `docs/research/2026-06-08-availability-targeted-generation-contract.md`:
+  the prompt ledger now supports `availability_targeted_v1` and
+  `--availability-priority`. A local smoke check confirms the prioritized
+  first-20 prompt records cover all eight future-option paths.
 
 Activation extraction remains blocked because lexical, slack, availability,
 source-diversity, and transfer gates do not pass together.
 
 ## Active Objective
 
-Add an availability-targeted generation regime and rerun the availability-aware
-first-20 four-candidate tournament.
+Run an availability-targeted generation batch and rerun the availability-aware
+first-20 tournament with the matching prompt-ledger flags.
 
-The availability audit and availability-aware tournament now exist. The next
-move is to improve the candidate pool itself: generated candidates must cover
-missing paths such as `evidence_access` and `privacy_choice`, mention each
-declared path in both labels, preserve each path on the genuine side, and tax at
-least one matched path on the pseudo side.
+The availability audit, availability-aware tournament, and
+`availability_targeted_v1` prompt contract now exist. The next move is to test
+the candidate pool itself: generated candidates must cover all eight future
+paths, mention each declared path in both labels, preserve each path on the
+genuine side, and make those same paths practically weaker on the pseudo side.
 
 Selection should preserve the availability dimensions already exposed by the
 audit:
@@ -81,11 +85,16 @@ Implementation should probably follow existing audit patterns:
 
 ## Next Sequence
 
-1. Add an availability-targeted prompt contract or prompt-slice variant.
-2. Ensure the first-20 slice includes `evidence_access` and `privacy_choice`.
-3. Generate a new candidate batch through Modal HF.
-4. Rerun candidate selection with availability as a core gate.
-5. Compare selected winners and gate counts against the current tournament.
+1. Generate a new first-20 candidate batch through Modal HF with
+   `--prompt-contract-version availability_targeted_v1` and
+   `--availability-priority`.
+2. Generate at least one additional candidate batch with the same flags if the
+   first batch does not beat the `1/10` availability baseline.
+3. Rerun candidate selection with availability as a core gate and the same
+   prompt-ledger flags.
+4. Compare selected winners and gate counts against the current tournament.
+5. Add a dated run note with accepted/rejected candidates and residual failure
+   modes.
 6. Only after lexical, slack, source-diversity, component, and availability
    gates pass together, send a generated shard into activation extraction.
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     API_HARD_NEGATIVE_CONTRACT_VERSION,
     API_TARGET_WORD_COUNT_MAX,
     API_TARGET_WORD_COUNT_MIN,
@@ -14,6 +15,7 @@ from social_cohesion_vectors.experiments.fault_generation import (
     generated_fault_examples,
     pairing_audit_for_generated_fault_examples,
     pairwise_examples_from_generated_fault_examples,
+    prioritize_prompt_records_for_future_options,
     render_generated_fault_markdown,
     scored_runs_from_generated_fault_examples,
     shape_generated_fault_report,
@@ -66,6 +68,14 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
         for record in prompt_records
     )
     assert all(
+        record.metadata["availability_targeted_contract"]
+        == (
+            "every listed path must appear in both labels; genuine keeps each "
+            "path usable while pseudo taxes the same paths in practice"
+        )
+        for record in prompt_records
+    )
+    assert all(
         record.metadata["prompt_contract_version"]
         == API_HARD_NEGATIVE_CONTRACT_VERSION
         for record in prompt_records
@@ -111,6 +121,61 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
         for record in prompt_records
     )
     assert pairing_audit_for_generated_fault_examples(examples)["ready"] is True
+
+
+def test_availability_targeted_prompt_contract_requires_every_listed_path() -> None:
+    prompt_records = build_fault_prompt_records(
+        variants=DEFAULT_VARIANTS[:1],
+        prompt_contract_version=API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+    )
+    data_choice = next(
+        record
+        for record in prompt_records
+        if record.base_contrast_id == "data_choice"
+        and record.label == "pseudo_cohesion"
+    )
+    genuine_data_choice = next(
+        record
+        for record in prompt_records
+        if record.base_contrast_id == "data_choice"
+        and record.label == "genuine_cohesion"
+    )
+
+    assert all(
+        record.metadata["prompt_contract_version"]
+        == API_AVAILABILITY_TARGETED_CONTRACT_VERSION
+        for record in prompt_records
+    )
+    assert "Availability-targeted rule" in data_choice.user_prompt
+    assert "include every listed future path" in data_choice.user_prompt
+    assert "evidence_access: evidence, reasons, facts, proof, verify" in (
+        data_choice.user_prompt
+    )
+    assert "privacy_choice: privacy, personal details, consent to share" in (
+        data_choice.user_prompt
+    )
+    assert "Pseudo-cohesion: keep the same path words" in data_choice.user_prompt
+    assert "Genuine-cohesion: keep every listed path usable now" in (
+        genuine_data_choice.user_prompt
+    )
+
+
+def test_availability_priority_orders_limited_prompt_shards_for_path_coverage() -> None:
+    prompt_records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])
+    prioritized = prioritize_prompt_records_for_future_options(prompt_records)
+    first_four_pairs: dict[str, set[str]] = {}
+    for record in prioritized[:8]:
+        first_four_pairs.setdefault(
+            f"{record.base_contrast_id}__{record.variant}",
+            set(),
+        ).update(str(record.metadata["future_options_tested"]).split(","))
+
+    covered = set().union(*first_four_pairs.values())
+
+    assert "evidence_access" in covered
+    assert "privacy_choice" in covered
+    assert "appeal" in covered
+    assert len(covered) == 8
 
 
 def test_generated_fault_report_summarizes_fault_coverage() -> None:
