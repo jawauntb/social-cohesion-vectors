@@ -143,10 +143,12 @@ examples / 360 activation prompts. It passes the local non-activation gates:
 0/180 simple cue-solved pairs, 8/8 future-option slack coverage, 180/180
 slack-prefers-genuine pairs, 2 sources, 20 shared fault groups, and 0 duplicate
 or near-duplicate cross-source pairs. The caveat is broader lexical transfer:
-`lexical_only` still reaches 0.883 held-out-fault and held-out-source accuracy,
-so activation results on this deterministic bundle should remain
-lexical-caveated until wording-diverse/API-authored examples lower that
-baseline.
+`lexical_only` still reaches 0.883 held-out-fault and held-out-source accuracy.
+A term-level diagnostic shows 0 label-aligned lexicon terms; the driver is
+`__log_token_count__`, which alone reaches 0.883 pairwise accuracy because the
+deterministic genuine side is usually longer. Activation results on this bundle
+should remain length/lexical-caveated until wording-diverse/API-authored
+examples lower that baseline.
 
 The reviewer-style geometry audit changes the claim we should make about those
 directions. The 20 primary-fault directions are not near-orthogonal: their mean

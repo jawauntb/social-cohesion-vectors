@@ -52,7 +52,7 @@ Summary:
 - Pairwise examples: 180
 - Activation prompts: 360
 - Prompt records: 180
-- Audit ready steps: 5
+- Audit ready steps: 6
 - Audit not-ready steps: 0
 - Audit skipped steps: 1
 - Audit warnings: 2
@@ -74,11 +74,23 @@ However, the broader `lexical_only` transfer baseline remains high:
 | Fault class | 0.883 |
 | Source | 0.883 |
 
-This is the important caveat: the simple cue-count gate is clean, but the
-deterministic text still contains broader wording regularities. The source
+A term-level lexical diagnostic explains the caveat:
+
+| Diagnostic | Value |
+| --- | ---: |
+| Label-aligned lexicon terms | 0 |
+| Label-inverted lexicon terms | 1 |
+| Mean pair cue margin | 0.000 |
+| Best single feature | `__log_token_count__` |
+| Best single-feature accuracy | 0.883 |
+
+This is the important caveat: the simple cue-count gate is clean, and fixed
+positive/negative lexicon terms are not the driver. The deterministic text still
+contains a length regularity: the genuine side is longer often enough that
+token-count alone reproduces the `lexical_only` transfer score. The source
 bundle is ready as a controlled activation substrate, but activation claims
-should remain lexical-caveated until API-authored or otherwise
-wording-diverse examples lower this baseline.
+should remain length/lexical-caveated until wording-diverse/API-authored
+examples lower that baseline.
 
 ## Synthetic Activation Smoke
 
