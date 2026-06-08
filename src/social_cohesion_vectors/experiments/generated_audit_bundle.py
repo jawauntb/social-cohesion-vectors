@@ -23,6 +23,10 @@ from social_cohesion_vectors.experiments.lexical_leakage import (
     run_lexical_leakage_report_from_file,
     save_lexical_leakage_report,
 )
+from social_cohesion_vectors.experiments.slack_preservation_audit import (
+    run_slack_preservation_audit_from_file,
+    save_slack_preservation_audit,
+)
 from social_cohesion_vectors.regime_records import (
     build_activation_metadata_transfer_regime_record,
     write_regime_transition_markdown,
@@ -103,6 +107,35 @@ def run_generated_benchmark_audit_bundle(
             ),
             json_path=component_json,
             markdown_path=component_markdown,
+        )
+    )
+
+    slack_report = run_slack_preservation_audit_from_file(
+        pairs,
+        group_metadata_key=group_metadata_key,
+    )
+    slack_json = output_path / "generated_benchmark_slack_preservation_audit.json"
+    slack_markdown = output_path / "generated_benchmark_slack_preservation_audit.md"
+    save_slack_preservation_audit(
+        slack_report,
+        json_path=slack_json,
+        markdown_path=slack_markdown,
+    )
+    steps.append(
+        _step(
+            step_id="slack_preservation_audit",
+            report=slack_report,
+            ready=bool(
+                _mapping(slack_report.get("summary")).get("ready_for_activation")
+            ),
+            readiness_status=str(
+                _mapping(slack_report.get("summary")).get(
+                    "activation_readiness",
+                    "not_ready",
+                )
+            ),
+            json_path=slack_json,
+            markdown_path=slack_markdown,
         )
     )
 
