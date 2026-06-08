@@ -183,6 +183,56 @@ tournament at all. The next sampling loop should produce multiple repair-v2
 candidates and keep only rows that pass this local filter before rerunning the
 first-20 tournament.
 
+## Filtered Multi-Sample Sweep
+
+Generated three more repair-v2 chunks for the same hard contrasts:
+
+- `repair_v2_001`: seed `909`, temperature `0.85`, top-p `0.9`,
+  `--max-new-tokens 125`;
+- `repair_v2_002`: seed `1001`, temperature `0.7`, top-p `0.85`,
+  `--max-new-tokens 125`;
+- `repair_v2_003`: seed `1111`, temperature `0.55`, top-p `0.8`,
+  `--max-new-tokens 125`.
+
+Artifacts:
+
+```text
+/tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_v2_001/
+/tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_v2_002/
+/tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_v2_003/
+/tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_v2_001_002_003_filter_default/
+```
+
+All three chunks produced six valid outputs and three complete pairs. The
+default repair filter accepted no pairs:
+
+| Candidate | Score | Slack | Lexical | Availability | Length | All gates |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `repair_v2_001` | 0/3 | 0/3 | 3/3 | 0/3 | 0/3 | 0/3 |
+| `repair_v2_002` | 1/3 | 1/3 | 3/3 | 0/3 | 0/3 | 0/3 |
+| `repair_v2_003` | 2/3 | 3/3 | 2/3 | 1/3 | 0/3 | 0/3 |
+
+Filter result:
+
+| Metric | Result |
+| --- | ---: |
+| evaluated candidate pairs | 9 |
+| accepted pairs | 0 |
+| accepted raw outputs | 0 |
+| rejected candidate pairs | 9 |
+
+No tournament was rerun because the filter produced no accepted raw-output rows.
+The best near-miss was `repair_v2_003`: it improved score/slack shape and had
+one positive availability-gate pair, but all three pairs missed the target
+length range. The remaining problem is therefore not just sampling variance.
+Direct Qwen generation still fails to jointly satisfy output shape and
+path-level practical availability.
+
+Next regime move: add a post-generation repair/rewrite step or a constrained
+candidate composer that can explicitly rewrite failed pairs to the required
+55-75-word range while preserving the same path-level tax/availability
+structure, then run the local repair filter before any tournament comparison.
+
 ## Claim Boundary
 
 This is generated-text benchmark construction only. It makes no human
