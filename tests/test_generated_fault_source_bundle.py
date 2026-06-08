@@ -44,11 +44,12 @@ def test_generated_fault_source_bundle_exports_two_ready_text_sources(
     assert manifest["summary"]["pairwise_examples"] == 60
     assert manifest["summary"]["activation_prompts"] == 120
     assert manifest["summary"]["prompt_records"] == 60
-    assert manifest["summary"]["audit_ready_steps"] == 5
+    assert manifest["summary"]["audit_ready_steps"] == 6
     assert manifest["summary"]["audit_not_ready_steps"] == 0
     assert manifest["summary"]["audit_skipped_steps"] == 1
     assert manifest["summary"]["audit_warning_count"] == 2
     assert _step(manifest, "lexical_leakage")["ready"] is True
+    assert _step(manifest, "lexical_baseline_diagnostic")["ready"] is True
     assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
     assert len(pairs) == 60
@@ -84,7 +85,7 @@ def test_generated_fault_source_bundle_accepts_synthetic_activation_payload(
 
     assert manifest["summary"]["status"] == "bundle_ready"
     assert manifest["summary"]["ready"] is True
-    assert manifest["summary"]["audit_ready_steps"] == 7
+    assert manifest["summary"]["audit_ready_steps"] == 8
     assert manifest["summary"]["audit_not_ready_steps"] == 0
     assert manifest["summary"]["audit_skipped_steps"] == 0
     assert manifest["summary"]["audit_warning_count"] == 2

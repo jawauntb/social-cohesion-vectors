@@ -45,10 +45,11 @@ def test_generated_benchmark_audit_bundle_marks_missing_activation_as_skipped(
 
     assert manifest["summary"]["status"] == "bundle_incomplete"
     assert manifest["summary"]["ready"] is False
-    assert manifest["summary"]["ready_steps"] == 5
+    assert manifest["summary"]["ready_steps"] == 6
     assert manifest["summary"]["skipped_steps"] == 1
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "lexical_baseline_diagnostic")["ready"] is True
     assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "fault_heldout_transfer")["ready"] is True
     assert "activation_npz_not_provided" in markdown
@@ -78,7 +79,7 @@ def test_generated_benchmark_audit_bundle_accepts_two_lexically_safe_sources(
 
     assert manifest["summary"]["status"] == "bundle_incomplete"
     assert manifest["summary"]["ready"] is False
-    assert manifest["summary"]["ready_steps"] == 5
+    assert manifest["summary"]["ready_steps"] == 6
     assert manifest["summary"]["not_ready_steps"] == 0
     assert manifest["summary"]["skipped_steps"] == 1
     assert manifest["summary"]["warning_count"] == 2
@@ -87,6 +88,7 @@ def test_generated_benchmark_audit_bundle_accepts_two_lexically_safe_sources(
         "source_lexical_baseline_high",
     }
     assert _step(manifest, "lexical_leakage")["ready"] is True
+    assert _step(manifest, "lexical_baseline_diagnostic")["ready"] is True
     assert _step(manifest, "component_margin_audit")["ready"] is True
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
     assert _step(manifest, "source_diversity_audit")["ready"] is True
@@ -109,7 +111,7 @@ def test_generated_benchmark_audit_bundle_writes_activation_regime_record(
 
     assert manifest["summary"]["status"] == "bundle_ready"
     assert manifest["summary"]["ready"] is True
-    assert manifest["summary"]["ready_steps"] == 7
+    assert manifest["summary"]["ready_steps"] == 8
     assert manifest["summary"]["skipped_steps"] == 0
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
     assert _step(manifest, "source_diversity_audit")["ready"] is True

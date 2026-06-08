@@ -19,6 +19,10 @@ from social_cohesion_vectors.experiments.fault_heldout import (
     run_fault_heldout_transfer_from_files,
     save_fault_heldout_reports,
 )
+from social_cohesion_vectors.experiments.lexical_baseline_diagnostic import (
+    run_lexical_baseline_diagnostic_from_file,
+    save_lexical_baseline_diagnostic,
+)
 from social_cohesion_vectors.experiments.lexical_leakage import (
     run_lexical_leakage_report_from_file,
     save_lexical_leakage_report,
@@ -81,6 +85,28 @@ def run_generated_benchmark_audit_bundle(
             ),
             json_path=lexical_json,
             markdown_path=lexical_markdown,
+        )
+    )
+
+    lexical_diagnostic_report = run_lexical_baseline_diagnostic_from_file(
+        pairs,
+        group_metadata_key=group_metadata_key,
+    )
+    lexical_diagnostic_json = output_path / "lexical_baseline_diagnostic.json"
+    lexical_diagnostic_markdown = output_path / "lexical_baseline_diagnostic.md"
+    save_lexical_baseline_diagnostic(
+        lexical_diagnostic_report,
+        json_path=lexical_diagnostic_json,
+        markdown_path=lexical_diagnostic_markdown,
+    )
+    steps.append(
+        _step(
+            step_id="lexical_baseline_diagnostic",
+            report=lexical_diagnostic_report,
+            ready=True,
+            readiness_status="diagnostic_ready",
+            json_path=lexical_diagnostic_json,
+            markdown_path=lexical_diagnostic_markdown,
         )
     )
 
