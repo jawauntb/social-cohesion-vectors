@@ -22,6 +22,8 @@ def run_activation_metadata_transfer_from_files(
     pairs_path: str | Path,
     metadata_key: str = "primary_fault_class",
     coverage_metadata_keys: Sequence[str] | None = None,
+    required_coverage_metadata_keys: Sequence[str] | None = None,
+    min_coverage_groups_per_key: int = 1,
 ) -> dict[str, Any]:
     """Load activations and pairs, then evaluate held-out metadata transfer."""
 
@@ -30,6 +32,8 @@ def run_activation_metadata_transfer_from_files(
         pairs=load_pairwise_examples_jsonl(pairs_path),
         metadata_key=metadata_key,
         coverage_metadata_keys=coverage_metadata_keys,
+        required_coverage_metadata_keys=required_coverage_metadata_keys,
+        min_coverage_groups_per_key=min_coverage_groups_per_key,
         pairs_path=str(pairs_path),
     )
 
@@ -40,6 +44,8 @@ def run_activation_metadata_transfer(
     pairs: Sequence[PairwiseExample],
     metadata_key: str = "primary_fault_class",
     coverage_metadata_keys: Sequence[str] | None = None,
+    required_coverage_metadata_keys: Sequence[str] | None = None,
+    min_coverage_groups_per_key: int = 1,
     pairs_path: str | None = None,
 ) -> dict[str, Any]:
     """Train on all but one metadata value and evaluate activation margins."""
@@ -48,6 +54,16 @@ def run_activation_metadata_transfer(
     pair_values = _pair_metadata_values(pairs, metadata_key)
     coverage_keys = _coverage_metadata_keys(metadata_key, coverage_metadata_keys)
     metadata_coverage = _metadata_coverage(pairs, coverage_keys)
+    required_coverage_keys = _required_coverage_metadata_keys(
+        coverage_keys,
+        required_coverage_metadata_keys,
+    )
+    coverage_readiness = _metadata_coverage_readiness(
+        pairs=pairs,
+        metadata_coverage=metadata_coverage,
+        required_metadata_keys=required_coverage_keys,
+        min_groups_per_key=min_coverage_groups_per_key,
+    )
     folds: list[dict[str, Any]] = []
     for held_out in sorted({value for values in pair_values.values() for value in values}):
         test_pair_ids = {
@@ -77,9 +93,16 @@ def run_activation_metadata_transfer(
             "activation_dim": int(payload.activations.shape[1]),
             "groups": len(folds),
             "coverage_metadata_keys": coverage_keys,
+            "required_coverage_metadata_keys": required_coverage_keys,
+            "min_coverage_groups_per_key": min_coverage_groups_per_key,
             "metadata_coverage": metadata_coverage,
         },
-        "summary": _summary(folds),
+        "summary": {
+            **_summary(folds),
+            "metadata_coverage_readiness": coverage_readiness["status"],
+            "ready_for_metadata_coverage_claims": coverage_readiness["ready"],
+        },
+        "readiness": coverage_readiness,
         "folds": folds,
     }
 
@@ -108,6 +131,7 @@ def render_activation_metadata_transfer_markdown(report: Mapping[str, Any]) -> s
 
     summary = _mapping(report.get("summary"))
     inputs = _mapping(report.get("inputs"))
+    readiness = _mapping(report.get("readiness"))
     lines = [
         "# Activation Metadata Transfer",
         "",
@@ -120,12 +144,43 @@ def render_activation_metadata_transfer_markdown(report: Mapping[str, Any]) -> s
         f"- Prompts: {int(inputs.get('prompts', 0))}",
         f"- Activation dim: {int(inputs.get('activation_dim', 0))}",
         f"- Groups: {int(inputs.get('groups', 0))}",
+        f"- Metadata coverage readiness: "
+        f"`{readiness.get('status', 'not_ready')}`",
+        f"- Ready for metadata coverage claims: "
+        f"{bool(readiness.get('ready', False))}",
         "",
-        "## Metadata Coverage",
+        "## Metadata Coverage Readiness",
         "",
-        "| Metadata key | Pairs with values | Missing pairs | Groups | Values |",
-        "| --- | ---: | ---: | ---: | --- |",
+        "| Gate | Value | Threshold | Passed |",
+        "| --- | ---: | ---: | --- |",
     ]
+    for gate in _sequence(readiness.get("gates")):
+        gate_map = _mapping(gate)
+        lines.append(
+            "| "
+            f"{gate_map.get('gate_id', '')} | "
+            f"{float(gate_map.get('value', 0.0)):.3f} | "
+            f"{float(gate_map.get('threshold', 0.0)):.3f} | "
+            f"{bool(gate_map.get('passed', False))} |"
+        )
+    failed_metadata_keys = _sequence(readiness.get("failed_metadata_keys"))
+    if failed_metadata_keys:
+        lines.extend(
+            [
+                "",
+                "Not ready for metadata coverage claims: incomplete metadata "
+                f"for {', '.join(str(key) for key in failed_metadata_keys)}.",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Metadata Coverage",
+            "",
+            "| Metadata key | Pairs with values | Missing pairs | Groups | Values |",
+            "| --- | ---: | ---: | ---: | --- |",
+        ]
+    )
     for row in _sequence(inputs.get("metadata_coverage")):
         row_map = _mapping(row)
         lines.append(
@@ -245,6 +300,14 @@ def _coverage_metadata_keys(
     return list(dict.fromkeys(key for key in keys if key))
 
 
+def _required_coverage_metadata_keys(
+    coverage_keys: Sequence[str],
+    requested_keys: Sequence[str] | None,
+) -> list[str]:
+    keys = coverage_keys if requested_keys is None else requested_keys
+    return list(dict.fromkeys(key for key in keys if key))
+
+
 def _metadata_coverage(
     pairs: Sequence[PairwiseExample],
     metadata_keys: Sequence[str],
@@ -264,6 +327,93 @@ def _metadata_coverage(
             }
         )
     return rows
+
+
+def _metadata_coverage_readiness(
+    *,
+    pairs: Sequence[PairwiseExample],
+    metadata_coverage: Sequence[Mapping[str, Any]],
+    required_metadata_keys: Sequence[str],
+    min_groups_per_key: int,
+) -> dict[str, Any]:
+    row_by_key = {
+        str(row.get("metadata_key", "")): row
+        for row in metadata_coverage
+        if str(row.get("metadata_key", ""))
+    }
+    missing_required_keys = sorted(
+        key for key in required_metadata_keys if key not in row_by_key
+    )
+    incomplete_metadata_keys = sorted(
+        key
+        for key in required_metadata_keys
+        if int(_mapping(row_by_key.get(key)).get("missing_pairs", len(pairs))) > 0
+    )
+    thin_group_keys = sorted(
+        key
+        for key in required_metadata_keys
+        if int(_mapping(row_by_key.get(key)).get("groups", 0))
+        < min_groups_per_key
+    )
+    failed_metadata_keys = sorted(
+        set(missing_required_keys) | set(incomplete_metadata_keys) | set(thin_group_keys)
+    )
+    min_pairs_with_values = min(
+        (
+            int(_mapping(row_by_key.get(key)).get("pairs_with_values", 0))
+            for key in required_metadata_keys
+        ),
+        default=0,
+    )
+    min_groups = min(
+        (
+            int(_mapping(row_by_key.get(key)).get("groups", 0))
+            for key in required_metadata_keys
+        ),
+        default=0,
+    )
+    gates = [
+        {
+            "gate_id": "non_empty_pairs",
+            "value": float(len(pairs)),
+            "threshold": 1.0,
+            "passed": len(pairs) > 0,
+        },
+        {
+            "gate_id": "required_metadata_keys_present",
+            "value": float(len(required_metadata_keys) - len(missing_required_keys)),
+            "threshold": float(len(required_metadata_keys)),
+            "passed": not missing_required_keys,
+        },
+        {
+            "gate_id": "complete_pair_coverage",
+            "value": float(min_pairs_with_values),
+            "threshold": float(len(pairs)),
+            "passed": not incomplete_metadata_keys,
+        },
+        {
+            "gate_id": "min_groups_per_key",
+            "value": float(min_groups),
+            "threshold": float(min_groups_per_key),
+            "passed": not thin_group_keys,
+        },
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": (
+            "metadata_coverage_ready"
+            if ready
+            else "not_ready_for_metadata_coverage_claims"
+        ),
+        "ready": ready,
+        "required_metadata_keys": list(required_metadata_keys),
+        "min_groups_per_key": min_groups_per_key,
+        "missing_required_keys": missing_required_keys,
+        "incomplete_metadata_keys": incomplete_metadata_keys,
+        "thin_group_keys": thin_group_keys,
+        "failed_metadata_keys": failed_metadata_keys,
+        "gates": gates,
+    }
 
 
 def _summary(folds: Sequence[Mapping[str, Any]]) -> dict[str, Any]:

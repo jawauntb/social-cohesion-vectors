@@ -20,6 +20,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         pairs_path=args.pairs,
         metadata_key=args.metadata_key,
         coverage_metadata_keys=args.coverage_metadata_key,
+        required_coverage_metadata_keys=args.required_coverage_metadata_key,
+        min_coverage_groups_per_key=args.min_coverage_groups_per_key,
     )
     save_activation_metadata_transfer_report(
         report,
@@ -33,6 +35,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"test_pairs={summary['test_pairs']} "
         f"mean_acc={summary['mean_test_accuracy']:.3f} "
         f"mean_margin={summary['mean_test_margin']:+.3f}"
+    )
+    readiness = report["readiness"]
+    print(
+        "metadata coverage readiness: "
+        f"status={readiness['status']} "
+        f"ready={readiness['ready']}"
     )
     print(f"wrote {args.markdown_output}")
     return 0
@@ -56,6 +64,21 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             "Additional pair metadata key to summarize for audit coverage. "
             "May be provided multiple times."
         ),
+    )
+    parser.add_argument(
+        "--required-coverage-metadata-key",
+        action="append",
+        default=None,
+        help=(
+            "Metadata key that must be complete for metadata coverage readiness. "
+            "Defaults to all summarized coverage keys. May be provided multiple times."
+        ),
+    )
+    parser.add_argument(
+        "--min-coverage-groups-per-key",
+        type=int,
+        default=1,
+        help="Minimum observed value groups required for each required coverage key.",
     )
     parser.add_argument(
         "--json-output",

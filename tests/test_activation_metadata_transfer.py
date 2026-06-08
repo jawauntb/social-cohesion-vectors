@@ -14,25 +14,7 @@ from social_cohesion_vectors.schemas import PairwiseExample
 
 def test_activation_metadata_transfer_holds_out_pair_groups(tmp_path) -> None:
     activation_path = tmp_path / "activations.npz"
-    np.savez(
-        activation_path,
-        activations=np.asarray(
-            [
-                [2.0, 0.0],
-                [0.0, 0.0],
-                [2.0, 0.1],
-                [0.0, 0.1],
-                [2.0, 0.2],
-                [0.0, 0.2],
-            ],
-            dtype=np.float64,
-        ),
-        pair_ids=np.asarray(["p1", "p1", "p2", "p2", "p3", "p3"], dtype=str),
-        labels=np.asarray(
-            ["positive", "negative", "positive", "negative", "positive", "negative"],
-            dtype=str,
-        ),
-    )
+    _write_activation_payload(activation_path)
     pairs = [
         _pair(
             "p1",
@@ -73,6 +55,12 @@ def test_activation_metadata_transfer_holds_out_pair_groups(tmp_path) -> None:
 
     assert report["summary"]["folds"] == 2
     assert report["summary"]["mean_test_accuracy"] == 1.0
+    assert report["summary"]["metadata_coverage_readiness"] == (
+        "metadata_coverage_ready"
+    )
+    assert report["summary"]["ready_for_metadata_coverage_claims"] is True
+    assert _readiness(report)["ready"] is True
+    assert _gate(report, "complete_pair_coverage")["passed"] is True
     assert _coverage_row(report, "source") == {
         "metadata_key": "source",
         "pairs_with_values": 3,
@@ -91,8 +79,85 @@ def test_activation_metadata_transfer_holds_out_pair_groups(tmp_path) -> None:
     ]
     assert _coverage_row(report, "cohort")["values"] == ["api", "seed"]
     assert "Activation Metadata Transfer" in markdown
+    assert "Metadata Coverage Readiness" in markdown
+    assert "metadata_coverage_ready" in markdown
     assert "Metadata Coverage" in markdown
     assert "`generated_fault_class_anthropic`" in markdown
+
+
+def test_activation_metadata_transfer_blocks_incomplete_metadata_coverage(
+    tmp_path,
+) -> None:
+    activation_path = tmp_path / "activations.npz"
+    _write_activation_payload(activation_path)
+    pairs = [
+        _pair(
+            "p1",
+            "a",
+            fault_classes="a,shared_fault",
+            source="generated_fault_class_offline",
+        ),
+        _pair(
+            "p2",
+            "b",
+            fault_classes="b,shared_fault",
+            source="generated_fault_class_anthropic",
+        ),
+        _pair(
+            "p3",
+            "b",
+            fault_classes="b",
+            source="generated_fault_class_anthropic",
+        ),
+    ]
+
+    report = run_activation_metadata_transfer(
+        activation_npz=activation_path,
+        pairs=pairs,
+        metadata_key="primary_fault_class",
+    )
+    markdown = render_activation_metadata_transfer_markdown(report)
+
+    readiness = _readiness(report)
+    assert readiness["status"] == "not_ready_for_metadata_coverage_claims"
+    assert readiness["ready"] is False
+    assert readiness["failed_metadata_keys"] == ["generated_style", "provider"]
+    assert _coverage_row(report, "provider")["missing_pairs"] == 3
+    assert _coverage_row(report, "generated_style")["missing_pairs"] == 3
+    assert _gate(report, "complete_pair_coverage")["passed"] is False
+    assert "not_ready_for_metadata_coverage_claims" in markdown
+    assert "generated_style, provider" in markdown
+
+
+def _write_activation_payload(activation_path) -> None:
+    np.savez(
+        activation_path,
+        activations=np.asarray(
+            [
+                [2.0, 0.0],
+                [0.0, 0.0],
+                [2.0, 0.1],
+                [0.0, 0.1],
+                [2.0, 0.2],
+                [0.0, 0.2],
+            ],
+            dtype=np.float64,
+        ),
+        pair_ids=np.asarray(["p1", "p1", "p2", "p2", "p3", "p3"], dtype=str),
+        labels=np.asarray(
+            ["positive", "negative", "positive", "negative", "positive", "negative"],
+            dtype=str,
+        ),
+    )
+
+
+def _readiness(report: Mapping[str, Any]) -> Mapping[str, Any]:
+    return cast(Mapping[str, Any], report["readiness"])
+
+
+def _gate(report: Mapping[str, Any], gate_id: str) -> Mapping[str, Any]:
+    gates = cast(list[Mapping[str, Any]], _readiness(report)["gates"])
+    return next(gate for gate in gates if gate["gate_id"] == gate_id)
 
 
 def _coverage_row(report: Mapping[str, Any], metadata_key: str) -> Mapping[str, Any]:
