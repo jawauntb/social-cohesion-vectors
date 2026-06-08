@@ -16,23 +16,33 @@ findings and decisions get summarized here or in dated notes under
 ## Current State
 
 The current bottleneck is no longer practical availability, source diversity,
-or activation extraction. The newest source-diverse generated benchmark reaches
-`bundle_ready` with activation metadata transfer accepted, but it still carries
-high lexical-baseline warnings. The active bottleneck is now reducing broader
+source-held-out lexical leakage, or activation extraction. The newest
+three-source generated benchmark reaches `bundle_ready` with activation
+metadata transfer accepted, clears the source-held-out lexical warning, and
+preserves all text gates. The active bottleneck is now reducing fault-class
 wording-level lexical separability while preserving the accepted text and
 activation gates.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-lexical-adversarial-source-family-run.md`: a third
+  wording-adversarial source family, `lexical_adversarial_repair_v1`, preserved
+  all strict local repair gates and produced a three-source bundle with
+  source diversity ready, zero near duplicates, availability accuracy
+  `138/138`, source `lexical_only` held-out accuracy reduced from `0.950` to
+  `0.467`, and Qwen2.5-0.5B layer `-2` activation metadata transfer accepted
+  at `1.000` mean test accuracy over 30 test pairs. The bundle remains
+  lexical-caveated because fault-class `lexical_only` held-out accuracy is
+  still `0.933`.
 - `docs/research/2026-06-08-source-diverse-activation-ready-run.md`: a second
   independent constrained wording family and raw-output source-family bundle
   closed source diversity and source-held-out transfer. The two-source bundle
   passed lexical cue leakage, component, slack, availability, source diversity,
   fault/source transfer, activation metadata coverage, and activation metadata
   transfer at `Qwen/Qwen2.5-0.5B-Instruct` layer `-2`. The full audit status is
-  `bundle_ready`, with two explicit warnings: `lexical_only` still reaches
-  `0.950` mean held-out fault-class accuracy and `0.950` mean held-out source
-  accuracy.
+  `bundle_ready`, with two explicit lexical warnings. This finding is now
+  superseded as the current baseline by the three-source lexical-adversarial
+  run.
 - `docs/research/2026-06-08-literature-foundation-audit.md`: the
   literature map leaves the active bottleneck unchanged, but sharpens why it
   matters. Availability is now treated as a procedural-justice and
@@ -65,22 +75,23 @@ Recent accepted findings:
 
 Activation extraction is no longer blocked for the generated-text benchmark.
 However, activation results remain lexical-caveated until stronger wording
-controls lower the lexical-only held-out baselines.
+controls lower the fault-class lexical-only held-out baseline.
 
 ## Active Objective
 
-Reduce lexical separability while preserving the new source-diverse
+Reduce fault-class lexical separability while preserving the new three-source
 activation-ready generated benchmark.
 
-The next operation should add a third wording-adversarial source family or
-strengthen the lexical-baseline verifier. The new family should avoid reusing
-the shared phrasing that now makes `lexical_only` strong across fault classes
-and sources, especially repeated timing, visibility, public-record, immediate
-revision, and balanced/proportional phrasing. It must still preserve:
+The next operation should add a fourth cross-fault wording-adversarial source
+family or strengthen the lexical-baseline verifier. The new family should vary
+the path vocabulary within each fault class more aggressively, because source
+wording diversity is now sufficient but fault-class `lexical_only` transfer
+remains high. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
 - source diversity without exact or near duplicates;
+- source `lexical_only` held-out accuracy below the warning threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - explicit generated-text and lexical-caveat claim boundaries.
 
@@ -92,8 +103,9 @@ generated benchmark with:
 - generated audit status still `bundle_ready`;
 - score, slack, component, availability, source diversity, and activation
   metadata transfer gates still passing;
-- source and fault-class `lexical_only` warnings cleared or materially reduced
-  below the warning threshold;
+- source and fault-class `lexical_only` warnings cleared or materially reduced,
+  with particular focus on reducing fault-class `lexical_only` below the
+  warning threshold;
 - no loss of all-eight-path coverage;
 - a dated research note interpreting accepted, rejected, and caveated
   activation runs.
@@ -114,14 +126,14 @@ Implementation should probably follow existing audit patterns:
 
 ## Next Sequence
 
-1. Add a third wording-adversarial source family or a stricter lexical-baseline
-   gate.
+1. Add a fourth cross-fault wording-adversarial source family or a stricter
+   lexical-baseline gate.
 2. Filter candidates through score, slack, lexical, availability, length, and
    formatting gates.
 3. Rebuild the source-family bundle and rerun all generated benchmark audits.
 4. Rerun activation metadata transfer on the accepted layer-sweep candidates.
 5. Compare lexical-only fault/source held-out baselines against the current
-   `0.950`/`0.950` warning baseline.
+   `0.933`/`0.467` baseline.
 6. Add a dated run note with accepted, rejected, and caveated activation
    results.
 

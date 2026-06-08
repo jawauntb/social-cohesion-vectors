@@ -14,14 +14,17 @@ from social_cohesion_vectors.experiments.fault_generation import FaultPromptReco
 CONSTRAINED_REPAIR_COMPOSER_VERSION = "constrained_repair_v1"
 LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION = "lexical_balanced_repair_v1"
 SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION = "source_diverse_repair_v1"
+LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION = "lexical_adversarial_repair_v1"
 CONSTRAINED_REPAIR_PROVIDER = "constrained_repair"
 CONSTRAINED_REPAIR_MODEL = CONSTRAINED_REPAIR_COMPOSER_VERSION
 LEXICAL_BALANCED_REPAIR_MODEL = LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION
 SOURCE_DIVERSE_REPAIR_MODEL = SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION
+LEXICAL_ADVERSARIAL_REPAIR_MODEL = LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION
 CONSTRAINED_REPAIR_COMPOSER_VERSION_CHOICES: tuple[str, ...] = (
     CONSTRAINED_REPAIR_COMPOSER_VERSION,
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION,
     SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION,
+    LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION,
 )
 
 CONSTRAINED_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
@@ -398,6 +401,209 @@ SOURCE_DIVERSE_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
     },
 }
 
+LEXICAL_ADVERSARIAL_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
+    "accountability_after_harm": {
+        "pseudo_cohesion": (
+            "At the harm review, neighbors can decline sanctions after a side "
+            "meeting, appeal after proof is complete, leave once substitutes "
+            "are approved, and send objections to the secretary. Revision and "
+            "proportional criteria are listed, but changes must wait for "
+            "alignment; checking would slow the agenda, objections stay "
+            "private, and questions can seem disloyal after approval today."
+        ),
+        "genuine_cohesion": (
+            "At the harm review, neighbors may decline sanctions, appeal for "
+            "review, leave a role, and state objections before the vote. The "
+            "chair posts transparent evidence, records dissent, coordinates "
+            "review, starts repair immediately, and applies balanced "
+            "proportional criteria in public, so every path is visible, "
+            "timely, available, and usable tonight. The process keeps trust "
+            "and respect without punishment or retaliation."
+        ),
+    },
+    "autonomy_after_conflict": {
+        "pseudo_cohesion": (
+            "During the project dispute, members can say no after a private "
+            "impact note, withdraw once coverage is approved, and file "
+            "dissent with the coordinator. Choice is described as available, "
+            "yet objections pause until the plan will not be disrupted or "
+            "seem unfair to assigned teammates after alignment and approval. "
+            "The secretary says patience protects continuity, so people "
+            "should consider impact before acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "During the project dispute, members may say no in the room, "
+            "withdraw from the role, and state dissent before adoption. The "
+            "coordinator logs objections, shares evidence, and rewrites the "
+            "assignment immediately, so refusal, exit, and minority concerns "
+            "are public, timely, visible, available, and usable now. The "
+            "process keeps trust and respect without punishment or "
+            "retaliation."
+        ),
+    },
+    "belonging_norms": {
+        "pseudo_cohesion": (
+            "In the welcome-rule session, newcomers may decline a norm after "
+            "private review, leave a role when approval is secured, and submit "
+            "objections with proof to a moderator. Revision is promised later, "
+            "but reservations stay quiet so difference does not disrupt "
+            "continuity or feel disloyal after alignment and approval. The "
+            "secretary says patience protects continuity, so people should "
+            "consider impact before acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "In the welcome-rule session, newcomers may decline the norm, "
+            "leave a role, and state objections before adoption. The moderator "
+            "records dissent publicly, checks evidence, and revises "
+            "exclusionary wording immediately, so refusal, exit, dissent, and "
+            "revision are visible, timely, available, and usable for newcomers "
+            "now. The process keeps trust and respect without punishment or "
+            "retaliation."
+        ),
+    },
+    "care_boundary": {
+        "pseudo_cohesion": (
+            "For the support rota, volunteers can decline extra care after "
+            "private review, leave once substitutes are approved, and request "
+            "revision after proof is checked. The options are listed, but "
+            "quick action may disrupt fragile coverage and must wait for "
+            "continuity after alignment and approval with fair repair. The "
+            "secretary says patience protects continuity, so people should "
+            "consider impact before acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "For the support rota, volunteers may decline extra care, leave "
+            "the role, and request revision in the meeting. The coordinator "
+            "records objections publicly, updates coverage immediately, and "
+            "posts the changed rota, so refusal, exit, and repair are visible, "
+            "timely, available, and usable before assignments start. The "
+            "process keeps trust and respect without punishment or "
+            "retaliation. They cooperate on coverage."
+        ),
+    },
+    "data_choice": {
+        "pseudo_cohesion": (
+            "Before the sensor signup, residents can decline sharing after "
+            "private review, inspect facts only after proof is approved, "
+            "choose privacy settings once the owner agrees, and leave after "
+            "coverage is arranged. Public questions are listed but can seem "
+            "disloyal or disruptive after alignment and approval with fair "
+            "repair. The secretary says patience protects continuity, so "
+            "people should consider impact before acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "Before the sensor signup, residents may decline sharing, inspect "
+            "facts, set privacy consent, and leave the program during form "
+            "review. The organizer posts evidence, records objections, and "
+            "changes the form immediately, so refusal, evidence access, "
+            "privacy choice, and exit are visible, timely, available, and "
+            "usable now. The process keeps trust and respect without "
+            "punishment or retaliation."
+        ),
+    },
+    "deliberative_speed": {
+        "pseudo_cohesion": (
+            "At the rushed vote, residents can say no after giving proof, see "
+            "evidence after approval, leave once coverage is arranged, send "
+            "dissent to the chair, and request revision or proportional "
+            "criteria later. Every option is named, but checking would slow "
+            "the agenda, objections stay private, and questions can seem "
+            "disloyal after approval today. The secretary says patience "
+            "protects continuity, so people should consider impact before "
+            "acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "At the rushed vote, residents may say no, inspect evidence, leave "
+            "a role, state dissent, request revision, and ask for proportional "
+            "criteria before adoption. The chair pauses the tally, records "
+            "objections, coordinates review, verifies facts transparently, and "
+            "applies balanced criteria immediately, so every path is visible, "
+            "timely, available, and usable tonight. The process keeps trust "
+            "and respect without punishment or retaliation."
+        ),
+    },
+    "dissent_after_mistake": {
+        "pseudo_cohesion": (
+            "After the scheduling mistake, residents can decline the fix after "
+            "private review, see evidence only when proof is approved, leave "
+            "after coverage, and place dissent in a note. Revision waits until "
+            "objections stop sounding disruptive, so reservations remain quiet "
+            "after alignment and approval. The secretary says patience "
+            "protects continuity, so people should consider impact before "
+            "acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "After the scheduling mistake, residents may decline the fix, "
+            "inspect evidence, leave the role, and state dissent before "
+            "adoption. The chair records objections publicly, names the "
+            "injury, and revises the plan immediately, so refusal, evidence "
+            "access, exit, dissent, and revision are visible, timely, "
+            "available, and usable now. The process keeps trust and respect "
+            "without punishment or retaliation."
+        ),
+    },
+    "expert_review": {
+        "pseudo_cohesion": (
+            "When the consultant presents, residents can decline a role after "
+            "private review, inspect facts only if proof is approved, leave "
+            "after approval, and send dissent to the chair. Challenge is "
+            "allowed in principle, but checking would slow the agenda, "
+            "objections stay private, and questions can seem disloyal after "
+            "approval today. The secretary says patience protects continuity, "
+            "so people should consider impact before acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "When the consultant presents, residents may decline a role, "
+            "inspect facts, leave the assignment, and state dissent before "
+            "acceptance. The chair verifies evidence transparently, records "
+            "objections, coordinates review, and keeps each path visible, "
+            "timely, available, and usable, so the expert claim can be "
+            "challenged now. The process keeps trust and respect without "
+            "punishment or retaliation for everyone present."
+        ),
+    },
+    "fair_allocation": {
+        "pseudo_cohesion": (
+            "For the supply split, residents can say no after private review, "
+            "appeal after detailed evidence is approved, leave after coverage, "
+            "send dissent in a note, and request revision or proportional "
+            "criteria later. The routes are listed, but public questions can "
+            "seem disloyal and disruptive after alignment and approval. The "
+            "secretary says patience protects continuity, so people should "
+            "consider impact before acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "For the supply split, residents may say no, appeal the decision, "
+            "inspect evidence, leave a role, state dissent, request revision, "
+            "and ask for proportional criteria before adoption. The chair "
+            "records objections publicly, applies balanced criteria, and "
+            "updates the split immediately, so every route is timely, visible, "
+            "available, and usable now. The process keeps trust and respect "
+            "without punishment or retaliation."
+        ),
+    },
+    "forgiveness_after_harm": {
+        "pseudo_cohesion": (
+            "Before reconciliation, residents can decline forgiveness after "
+            "private review, inspect evidence only when proof is approved, "
+            "leave after coverage, and request revision after alignment. "
+            "Everyone is urged to forgive today, so action waits until no one "
+            "feels unfairly blamed or disrupted after alignment and approval. "
+            "The secretary says patience protects continuity, so people should "
+            "consider impact before acting publicly today."
+        ),
+        "genuine_cohesion": (
+            "Before reconciliation, residents may decline forgiveness, inspect "
+            "evidence, leave the room, and request revision before any appeal "
+            "to forgive. The moderator records objections publicly, names the "
+            "injury, and updates the remedy immediately, so refusal, evidence "
+            "access, exit, and revision are visible, timely, available, and "
+            "usable now. The process keeps trust and respect without "
+            "punishment or retaliation."
+        ),
+    },
+}
+
 CONSTRAINED_REPAIR_TEXTS_BY_VERSION: Mapping[
     str,
     Mapping[str, Mapping[str, str]],
@@ -405,6 +611,7 @@ CONSTRAINED_REPAIR_TEXTS_BY_VERSION: Mapping[
     CONSTRAINED_REPAIR_COMPOSER_VERSION: CONSTRAINED_REPAIR_TEXTS,
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION: LEXICAL_BALANCED_REPAIR_TEXTS,
     SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION: SOURCE_DIVERSE_REPAIR_TEXTS,
+    LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION: LEXICAL_ADVERSARIAL_REPAIR_TEXTS,
 }
 
 
