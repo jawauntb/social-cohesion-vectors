@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_HARD_NEGATIVE_CONTRACT_VERSION,
+    API_TARGET_WORD_COUNT_MAX,
+    API_TARGET_WORD_COUNT_MIN,
     DEFAULT_VARIANTS,
     activation_prompts_from_generated_fault_examples,
     build_fault_prompt_records,
@@ -55,7 +58,39 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
     )
     assert all(record.metadata["future_options_tested"] for record in prompt_records)
     assert all(
-        "Future options tested:" in record.user_prompt for record in prompt_records
+        record.metadata["prompt_contract_version"]
+        == API_HARD_NEGATIVE_CONTRACT_VERSION
+        for record in prompt_records
+    )
+    assert all(
+        record.metadata["target_word_count_min"] == API_TARGET_WORD_COUNT_MIN
+        for record in prompt_records
+    )
+    assert all(
+        record.metadata["target_word_count_max"] == API_TARGET_WORD_COUNT_MAX
+        for record in prompt_records
+    )
+    assert all(
+        "Future paths tested:" in record.user_prompt for record in prompt_records
+    )
+    assert all(
+        "someone can say no without being punished or shamed" in record.user_prompt
+        or "someone can ask for another look at a decision" in record.user_prompt
+        for record in prompt_records
+    )
+    assert all(
+        "Return one paragraph of 55-75 words." in record.user_prompt
+        for record in prompt_records
+    )
+    assert all(
+        "Match emotional warmth and surface cooperativeness across both hidden labels."
+        in record.user_prompt
+        for record in prompt_records
+    )
+    assert all(
+        "Write the speaker's message to the group, not a story about the scene."
+        in record.user_prompt
+        for record in prompt_records
     )
     assert pairing_audit_for_generated_fault_examples(examples)["ready"] is True
 
