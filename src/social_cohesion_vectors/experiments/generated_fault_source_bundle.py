@@ -276,6 +276,7 @@ def render_generated_fault_source_bundle_pipeline_markdown(
         f"- Activation prompts: {int(summary.get('activation_prompts', 0))}",
         f"- Audit bundle status: `{summary.get('audit_bundle_status', 'unknown')}`",
         f"- Audit skipped steps: {int(summary.get('audit_skipped_steps', 0))}",
+        f"- Audit warnings: {int(summary.get('audit_warning_count', 0))}",
         "",
         "## Artifacts",
         "",
@@ -304,6 +305,16 @@ def render_generated_fault_source_bundle_pipeline_markdown(
             f"`{step.get('status', '')}` | "
             f"`{step.get('readiness_status', '')}` |"
         )
+    warnings = _sequence(audit.get("warnings"))
+    if warnings:
+        lines.extend(["", "## Audit Warnings", ""])
+        for raw_warning in warnings:
+            warning = _mapping(raw_warning)
+            lines.append(
+                "- "
+                f"`{warning.get('warning_id', '')}`: "
+                f"{warning.get('message', '')}"
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -346,6 +357,7 @@ def _pipeline_manifest(
             "audit_ready_steps": int(audit_summary.get("ready_steps", 0)),
             "audit_not_ready_steps": int(audit_summary.get("not_ready_steps", 0)),
             "audit_skipped_steps": int(audit_summary.get("skipped_steps", 0)),
+            "audit_warning_count": int(audit_summary.get("warning_count", 0)),
         },
         "artifacts": {
             "scored_runs": str(scored_runs_output),

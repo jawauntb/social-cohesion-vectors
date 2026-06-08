@@ -37,11 +37,30 @@ def test_openai_output_text_extracts_response_content() -> None:
     )
 
 
+def test_chat_completion_output_text_extracts_message_content() -> None:
+    script = _load_script()
+
+    assert (
+        script._chat_completion_output_text(
+            {
+                "choices": [
+                    {"message": {"content": "first"}},
+                    {"message": {"content": [{"text": "second"}]}},
+                ]
+            }
+        )
+        == "first\nsecond"
+    )
+
+
 def test_http_error_detail_sanitizes_api_keys() -> None:
     script = _load_script()
 
     assert script._sanitize_error_detail("bad sk-proj-secret.tail key") == (
         "bad sk-*** key"
+    )
+    assert script._sanitize_error_detail("bad gsk_secret.tail key") == (
+        "bad gsk_*** key"
     )
 
 
@@ -143,7 +162,7 @@ def test_api_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
     exit_code = script.main(
         [
             "--provider",
-            "openai",
+            "groq",
             "--model",
             "replay-model",
             "--input-raw-outputs",
@@ -178,11 +197,11 @@ def test_api_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
     report = json.loads(output_paths["json_report"].read_text(encoding="utf-8"))
 
     assert len(normalized_outputs) == len(records)
-    assert {row["provider"] for row in normalized_outputs} == {"openai"}
+    assert {row["provider"] for row in normalized_outputs} == {"groq"}
     assert {row["model"] for row in normalized_outputs} == {"replay-model"}
     assert len(pairs) == 30
     assert len(prompts) == 60
-    assert pairs[0]["metadata"]["source"] == "generated_fault_class_openai"
+    assert pairs[0]["metadata"]["source"] == "generated_fault_class_groq"
     assert report["api_generation"]["mode"] == "replay"
     assert report["summary"]["api_generation_ready"] is True
     assert report["summary"]["pairs"] == 30
@@ -252,6 +271,37 @@ def test_generate_output_records_skips_after_fatal_auth_error() -> None:
     assert outputs[1]["error_type"] == "skipped_after_fatal_request_error"
     assert "invalid_api_key" in str(outputs[1]["error_detail"])
     assert "sk-***" in str(outputs[1]["error_detail"])
+
+
+def test_generate_output_records_skips_after_fatal_forbidden_error() -> None:
+    script = _load_script()
+    script_any = cast(Any, script)
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:3]
+    original = script_any._generate_text
+    calls: list[str] = []
+
+    def fail(*args: object, **kwargs: object) -> str:
+        calls.append("called")
+        raise RuntimeError("Groq request failed: 403 error code: 1010")
+
+    try:
+        script_any._generate_text = fail
+        outputs = script._generate_output_records(
+            records,
+            provider="groq",
+            model="test-model",
+        )
+    finally:
+        script_any._generate_text = original
+
+    assert calls == ["called"]
+    assert [output["status"] for output in outputs] == [
+        "request_error",
+        "request_skipped_after_fatal_error",
+        "request_skipped_after_fatal_error",
+    ]
+    assert outputs[1]["error_type"] == "skipped_after_fatal_request_error"
+    assert "error code: 1010" in str(outputs[1]["error_detail"])
 
 
 def test_generate_output_records_continues_after_nonfatal_request_error() -> None:

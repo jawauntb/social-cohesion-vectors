@@ -36,6 +36,50 @@ Summary:
 
 The skipped step was expected: no real activation `.npz` was supplied.
 
+## Full-Variant Local Rerun
+
+A full three-variant rerun on this branch wrote uncommitted artifacts to:
+
+`/tmp/social_cohesion_source_bundle_v3`
+
+Summary:
+
+- Status: `bundle_incomplete`
+- Ready: false
+- Styles: `cue_balanced`, `lexical_hardened`
+- Sources: 2
+- Scored runs: 360
+- Pairwise examples: 180
+- Activation prompts: 360
+- Prompt records: 180
+- Audit ready steps: 5
+- Audit not-ready steps: 0
+- Audit skipped steps: 1
+- Audit warnings: 2
+
+The non-activation gates are clean at dataset level:
+
+| Gate | Result |
+| --- | --- |
+| Simple cue leakage | 0/180 cue-solved pairs; mean cue margin 0.000 |
+| Component margin | 180/180 score-prefers-genuine pairs; mean score margin +0.202 |
+| Slack preservation | 8/8 future options covered; 180/180 slack-prefers-genuine pairs |
+| Source diversity | 2 sources, 20 shared groups, 0 duplicates, 0 near duplicates |
+| Strategy prior | 0.500 held-out fault/source accuracy |
+
+However, the broader `lexical_only` transfer baseline remains high:
+
+| Split | `lexical_only` mean held-out accuracy |
+| --- | ---: |
+| Fault class | 0.883 |
+| Source | 0.883 |
+
+This is the important caveat: the simple cue-count gate is clean, but the
+deterministic text still contains broader wording regularities. The source
+bundle is ready as a controlled activation substrate, but activation claims
+should remain lexical-caveated until API-authored or otherwise
+wording-diverse examples lower this baseline.
+
 ## Synthetic Activation Smoke
 
 A synthetic activation payload was created from the same pair IDs to test only

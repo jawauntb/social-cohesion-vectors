@@ -33,8 +33,10 @@ from social_cohesion_vectors.experiments.generated_audit_bundle import (
 )
 
 ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
+GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
 
 
@@ -156,7 +158,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--provider",
-        choices=["anthropic", "openai"],
+        choices=["anthropic", "groq", "openai"],
         default="anthropic",
     )
     parser.add_argument(
@@ -292,6 +294,11 @@ def _generate_text(
         if not api_key:
             raise SystemExit("ANTHROPIC_API_KEY is required for --provider anthropic")
         return _anthropic_message(record, api_key=api_key, model=model)
+    if provider == "groq":
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise SystemExit("GROQ_API_KEY is required for --provider groq")
+        return _groq_chat_completion(record, api_key=api_key, model=model)
     if provider == "openai":
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
@@ -303,6 +310,8 @@ def _generate_text(
 def _default_model(provider: str) -> str:
     if provider == "anthropic":
         return os.environ.get("ANTHROPIC_MODEL", DEFAULT_ANTHROPIC_MODEL)
+    if provider == "groq":
+        return os.environ.get("GROQ_MODEL", DEFAULT_GROQ_MODEL)
     if provider == "openai":
         return os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
     raise ValueError(f"Unsupported provider: {provider}")
@@ -346,6 +355,40 @@ def _anthropic_message(
     return "\n".join(part for part in text_parts if part).strip()
 
 
+def _groq_chat_completion(
+    record: FaultPromptRecord,
+    *,
+    api_key: str,
+    model: str,
+) -> str:
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": record.system_prompt},
+            {"role": "user", "content": record.user_prompt},
+        ],
+        "max_completion_tokens": 512,
+    }
+    request = Request(
+        GROQ_CHAT_COMPLETIONS_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "authorization": f"Bearer {api_key}",
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=120) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        detail = _sanitize_error_detail(exc.read().decode("utf-8", errors="replace"))
+        raise RuntimeError(f"Groq request failed: {exc.code} {detail}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"Groq request failed: {exc.reason}") from exc
+    return _chat_completion_output_text(body)
+
+
 def _openai_response(
     record: FaultPromptRecord,
     *,
@@ -378,6 +421,28 @@ def _openai_response(
     return _openai_output_text(body)
 
 
+def _chat_completion_output_text(body: Mapping[str, object]) -> str:
+    text_parts: list[str] = []
+    choices = body.get("choices")
+    if isinstance(choices, list):
+        for choice in choices:
+            if not isinstance(choice, Mapping):
+                continue
+            message = choice.get("message")
+            if not isinstance(message, Mapping):
+                continue
+            content = message.get("content")
+            if isinstance(content, str):
+                text_parts.append(content)
+            elif isinstance(content, list):
+                text_parts.extend(
+                    str(block.get("text", ""))
+                    for block in content
+                    if isinstance(block, Mapping)
+                )
+    return "\n".join(part for part in text_parts if part).strip()
+
+
 def _openai_output_text(body: Mapping[str, object]) -> str:
     text_parts: list[str] = []
     output = body.get("output")
@@ -398,7 +463,8 @@ def _openai_output_text(body: Mapping[str, object]) -> str:
 
 
 def _sanitize_error_detail(detail: str) -> str:
-    return re.sub(r"sk-[A-Za-z0-9_*.-]+", "sk-***", detail)
+    sanitized = re.sub(r"sk-[A-Za-z0-9_*.-]+", "sk-***", detail)
+    return re.sub(r"gsk_[A-Za-z0-9_*.-]+", "gsk_***", sanitized)
 
 
 def _is_fatal_request_error(output: Mapping[str, object]) -> bool:
@@ -407,8 +473,11 @@ def _is_fatal_request_error(output: Mapping[str, object]) -> bool:
     detail = str(output.get("error_detail", "")).casefold()
     fatal_markers = (
         " 401",
+        " 403",
         '"status": 401',
+        '"status": 403',
         "authentication_error",
+        "error code: 1010",
         "invalid_api_key",
         "invalid api key",
         "invalid x-api-key",

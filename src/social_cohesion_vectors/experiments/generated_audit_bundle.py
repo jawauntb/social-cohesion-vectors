@@ -291,6 +291,7 @@ def run_generated_benchmark_audit_bundle(
         activation_npz=Path(activation_npz) if activation_npz is not None else None,
         output_dir=output_path,
         steps=steps,
+        warnings=_lexical_baseline_warnings(fault_report),
     )
     manifest_json = output_path / "generated_benchmark_audit_bundle.json"
     manifest_markdown = output_path / "generated_benchmark_audit_bundle.md"
@@ -337,6 +338,7 @@ def render_generated_benchmark_audit_bundle_markdown(
         f"- Ready steps: {int(summary.get('ready_steps', 0))}",
         f"- Not-ready steps: {int(summary.get('not_ready_steps', 0))}",
         f"- Skipped steps: {int(summary.get('skipped_steps', 0))}",
+        f"- Warnings: {int(summary.get('warning_count', 0))}",
         "",
         "## Steps",
         "",
@@ -353,6 +355,16 @@ def render_generated_benchmark_audit_bundle_markdown(
             f"{step.get('json_path') or ''} | "
             f"{step.get('markdown_path') or ''} |"
         )
+    warnings = _sequence(manifest.get("warnings"))
+    if warnings:
+        lines.extend(["", "## Warnings", ""])
+        for raw_warning in warnings:
+            warning = _mapping(raw_warning)
+            lines.append(
+                "- "
+                f"`{warning.get('warning_id', '')}`: "
+                f"{warning.get('message', '')}"
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -363,6 +375,7 @@ def _manifest(
     activation_npz: Path | None,
     output_dir: Path,
     steps: list[dict[str, Any]],
+    warnings: list[dict[str, Any]],
 ) -> dict[str, Any]:
     skipped = [step for step in steps if step["status"] == "skipped"]
     not_ready = [step for step in steps if step["status"] == "not_ready"]
@@ -393,9 +406,61 @@ def _manifest(
             "ready_steps": len(ready),
             "not_ready_steps": len(not_ready),
             "skipped_steps": len(skipped),
+            "warning_count": len(warnings),
         },
         "steps": steps,
+        "warnings": warnings,
     }
+
+
+def _lexical_baseline_warnings(
+    fault_report: Mapping[str, Any],
+    *,
+    warning_threshold: float = 0.8,
+) -> list[dict[str, Any]]:
+    warnings: list[dict[str, Any]] = []
+    sections: tuple[tuple[str, object], ...] = (
+        ("fault_class", fault_report.get("summary")),
+        (
+            "source",
+            _mapping(fault_report.get("source_transfer")).get("summary"),
+        ),
+    )
+    for split, rows in sections:
+        lexical_row = _baseline_summary_row(rows, baseline="lexical_only")
+        if not lexical_row:
+            continue
+        accuracy = float(lexical_row.get("mean_test_accuracy", 0.0))
+        if accuracy < warning_threshold:
+            continue
+        warnings.append(
+            {
+                "warning_id": f"{split}_lexical_baseline_high",
+                "split": split,
+                "baseline": "lexical_only",
+                "mean_test_accuracy": round(accuracy, 6),
+                "threshold": warning_threshold,
+                "message": (
+                    f"`lexical_only` reaches {accuracy:.3f} mean held-out "
+                    f"{split} accuracy despite the simple cue-leakage gate. "
+                    "Treat activation results as lexical-caveated until "
+                    "wording-diverse generated examples lower this baseline."
+                ),
+            }
+        )
+    return warnings
+
+
+def _baseline_summary_row(
+    rows: object,
+    *,
+    baseline: str,
+) -> Mapping[str, Any]:
+    for row in _sequence(rows):
+        row_map = _mapping(row)
+        if str(row_map.get("baseline", "")) == baseline:
+            return row_map
+    return {}
 
 
 def _step(
