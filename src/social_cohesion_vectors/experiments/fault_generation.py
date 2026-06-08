@@ -352,9 +352,7 @@ def build_fault_prompt_records(
                     continue
                 records.append(
                     FaultPromptRecord(
-                        prompt_id=(
-                            f"{contrast_id}__{variant.name}__{label}"
-                        ),
+                        prompt_id=(f"{contrast_id}__{variant.name}__{label}"),
                         base_contrast_id=contrast_id,
                         variant=variant.name,
                         label=label,
@@ -390,8 +388,7 @@ def scored_runs_from_generated_fault_examples(
     """Score generated fault examples and coerce them into ScoredRun records."""
 
     return [
-        _scored_run_from_evaluated(evaluate_example(example))
-        for example in examples
+        _scored_run_from_evaluated(evaluate_example(example)) for example in examples
     ]
 
 
@@ -429,9 +426,7 @@ def pairwise_examples_from_generated_fault_examples(
                 positive.scorer_score - negative.scorer_score,
                 6,
             ),
-            "slack_options_tested": ",".join(
-                future_options_for_contrast(contrast_id)
-            ),
+            "slack_options_tested": ",".join(future_options_for_contrast(contrast_id)),
             "positive_slack_preservation": round(
                 positive.score_components.get("slack_preservation", 0.0),
                 6,
@@ -596,7 +591,9 @@ def shape_generated_fault_report(
             "pair_construction_ready": pairing_audit["ready"],
             "complete_pair_contrasts": pairing_audit["complete_contrasts"],
             "incomplete_pair_contrasts": pairing_audit["incomplete_contrasts"],
-            "base_contrasts": len({base_contrast_id(pair.scenario_id) for pair in pairs}),
+            "base_contrasts": len(
+                {base_contrast_id(pair.scenario_id) for pair in pairs}
+            ),
             "primary_fault_classes": len(
                 {pair.metadata.get("primary_fault_class") for pair in pairs}
             ),
@@ -683,6 +680,22 @@ def render_generated_fault_markdown(report: Mapping[str, Any]) -> str:
         for status, count in _mapping(api_generation.get("status_counts")).items():
             lines.append(f"| {status} | {int(count)} |")
 
+    audit_bundle = _mapping(report.get("audit_bundle"))
+    if audit_bundle:
+        audit_summary = _mapping(audit_bundle.get("summary"))
+        lines.extend(
+            [
+                "",
+                "## Audit Bundle",
+                "",
+                f"- Status: `{audit_summary.get('status', 'unknown')}`",
+                f"- Ready: {bool(audit_summary.get('ready', False))}",
+                f"- Ready steps: {int(audit_summary.get('ready_steps', 0))}",
+                f"- Not-ready steps: {int(audit_summary.get('not_ready_steps', 0))}",
+                f"- Skipped steps: {int(audit_summary.get('skipped_steps', 0))}",
+            ]
+        )
+
     pairing_audit = _mapping(report.get("pairing_audit"))
     incomplete = _sequence_of_mappings(pairing_audit.get("incomplete"))
     if incomplete:
@@ -746,7 +759,9 @@ def export_generated_fault_dataset(
 def _examples_by_contrast(
     examples: Sequence[PseudoCohesionExample],
 ) -> dict[str, dict[ExampleLabel, PseudoCohesionExample]]:
-    by_contrast: dict[str, dict[ExampleLabel, PseudoCohesionExample]] = defaultdict(dict)
+    by_contrast: dict[str, dict[ExampleLabel, PseudoCohesionExample]] = defaultdict(
+        dict
+    )
     for example in examples:
         by_contrast[base_contrast_id(example.contrast_id)][example.label] = example
     return by_contrast
