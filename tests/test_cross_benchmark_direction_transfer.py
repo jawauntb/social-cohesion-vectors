@@ -58,6 +58,11 @@ def test_cross_benchmark_direction_transfer_reports_failed_pairs(
     assert report["summary"]["target_self_failed_pairs"] == 0
     assert report["summary"]["source_to_target_failed_pairs"] == 1
     assert report["summary"]["target_to_source_failed_pairs"] == 1
+    assert report["summary"]["ready_for_joint_direction_claims"] is True
+    assert report["summary"]["joint_direction_source_accuracy"] == 1.0
+    assert report["summary"]["joint_direction_target_accuracy"] == 1.0
+    assert report["summary"]["joint_direction_source_failed_pairs"] == 0
+    assert report["summary"]["joint_direction_target_failed_pairs"] == 0
     assert report["source_to_target"]["failed_pairs"] == [
         {
             "pair_id": "t1",
@@ -76,9 +81,12 @@ def test_cross_benchmark_direction_transfer_reports_failed_pairs(
             "passed": False,
         }
     ]
+    assert report["joint_on_source"]["pairwise_accuracy"] == 1.0
+    assert report["joint_on_target"]["pairwise_accuracy"] == 1.0
     assert "## Failed Pairs" in markdown
     assert "`generated` | `target` | `t1` | -1.000" in markdown
     assert "`control` | `source` | `s1` | -1.000" in markdown
+    assert "`joint` | `source`" in markdown
 
 
 def test_cross_benchmark_direction_transfer_cli_writes_report(
@@ -197,7 +205,7 @@ def _write_cross_failure_fixture(tmp_path: Path) -> dict[str, Path]:
         source_activation,
         activations=np.asarray(
             [
-                [1.0, 0.0],
+                [2.0, 0.0],
                 [0.0, 1.0],
             ],
             dtype=np.float64,
@@ -209,7 +217,7 @@ def _write_cross_failure_fixture(tmp_path: Path) -> dict[str, Path]:
         target_activation,
         activations=np.asarray(
             [
-                [0.0, 1.0],
+                [0.0, 2.0],
                 [1.0, 0.0],
             ],
             dtype=np.float64,

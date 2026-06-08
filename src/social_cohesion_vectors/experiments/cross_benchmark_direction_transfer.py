@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 
+from social_cohesion_vectors.activations.contrastive import train_direction_from_arrays
 from social_cohesion_vectors.experiments.transfer import load_activation_payload
 
 _EPSILON = 1e-12
@@ -42,10 +43,19 @@ def run_cross_benchmark_direction_transfer_from_files(
     target_self = _pairwise_projection_eval(target_payload, target_direction)
     source_to_target = _pairwise_projection_eval(target_payload, source_direction)
     target_to_source = _pairwise_projection_eval(source_payload, target_direction)
+    joint_direction = _joint_direction(source_payload, target_payload)
+    joint_on_source = _pairwise_projection_eval(source_payload, joint_direction)
+    joint_on_target = _pairwise_projection_eval(target_payload, joint_direction)
     cosine = _cosine(source_direction, target_direction)
     readiness = _readiness(
         source_to_target=source_to_target,
         target_to_source=target_to_source,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+    )
+    joint_readiness = _joint_readiness(
+        joint_on_source=joint_on_source,
+        joint_on_target=joint_on_target,
         min_pairwise_accuracy=min_pairwise_accuracy,
         min_margin=min_margin,
     )
@@ -85,18 +95,33 @@ def run_cross_benchmark_direction_transfer_from_files(
             "target_to_source_mean_margin": target_to_source["mean_margin"],
             "target_to_source_min_margin": target_to_source["min_margin"],
             "target_to_source_failed_pairs": target_to_source["failed_pair_count"],
+            "joint_direction_source_accuracy": joint_on_source["pairwise_accuracy"],
+            "joint_direction_source_mean_margin": joint_on_source["mean_margin"],
+            "joint_direction_source_min_margin": joint_on_source["min_margin"],
+            "joint_direction_source_failed_pairs": joint_on_source["failed_pair_count"],
+            "joint_direction_target_accuracy": joint_on_target["pairwise_accuracy"],
+            "joint_direction_target_mean_margin": joint_on_target["mean_margin"],
+            "joint_direction_target_min_margin": joint_on_target["min_margin"],
+            "joint_direction_target_failed_pairs": joint_on_target["failed_pair_count"],
+            "joint_direction_readiness": joint_readiness["status"],
+            "ready_for_joint_direction_claims": joint_readiness["ready"],
             "transfer_readiness": readiness["status"],
             "ready_for_direction_transfer_claims": readiness["ready"],
         },
         "readiness": readiness,
+        "joint_readiness": joint_readiness,
         "source_self": source_self,
         "target_self": target_self,
         "source_to_target": source_to_target,
         "target_to_source": target_to_source,
+        "joint_on_source": joint_on_source,
+        "joint_on_target": joint_on_target,
         "interpretation_guardrail": (
             "Cross-benchmark direction transfer supports a shared text-benchmark "
-            "axis in this activation space. It does not establish a human, "
-            "neural, clinical, or deployment claim."
+            "axis in this activation space. A pooled joint direction can show "
+            "shared separability without proving source-only or target-only "
+            "directions transfer. Neither result establishes a human, neural, "
+            "clinical, or deployment claim."
         ),
     }
 
@@ -159,6 +184,16 @@ def render_cross_benchmark_direction_transfer_markdown(
         f"{float(summary.get('target_to_source_min_margin', 0.0)):+.3f}",
         f"- Transfer readiness: "
         f"`{summary.get('transfer_readiness', 'not_ready')}`",
+        f"- Joint direction source accuracy: "
+        f"{float(summary.get('joint_direction_source_accuracy', 0.0)):.3f}",
+        f"- Joint direction source min margin: "
+        f"{float(summary.get('joint_direction_source_min_margin', 0.0)):+.3f}",
+        f"- Joint direction target accuracy: "
+        f"{float(summary.get('joint_direction_target_accuracy', 0.0)):.3f}",
+        f"- Joint direction target min margin: "
+        f"{float(summary.get('joint_direction_target_min_margin', 0.0)):+.3f}",
+        f"- Joint direction readiness: "
+        f"`{summary.get('joint_direction_readiness', 'not_ready')}`",
         "",
         "## Direction Evaluations",
         "",
@@ -168,6 +203,8 @@ def render_cross_benchmark_direction_transfer_markdown(
         _evaluation_row(inputs.get("target_name", "target"), "target", report.get("target_self")),
         _evaluation_row(inputs.get("source_name", "source"), "target", report.get("source_to_target")),
         _evaluation_row(inputs.get("target_name", "target"), "source", report.get("target_to_source")),
+        _evaluation_row("joint", "source", report.get("joint_on_source")),
+        _evaluation_row("joint", "target", report.get("joint_on_target")),
         "",
         "## Failed Pairs",
         "",
@@ -183,6 +220,21 @@ def render_cross_benchmark_direction_transfer_markdown(
         "",
     ]
     return "\n".join(lines)
+
+
+def _joint_direction(source_payload: Any, target_payload: Any) -> np.ndarray:
+    activations = np.concatenate(
+        [source_payload.activations, target_payload.activations],
+        axis=0,
+    )
+    labels = np.concatenate(
+        [
+            np.asarray(source_payload.labels, dtype=str),
+            np.asarray(target_payload.labels, dtype=str),
+        ],
+        axis=0,
+    )
+    return train_direction_from_arrays(activations, labels=labels).direction
 
 
 def _load_direction(path: str | Path) -> np.ndarray:
@@ -298,6 +350,43 @@ def _readiness(
     }
 
 
+def _joint_readiness(
+    *,
+    joint_on_source: Mapping[str, Any],
+    joint_on_target: Mapping[str, Any],
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> dict[str, Any]:
+    gates = [
+        _gate(
+            "joint_source_pairwise_accuracy",
+            float(joint_on_source.get("pairwise_accuracy", 0.0)),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            "joint_target_pairwise_accuracy",
+            float(joint_on_target.get("pairwise_accuracy", 0.0)),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            "joint_source_min_margin",
+            float(joint_on_source.get("min_margin", 0.0)),
+            min_margin,
+        ),
+        _gate(
+            "joint_target_min_margin",
+            float(joint_on_target.get("min_margin", 0.0)),
+            min_margin,
+        ),
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "joint_direction_ready" if ready else "not_ready",
+        "ready": ready,
+        "gates": gates,
+    }
+
+
 def _gate(gate_id: str, value: float, threshold: float) -> dict[str, Any]:
     return {
         "gate_id": gate_id,
@@ -346,6 +435,8 @@ def _failure_rows(
         (target_name, "target", report.get("target_self")),
         (source_name, "target", report.get("source_to_target")),
         (target_name, "source", report.get("target_to_source")),
+        ("joint", "source", report.get("joint_on_source")),
+        ("joint", "target", report.get("joint_on_target")),
     )
     for direction_name, evaluation_name, raw_eval in specs:
         failed_pairs = _sequence(_mapping(raw_eval).get("failed_pairs"))

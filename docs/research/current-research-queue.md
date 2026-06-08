@@ -24,14 +24,23 @@ reaches `bundle_ready` with zero audit warnings and activation metadata
 transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The expanded
 hand-authored procedural-justice control reaches `control_bundle_ready` on
 Qwen2.5-0.5B, Qwen2.5-7B, and SmolLM2-1.7B. The generated benchmark has a
-perfect SmolLM2 pair-LOO layer, and Qwen7B-to-SmolLM2 same-prompt alignment is
-accepted for both generated and control benchmarks. The active bottleneck is
-now the SmolLM2 generated/control shared-axis failure: the two SmolLM2
-directions self-separate, but do not transfer cleanly across generated and
-hand-authored benchmarks.
+perfect SmolLM2 pair-LOO layer, Qwen7B-to-SmolLM2 same-prompt alignment is
+accepted for both benchmarks, and a pooled SmolLM2 generated+control direction
+separates both benchmarks. The active bottleneck is now source-only domain
+generalization in SmolLM2: generated-only and control-only directions
+self-separate, but do not transfer cleanly across generated and hand-authored
+benchmarks.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-joint-benchmark-direction-audit.md`: the
+  cross-benchmark direction-transfer report now records per-pair margins,
+  failed-pair tables, and a pooled joint direction diagnostic. On SmolLM2 layer
+  `-2`, the source-only directions still fail cross-benchmark transfer, but the
+  pooled generated+control direction separates both benchmarks: generated
+  accuracy `1.000` with minimum margin `+21.173`, and control accuracy `1.000`
+  with minimum margin `+50.555`. The residual is therefore source-only domain
+  generalization, not absence of a shared separable direction.
 - `docs/research/2026-06-08-out-of-family-replication-run.md`: the expanded
   hand-authored control replicates outside Qwen on
   `HuggingFaceTB/SmolLM2-1.7B-Instruct` layer `-2`, reaching
@@ -140,15 +149,17 @@ Activation extraction, lexical controls, same-family model replication, the
 first non-generated control, its first source expansion, the first Qwen7B
 generated/control direction-transfer check, and basic out-of-family separability
 are no longer blocked. However, activation results remain text-benchmark claims
-until generated/control direction transfer also survives the out-of-family
-setting, and human-facing gates are separately validated.
+until source-only or held-out-domain generated/control direction transfer also
+survives the out-of-family setting, and human-facing gates are separately
+validated.
 
 ## Active Objective
 
-Close the out-of-family generated/control shared-axis failure.
+Close the out-of-family source-only domain-generalization failure.
 
-The next operation should attack the SmolLM2 layer `-2` residuals while
-preserving the accepted Qwen and SmolLM2 baselines. It must still preserve:
+The next operation should attack the SmolLM2 layer `-2` source-only residuals
+while preserving the accepted Qwen and SmolLM2 baselines. It must still
+preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -157,7 +168,7 @@ preserving the accepted Qwen and SmolLM2 baselines. It must still preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with SmolLM2 generated/control transfer as the active failing gate;
+  exist, with SmolLM2 held-out-domain transfer as the active failing gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -171,9 +182,9 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- an out-of-family generated/control direction-transfer pass;
+- an out-of-family held-out-domain generated/control direction-transfer pass;
 - generated/control direction-transfer readiness for any model setting where
-  comparable accepted layers exist;
+  comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
   replication runs.
 
@@ -203,15 +214,19 @@ Implementation should probably follow existing audit patterns:
 3. Keep the accepted Qwen7B generated/control direction-transfer report on the
    expanded control as the current cross-benchmark alignment baseline.
 4. Preserve SmolLM2 layer `-2` as the active out-of-family diagnostic model.
-5. Use the per-pair failure tables in generated/control direction-transfer
-   reports so the failing SmolLM2 cases are first-class audit artifacts.
-6. Target the current residuals: generated `privacy_bypass::data_choice`,
+5. Use the per-pair failure tables and pooled joint-direction diagnostic in
+   generated/control direction-transfer reports so the failing SmolLM2 cases
+   are first-class audit artifacts.
+6. Add a held-out-domain or bridge-training audit: train on generated plus a
+   subset of control sources, and control plus a subset of generated sources,
+   then hold out the remaining source/domain.
+7. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
    fail under the generated direction.
-7. Rerun SmolLM2 generated/control direction transfer before adding more model
+8. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-8. Keep human validation parked until generated, non-generated, cross-setting,
+9. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
