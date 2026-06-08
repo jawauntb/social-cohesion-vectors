@@ -217,6 +217,10 @@ def _candidate_row(record: FaultPromptRecord, *, text: str) -> dict[str, object]
         "availability_targeted_contract": record.metadata[
             "availability_targeted_contract"
         ],
+        "availability_repair_contract": record.metadata[
+            "availability_repair_contract"
+        ],
+        "repair_focus_options": record.metadata["repair_focus_options"],
         "provider": "modal_hf",
         "model": "test/model",
         "status": "ok",

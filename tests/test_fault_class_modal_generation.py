@@ -7,6 +7,7 @@ from types import ModuleType
 
 from social_cohesion_vectors.datasets import read_jsonl, write_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     DEFAULT_VARIANTS,
     FaultPromptRecord,
@@ -100,6 +101,59 @@ def test_modal_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
     assert report["summary"]["authorship_model"] == "test/open-model"
     assert report["summary"]["api_generation_ready"] is True
     assert "audit_bundle" in report
+
+
+def test_modal_generation_cli_filters_repair_targets_in_replay(
+    tmp_path: Path,
+) -> None:
+    script = _load_script()
+    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])
+    raw_outputs = tmp_path / "raw" / "modal_raw_outputs.jsonl"
+    output_paths = _modal_output_paths(tmp_path)
+    write_jsonl(_minimal_replay_rows(records), raw_outputs)
+
+    exit_code = script.main(
+        [
+            "--model-id",
+            "test/open-model",
+            "--input-raw-outputs",
+            str(raw_outputs),
+            "--variants",
+            DEFAULT_VARIANTS[0].name,
+            "--prompt-contract-version",
+            API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
+            "--repair-target",
+            "fair_allocation=refusal,appeal,repair",
+            "--raw-outputs",
+            str(output_paths["raw_outputs"]),
+            "--examples-output",
+            str(output_paths["examples"]),
+            "--scored-runs-output",
+            str(output_paths["scored_runs"]),
+            "--pairs-output",
+            str(output_paths["pairs"]),
+            "--prompts-output",
+            str(output_paths["prompts"]),
+            "--json-report-output",
+            str(output_paths["json_report"]),
+            "--markdown-report-output",
+            str(output_paths["markdown_report"]),
+        ]
+    )
+
+    assert exit_code == 0
+    normalized_outputs = read_jsonl(output_paths["raw_outputs"])
+    assert len(normalized_outputs) == 2
+    assert {row["base_contrast_id"] for row in normalized_outputs} == {
+        "fair_allocation"
+    }
+    assert {row["prompt_contract_version"] for row in normalized_outputs} == {
+        API_AVAILABILITY_REPAIR_CONTRACT_VERSION
+    }
+    assert {row["repair_focus_options"] for row in normalized_outputs} == {
+        "refusal,appeal,repair"
+    }
+    assert all(row["availability_repair_contract"] for row in normalized_outputs)
 
 
 def _load_script() -> ModuleType:

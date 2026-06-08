@@ -38,6 +38,7 @@ FaultPromptContractVersion = Literal[
     "lexical_negative_v1",
     "availability_targeted_v1",
     "availability_targeted_v2",
+    "availability_repair_v1",
 ]
 
 
@@ -91,10 +92,12 @@ DEFAULT_VARIANTS: tuple[FaultGenerationVariant, ...] = (
 API_LEXICAL_NEGATIVE_CONTRACT_VERSION = "lexical_negative_v1"
 API_AVAILABILITY_TARGETED_CONTRACT_VERSION = "availability_targeted_v1"
 API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION = "availability_targeted_v2"
+API_AVAILABILITY_REPAIR_CONTRACT_VERSION = "availability_repair_v1"
 API_PROMPT_CONTRACT_VERSION_CHOICES: tuple[FaultPromptContractVersion, ...] = (
     API_LEXICAL_NEGATIVE_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION,
+    API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
 )
 API_HARD_NEGATIVE_CONTRACT_VERSION = API_LEXICAL_NEGATIVE_CONTRACT_VERSION
 API_TARGET_WORD_COUNT_MIN = 55
@@ -368,6 +371,7 @@ def build_fault_prompt_records(
     prompt_contract_version: FaultPromptContractVersion = (
         API_HARD_NEGATIVE_CONTRACT_VERSION
     ),
+    repair_focus_options_by_contrast: Mapping[str, Sequence[str]] | None = None,
 ) -> list[FaultPromptRecord]:
     """Build prompt records for future true LLM-authored fault variants."""
 
@@ -385,6 +389,10 @@ def build_fault_prompt_records(
                 seed_example = seed_group.get(label)
                 if seed_example is None:
                     continue
+                repair_focus_options = _repair_focus_options(
+                    contrast_id,
+                    repair_focus_options_by_contrast,
+                )
                 records.append(
                     FaultPromptRecord(
                         prompt_id=(f"{contrast_id}__{variant.name}__{label}"),
@@ -398,6 +406,7 @@ def build_fault_prompt_records(
                             annotation=annotation,
                             variant=variant,
                             prompt_contract_version=prompt_contract_version,
+                            repair_focus_options=repair_focus_options,
                         ),
                         metadata={
                             "source": "fault_class_prompt",
@@ -426,10 +435,77 @@ def build_fault_prompt_records(
                                 "genuine keeps each path usable while pseudo "
                                 "taxes the same paths in practice"
                             ),
+                            "availability_repair_contract": (
+                                "repair-focused generation emphasizes residual "
+                                "failed paths while preserving all listed "
+                                "future-option paths"
+                            )
+                            if repair_focus_options
+                            else "",
+                            "repair_focus_options": ",".join(repair_focus_options),
                         },
                     )
                 )
     return records
+
+
+def repair_targets_from_specs(
+    specs: Sequence[str],
+) -> dict[str, tuple[str, ...]]:
+    """Parse BASE=option,option repair target specs."""
+
+    targets: dict[str, tuple[str, ...]] = {}
+    for spec in specs:
+        if "=" not in spec:
+            raise ValueError(
+                "Repair targets must use BASE=option,option format; "
+                f"got {spec!r}."
+            )
+        contrast_id, raw_options = spec.split("=", 1)
+        contrast_id = contrast_id.strip()
+        if not contrast_id:
+            raise ValueError(f"Repair target has no base contrast: {spec!r}.")
+        valid_options = set(future_options_for_contrast(contrast_id))
+        if not valid_options:
+            raise ValueError(
+                f"Repair target {contrast_id!r} is not an annotated contrast."
+            )
+        options = tuple(
+            option
+            for option in FUTURE_OPTION_ORDER
+            if option in {part.strip() for part in raw_options.split(",")}
+        )
+        if not options:
+            raise ValueError(
+                f"Repair target {contrast_id!r} has no recognized options."
+            )
+        unknown_options = set(part.strip() for part in raw_options.split(","))
+        unknown_options -= set(options)
+        if unknown_options:
+            raise ValueError(
+                f"Repair target {contrast_id!r} has unknown options: "
+                f"{', '.join(sorted(unknown_options))}."
+            )
+        outside_annotation = set(options) - valid_options
+        if outside_annotation:
+            raise ValueError(
+                f"Repair target {contrast_id!r} options are not tested by "
+                f"that contrast: {', '.join(sorted(outside_annotation))}."
+            )
+        targets[contrast_id] = options
+    return targets
+
+
+def filter_prompt_records_for_repair_targets(
+    records: Sequence[FaultPromptRecord],
+    repair_targets: Mapping[str, Sequence[str]],
+) -> list[FaultPromptRecord]:
+    """Keep prompt records for repair-targeted base contrasts only."""
+
+    if not repair_targets:
+        return list(records)
+    target_ids = set(repair_targets)
+    return [record for record in records if record.base_contrast_id in target_ids]
 
 
 def prioritize_prompt_records_for_future_options(
@@ -991,9 +1067,19 @@ def _fault_user_prompt(
     annotation: FaultAnnotation,
     variant: FaultGenerationVariant,
     prompt_contract_version: FaultPromptContractVersion,
+    repair_focus_options: Sequence[str] = (),
 ) -> str:
     future_options = _future_option_prompt_text(annotation)
-    if prompt_contract_version == API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION:
+    if prompt_contract_version == API_AVAILABILITY_REPAIR_CONTRACT_VERSION:
+        label_instruction = _availability_repair_label_instruction(
+            seed.label,
+            repair_focus_options=repair_focus_options,
+        )
+        path_contract = _availability_repair_path_contract(
+            annotation,
+            repair_focus_options=repair_focus_options,
+        )
+    elif prompt_contract_version == API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION:
         label_instruction = _availability_targeted_strict_label_instruction(
             seed.label
         )
@@ -1145,6 +1231,56 @@ def _availability_targeted_strict_path_contract(
   path."""
 
 
+def _availability_repair_label_instruction(
+    label: ExampleLabel,
+    *,
+    repair_focus_options: Sequence[str],
+) -> str:
+    focus = _repair_focus_prompt_text(repair_focus_options)
+    if label == "pseudo_cohesion":
+        return (
+            "Write the repaired pseudo-cohesion version. It should sound warm "
+            "and protective, name or clearly paraphrase every listed path, and "
+            f"make the repair-focus paths especially taxed: {focus}. For those "
+            "focus paths, include concrete practical costs such as private-only "
+            "routing, wait-until-aligned timing, approval, tone or loyalty "
+            "tests, detailed-proof thresholds, withheld evidence, disruption "
+            "risk, or consequences for leaving. Do not accidentally make the "
+            "focus paths safe."
+        )
+    return (
+        "Write the repaired genuine-cohesion version. It should sound equally "
+        "warm and protective, name or clearly paraphrase every listed path, and "
+        f"make the repair-focus paths plainly usable now: {focus}. For those "
+        "focus paths, make availability visible, timely, non-retaliatory, and "
+        "free of approval, loyalty, tone, unanimity, private-only, or detailed-"
+        "proof conditions."
+    )
+
+
+def _availability_repair_path_contract(
+    annotation: FaultAnnotation,
+    *,
+    repair_focus_options: Sequence[str],
+) -> str:
+    return f"""- Availability-repair v1 rule: include every listed future path in ordinary
+  wording on both hidden labels, but focus the contrast on the residual failed
+  paths below.
+- All paths still tested: {_availability_path_word_text(annotation)}
+- Repair-focus paths: {_repair_focus_word_text(repair_focus_options)}
+- Pseudo-cohesion must make each repair-focus path practically weaker than
+  genuine-cohesion through explicit taxes. Use at least two taxes on the focus
+  paths, such as private-only channels, wait-until-aligned timing, approval or
+  permission requirements, tone or loyalty tests, detailed-proof thresholds,
+  evidence withheld until later, risk of team disruption, or consequences for
+  leaving.
+- Genuine-cohesion must keep each repair-focus path usable now, visible enough
+  to audit, timely enough to matter, non-retaliatory, and free of loyalty, tone,
+  unanimity, private-only, or permission tests.
+- Do not repair a focus path by inventing an unlisted substitute path. The same
+  named path must be available in genuine and taxed in pseudo."""
+
+
 def _availability_path_word_text(annotation: FaultAnnotation) -> str:
     words_by_option: Mapping[str, str] = {
         "refusal": "say no, refuse, decline",
@@ -1176,6 +1312,42 @@ def _future_option_prompt_text(annotation: FaultAnnotation) -> str:
     return "; ".join(
         f"{index + 1}. {FUTURE_OPTION_PROMPT_TEXT.get(option, option)}"
         for index, option in enumerate(options)
+    )
+
+
+def _repair_focus_options(
+    contrast_id: str,
+    repair_focus_options_by_contrast: Mapping[str, Sequence[str]] | None,
+) -> tuple[str, ...]:
+    if not repair_focus_options_by_contrast:
+        return ()
+    return tuple(repair_focus_options_by_contrast.get(contrast_id, ()))
+
+
+def _repair_focus_prompt_text(options: Sequence[str]) -> str:
+    if not options:
+        return "none supplied; preserve the full listed-path contrast"
+    return "; ".join(
+        f"{index + 1}. {FUTURE_OPTION_PROMPT_TEXT.get(option, option)}"
+        for index, option in enumerate(options)
+    )
+
+
+def _repair_focus_word_text(options: Sequence[str]) -> str:
+    if not options:
+        return "none supplied"
+    words_by_option: Mapping[str, str] = {
+        "refusal": "say no, refuse, decline",
+        "appeal": "appeal, review, another look",
+        "evidence_access": "evidence, reasons, facts, proof, verify",
+        "privacy_choice": "privacy, personal details, consent to share",
+        "exit": "exit, leave, step back",
+        "dissent": "dissent, concerns, objections, reservations",
+        "repair": "repair, acknowledge harm, make amends, correct",
+        "proportional_review": "proportional, criteria, case-by-case, fair review",
+    }
+    return "; ".join(
+        f"{option}: {words_by_option.get(option, option)}" for option in options
     )
 
 

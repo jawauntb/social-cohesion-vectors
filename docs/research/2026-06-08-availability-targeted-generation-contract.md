@@ -39,12 +39,21 @@ Added a selectable prompt contract:
   available "without fear", "without penalty", "without retaliation", "without
   repercussion", "freely", or "openly" unless the sentence immediately adds a
   cost or condition.
+- `availability_repair_v1`: targeted repair contract for residual failures.
+  Repair specs name exact failed base contrasts and future-option paths, while
+  the prompt still preserves all tested paths for the contrast.
 
 Added limited-shard ordering:
 
 - `prioritize_prompt_records_for_future_options(...)`;
 - `--availability-priority` for API generation, Modal generation, and the
   authorship tournament.
+
+Added repair-target filtering:
+
+- `repair_targets_from_specs(...)`;
+- `filter_prompt_records_for_repair_targets(...)`;
+- `--repair-target BASE=option,option` for Modal generation.
 
 This is a search/regime-revision step, not an activation claim. It changes the
 authoring schema and prompt-ledger ordering so the next generation run can test
@@ -117,14 +126,36 @@ Any tournament using that batch must use the same prompt-ledger flags:
 --prompt-contract-version availability_targeted_v2
 ```
 
+The command shape for a repair batch is:
+
+```bash
+.venv/bin/python scripts/run_fault_class_modal_generation.py \
+  --model-id Qwen/Qwen2.5-7B-Instruct \
+  --variants neighborhood_forum \
+  --availability-priority \
+  --prompt-contract-version availability_repair_v1 \
+  --repair-target autonomy_after_conflict=dissent \
+  --repair-target belonging_norms=refusal,dissent \
+  --repair-target fair_allocation=refusal,appeal,repair \
+  --raw-outputs /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/raw_outputs.jsonl \
+  --examples-output /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/examples.jsonl \
+  --scored-runs-output /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/scored_runs.jsonl \
+  --pairs-output /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/pairs.jsonl \
+  --prompts-output /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/activation_prompts.jsonl \
+  --json-report-output /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/dataset.json \
+  --markdown-report-output /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/dataset.md \
+  --audit-output-dir /tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_XXX/audit_bundle
+```
+
 ## Gate
 
-After the first v1/v2 live run, the next generated shard improves the research
-state only if it beats the current selected baseline:
+After the first repair run, the next generated shard improves the research
+state only if it beats the current repaired selected baseline:
 
-- availability pass rate above `5/10`;
+- availability pass rate above `7/10`;
 - core gate pass rate above `4/10`;
 - all-gate pass rate above `2/10`;
+- lexical gate pass rate above `7/10`;
 - selected score and slack gates remain at `10/10`;
 - all eight future-option paths remain covered.
 

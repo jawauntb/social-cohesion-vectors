@@ -16,7 +16,8 @@ findings and decisions get summarized here or in dated notes under
 ## Current State
 
 The current bottleneck is not GPU scale or activation extraction. It is
-targeted repair generation for the remaining practical-availability failures.
+joint repair of practical availability, lexical balance, and length for the last
+few hard generated-text contrasts.
 
 Recent accepted findings:
 
@@ -37,28 +38,34 @@ Recent accepted findings:
   `10/10`, improved availability to `5/10`, core gates to `4/10`, and all gates
   to `2/10`, but activation remains blocked by residual `refusal`, `appeal`,
   `dissent`, and `repair` failures.
+- `docs/research/2026-06-08-availability-repair-run.md`: targeted
+  `availability_repair_v1` generation improved the selected availability gate
+  from `5/10` to `7/10` while preserving score and slack at `10/10`, but core
+  stayed at `4/10` and all gates stayed at `2/10`. The remaining blockers are
+  `autonomy_after_conflict`, `belonging_norms`, and `fair_allocation`.
 
 Activation extraction remains blocked because lexical, slack, availability,
 source-diversity, and transfer gates do not pass together.
 
 ## Active Objective
 
-Add targeted repair generation for the five remaining failing base contrasts
-and rerun the tournament with those repair candidates added.
+Revise the repair loop so it jointly optimizes practical availability, lexical
+balance, and length on the remaining hard contrasts.
 
 The availability audit, availability-aware tournament, `availability_targeted_v1`,
-`availability_targeted_v2`, and live Modal first-20 sweep now exist. Broad
-generation is no longer the best next move. The next candidates should focus on
-the exact residual failures:
+`availability_targeted_v2`, `availability_repair_v1`, and live Modal repair
+sweep now exist. Broad generation is no longer the best next move. Simple
+repair sampling improved availability but did not improve core/all gates.
 
-- `accountability_after_harm`: `repair`;
 - `autonomy_after_conflict`: `dissent`;
 - `belonging_norms`: `refusal`, `dissent`;
 - `fair_allocation`: `refusal`, `appeal`, `repair`;
-- `forgiveness_after_harm`: `repair`.
 
-Selection should preserve the availability dimensions already exposed by the
-audit:
+The next operation should either add `availability_repair_v2` with stricter
+one-paragraph length and lexical-balance constraints, or revise the tournament
+selection tuple so availability margin is not dominated by length among
+availability-failing candidates. The repair loop should still preserve the
+availability dimensions exposed by the audit:
 
 - public enough to be accountable;
 - timely enough to matter;
@@ -72,10 +79,11 @@ audit:
 The active objective is complete when the repo can generate and select a
 repaired first-20 shard with:
 
-- availability pass rate above the current `5/10` selected baseline;
+- availability pass rate above the current `7/10` selected baseline;
 - core-gate pass rate above the current `4/10` selected baseline;
 - all-gate pass rate above the current `2/10` selected baseline;
 - selected score and slack gates remain at `10/10`;
+- lexical gate recovers above the current `7/10` repaired baseline;
 - no loss of all-eight-path coverage;
 - a dated research note interpreting accepted and rejected repair candidates.
 
@@ -95,15 +103,17 @@ Implementation should probably follow existing audit patterns:
 
 ## Next Sequence
 
-1. Add a repair-focused prompt slice or script option that can request only the
-   failed base contrasts and their failed future-option paths.
-2. Require repair prompts to name the failed paths, state the pseudo-side tax
-   dimensions, and keep the genuine side available on the same paths.
-3. Generate repair candidates through Modal HF.
-4. Rerun candidate selection with the repair candidates added to the five-chunk
-   pool.
-5. Compare selected winners and gate counts against the current `5/10`
-   availability, `4/10` core, and `2/10` all-gate baseline.
+1. Decide whether the next regime move is prompt-side (`availability_repair_v2`)
+   or selection-side (availability margin priority among failed-availability
+   rows).
+2. Apply the smallest change and cover it with tests.
+3. Regenerate only `autonomy_after_conflict`, `belonging_norms`, and
+   `fair_allocation`.
+4. Rerun candidate selection against the five broad chunks plus accepted repair
+   chunks.
+5. Compare selected winners and gate counts against the current `7/10`
+   availability, `4/10` core, `2/10` all-gate, and `7/10` lexical repaired
+   baseline.
 6. Add a dated run note with accepted/rejected repair candidates and residual
    failure modes.
 7. Only after lexical, slack, source-diversity, component, and availability

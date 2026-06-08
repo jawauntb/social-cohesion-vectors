@@ -32,9 +32,11 @@ from social_cohesion_vectors.experiments.fault_generation import (  # noqa: E402
     FaultPromptRecord,
     build_fault_prompt_records,
     fault_examples_from_prompt_outputs,
+    filter_prompt_records_for_repair_targets,
     pairwise_examples_from_generated_fault_examples,
     prioritize_prompt_records_for_future_options,
     render_generated_fault_markdown,
+    repair_targets_from_specs,
     scored_runs_from_generated_fault_examples,
     shape_generated_fault_report,
 )
@@ -55,6 +57,7 @@ PROVIDER = "modal_hf"
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
+    repair_targets = repair_targets_from_specs(args.repair_targets)
     variants = (
         tuple(
             variant
@@ -67,9 +70,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     records = build_fault_prompt_records(
         variants=variants,
         prompt_contract_version=args.prompt_contract_version,
+        repair_focus_options_by_contrast=repair_targets,
     )
     if args.availability_priority:
         records = prioritize_prompt_records_for_future_options(records)
+    if repair_targets:
+        records = filter_prompt_records_for_repair_targets(records, repair_targets)
     if args.offset:
         records = records[args.offset :]
     if args.limit is not None:
@@ -228,6 +234,16 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         choices=API_PROMPT_CONTRACT_VERSION_CHOICES,
         default=API_HARD_NEGATIVE_CONTRACT_VERSION,
         help="Prompt contract used to author generated benchmark examples.",
+    )
+    parser.add_argument(
+        "--repair-target",
+        dest="repair_targets",
+        action="append",
+        default=[],
+        help=(
+            "Generate only one repair-targeted prompt pair for BASE=option,option. "
+            "May be repeated, e.g. --repair-target fair_allocation=refusal,repair."
+        ),
     )
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--max-input-tokens", type=int, default=1024)
