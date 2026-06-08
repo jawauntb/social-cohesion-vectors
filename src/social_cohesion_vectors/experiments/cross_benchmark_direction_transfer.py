@@ -72,15 +72,19 @@ def run_cross_benchmark_direction_transfer_from_files(
             "source_self_accuracy": source_self["pairwise_accuracy"],
             "source_self_mean_margin": source_self["mean_margin"],
             "source_self_min_margin": source_self["min_margin"],
+            "source_self_failed_pairs": source_self["failed_pair_count"],
             "target_self_accuracy": target_self["pairwise_accuracy"],
             "target_self_mean_margin": target_self["mean_margin"],
             "target_self_min_margin": target_self["min_margin"],
+            "target_self_failed_pairs": target_self["failed_pair_count"],
             "source_to_target_accuracy": source_to_target["pairwise_accuracy"],
             "source_to_target_mean_margin": source_to_target["mean_margin"],
             "source_to_target_min_margin": source_to_target["min_margin"],
+            "source_to_target_failed_pairs": source_to_target["failed_pair_count"],
             "target_to_source_accuracy": target_to_source["pairwise_accuracy"],
             "target_to_source_mean_margin": target_to_source["mean_margin"],
             "target_to_source_min_margin": target_to_source["min_margin"],
+            "target_to_source_failed_pairs": target_to_source["failed_pair_count"],
             "transfer_readiness": readiness["status"],
             "ready_for_direction_transfer_claims": readiness["ready"],
         },
@@ -165,6 +169,14 @@ def render_cross_benchmark_direction_transfer_markdown(
         _evaluation_row(inputs.get("source_name", "source"), "target", report.get("source_to_target")),
         _evaluation_row(inputs.get("target_name", "target"), "source", report.get("target_to_source")),
         "",
+        "## Failed Pairs",
+        "",
+        *_failure_rows(
+            source_name=inputs.get("source_name", "source"),
+            target_name=inputs.get("target_name", "target"),
+            report=report,
+        ),
+        "",
         "## Interpretation Guardrail",
         "",
         str(report.get("interpretation_guardrail", "")),
@@ -209,19 +221,30 @@ def _pairwise_projection_eval(payload: Any, direction: np.ndarray) -> dict[str, 
     ):
         grouped[str(pair_id)][str(label)].append(float(projection))
 
+    pair_rows: list[dict[str, Any]] = []
     margins: list[float] = []
     skipped = 0
     ties = 0
-    for label_scores in grouped.values():
+    for pair_id, label_scores in grouped.items():
         if "positive" not in label_scores or "negative" not in label_scores:
             skipped += 1
             continue
-        margin = float(np.mean(label_scores["positive"])) - float(
-            np.mean(label_scores["negative"])
-        )
+        positive_projection = float(np.mean(label_scores["positive"]))
+        negative_projection = float(np.mean(label_scores["negative"]))
+        margin = positive_projection - negative_projection
         margins.append(margin)
         ties += 1 if margin == 0.0 else 0
+        pair_rows.append(
+            {
+                "pair_id": pair_id,
+                "positive_projection": round(positive_projection, 6),
+                "negative_projection": round(negative_projection, 6),
+                "margin": round(margin, 6),
+                "passed": margin > 0.0,
+            }
+        )
     positive_margins = sum(margin > 0.0 for margin in margins)
+    failed_pairs = [row for row in pair_rows if not bool(row["passed"])]
     return {
         "pairs": len(margins),
         "pairwise_accuracy": round(positive_margins / len(margins), 6)
@@ -232,6 +255,9 @@ def _pairwise_projection_eval(payload: Any, direction: np.ndarray) -> dict[str, 
         "max_margin": round(float(np.max(margins)), 6) if margins else 0.0,
         "skipped_pairs": skipped,
         "ties": ties,
+        "failed_pair_count": len(failed_pairs),
+        "failed_pairs": failed_pairs,
+        "pair_margins": pair_rows,
     }
 
 
@@ -305,5 +331,43 @@ def _evaluation_row(
     )
 
 
+def _failure_rows(
+    *,
+    source_name: object,
+    target_name: object,
+    report: Mapping[str, Any],
+) -> list[str]:
+    rows: list[str] = [
+        "| Direction | Evaluation set | Pair | Margin | Positive projection | Negative projection |",
+        "| --- | --- | --- | ---: | ---: | ---: |",
+    ]
+    specs = (
+        (source_name, "source", report.get("source_self")),
+        (target_name, "target", report.get("target_self")),
+        (source_name, "target", report.get("source_to_target")),
+        (target_name, "source", report.get("target_to_source")),
+    )
+    for direction_name, evaluation_name, raw_eval in specs:
+        failed_pairs = _sequence(_mapping(raw_eval).get("failed_pairs"))
+        for raw_pair in failed_pairs:
+            pair = _mapping(raw_pair)
+            rows.append(
+                "| "
+                f"`{direction_name}` | "
+                f"`{evaluation_name}` | "
+                f"`{pair.get('pair_id', '')}` | "
+                f"{float(pair.get('margin', 0.0)):+.3f} | "
+                f"{float(pair.get('positive_projection', 0.0)):+.3f} | "
+                f"{float(pair.get('negative_projection', 0.0)):+.3f} |"
+            )
+    if len(rows) == 2:
+        return ["No failed pairs."]
+    return rows
+
+
 def _mapping(value: object) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
+
+
+def _sequence(value: object) -> list[object]:
+    return list(value) if isinstance(value, list | tuple) else []

@@ -38,6 +38,49 @@ def test_cross_benchmark_direction_transfer_scores_both_datasets(
     assert "Cross-Benchmark Direction Transfer" in markdown
 
 
+def test_cross_benchmark_direction_transfer_reports_failed_pairs(
+    tmp_path: Path,
+) -> None:
+    paths = _write_cross_failure_fixture(tmp_path)
+
+    report = run_cross_benchmark_direction_transfer_from_files(
+        source_vector_npz=paths["source_vector"],
+        source_activation_npz=paths["source_activation"],
+        target_vector_npz=paths["target_vector"],
+        target_activation_npz=paths["target_activation"],
+        source_name="generated",
+        target_name="control",
+    )
+    markdown = render_cross_benchmark_direction_transfer_markdown(report)
+
+    assert report["summary"]["ready_for_direction_transfer_claims"] is False
+    assert report["summary"]["source_self_failed_pairs"] == 0
+    assert report["summary"]["target_self_failed_pairs"] == 0
+    assert report["summary"]["source_to_target_failed_pairs"] == 1
+    assert report["summary"]["target_to_source_failed_pairs"] == 1
+    assert report["source_to_target"]["failed_pairs"] == [
+        {
+            "pair_id": "t1",
+            "positive_projection": 0.0,
+            "negative_projection": 1.0,
+            "margin": -1.0,
+            "passed": False,
+        }
+    ]
+    assert report["target_to_source"]["failed_pairs"] == [
+        {
+            "pair_id": "s1",
+            "positive_projection": 0.0,
+            "negative_projection": 1.0,
+            "margin": -1.0,
+            "passed": False,
+        }
+    ]
+    assert "## Failed Pairs" in markdown
+    assert "`generated` | `target` | `t1` | -1.000" in markdown
+    assert "`control` | `source` | `s1` | -1.000" in markdown
+
+
 def test_cross_benchmark_direction_transfer_cli_writes_report(
     tmp_path: Path,
     capsys,
@@ -134,6 +177,45 @@ def _write_fixture(tmp_path: Path) -> dict[str, Path]:
             ["positive", "negative", "positive", "negative"],
             dtype=str,
         ),
+    )
+    return {
+        "source_vector": source_vector,
+        "source_activation": source_activation,
+        "target_vector": target_vector,
+        "target_activation": target_activation,
+    }
+
+
+def _write_cross_failure_fixture(tmp_path: Path) -> dict[str, Path]:
+    source_vector = tmp_path / "source_vector.npz"
+    target_vector = tmp_path / "target_vector.npz"
+    source_activation = tmp_path / "source_activation.npz"
+    target_activation = tmp_path / "target_activation.npz"
+    np.savez(source_vector, direction=np.asarray([1.0, 0.0], dtype=np.float64))
+    np.savez(target_vector, direction=np.asarray([0.0, 1.0], dtype=np.float64))
+    np.savez(
+        source_activation,
+        activations=np.asarray(
+            [
+                [1.0, 0.0],
+                [0.0, 1.0],
+            ],
+            dtype=np.float64,
+        ),
+        pair_ids=np.asarray(["s1", "s1"], dtype=str),
+        labels=np.asarray(["positive", "negative"], dtype=str),
+    )
+    np.savez(
+        target_activation,
+        activations=np.asarray(
+            [
+                [0.0, 1.0],
+                [1.0, 0.0],
+            ],
+            dtype=np.float64,
+        ),
+        pair_ids=np.asarray(["t1", "t1"], dtype=str),
+        labels=np.asarray(["positive", "negative"], dtype=str),
     )
     return {
         "source_vector": source_vector,
