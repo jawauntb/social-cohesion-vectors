@@ -131,7 +131,7 @@ The accepted tournament still fails the same tested paths:
 ## Next Operation
 
 Plain prompt-side tightening is no longer enough evidence of a promising
-regime move. The next loop should use verifier-aware repair, for example:
+regime move. The next loop should use verifier-aware repair:
 
 - generate multiple candidates per hard contrast and reject rows that fail
   local length, score/slack, or availability audits before tournament input;
@@ -142,6 +142,46 @@ regime move. The next loop should use verifier-aware repair, for example:
 
 Selection-order changes can still be tested, but they should not accept slack
 regression or zero availability margins as progress.
+
+## Verifier-Aware Filter Step
+
+Added a local repair-candidate filter that evaluates candidate pairs with the
+same scorer, slack, practical availability, length, and formatting gates used by
+the tournament, then writes only verifier-passing raw prompt rows forward. The
+default required gates are:
+
+- score prefers genuine;
+- slack prefers genuine;
+- availability prefers genuine;
+- both texts are within the target word-count range;
+- formatting is clean.
+
+Filter test on `repair_v2_000`:
+
+```text
+/tmp/social_cohesion_modal_hf_qwen7_availability_repair_20260608/repair_v2_000_filter_default/
+```
+
+Result:
+
+| Metric | Result |
+| --- | ---: |
+| expected pairs | 3 |
+| evaluated candidate pairs | 3 |
+| accepted pairs | 0 |
+| accepted raw outputs | 0 |
+| rejected candidate pairs | 3 |
+
+Rejected pairs:
+
+- `autonomy_after_conflict`: failed score, availability, and length gates;
+- `belonging_norms`: failed score, slack, availability, and length gates;
+- `fair_allocation`: failed availability and length gates.
+
+This filter would have prevented `repair_v2_000` from entering the comparison
+tournament at all. The next sampling loop should produce multiple repair-v2
+candidates and keep only rows that pass this local filter before rerunning the
+first-20 tournament.
 
 ## Claim Boundary
 
