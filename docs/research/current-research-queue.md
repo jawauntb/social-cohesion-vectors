@@ -15,32 +15,36 @@ findings and decisions get summarized here or in dated notes under
 
 ## Current State
 
-The current bottleneck is not GPU scale or activation extraction. It is benchmark
-validity for generated pseudo-cohesion hard negatives.
+The current bottleneck is not GPU scale or activation extraction. It is
+candidate generation under the new practical-availability verifier.
 
-The latest accepted finding is in
-`docs/research/2026-06-08-lexical-negative-regime-audit.md`:
+Recent accepted findings:
 
-- The `lexical_negative_v1` generation regime reduced simple lexical cue
-  margin, but it weakened behavioral and slack separation.
-- The four-candidate tournament selected 10/10 pairs but selected no `v4`
-  lexical-negative pairs.
-- Activation extraction remains blocked because lexical and slack gates do not
-  pass together.
+- `docs/research/2026-06-08-lexical-negative-regime-audit.md`: the
+  `lexical_negative_v1` generation regime reduced simple lexical cue margin,
+  but weakened behavioral and slack separation.
+- `docs/research/2026-06-08-availability-audit-first-run.md`: the new
+  availability audit shows that both standalone `v4` and the selected
+  tournament still fail practical future-path availability. After availability
+  was added to candidate selection, the first-20 candidate pool still produced
+  only 1/10 selected pairs passing availability and 0/10 core gates.
 
-Interpretation: balancing vocabulary alone is too blunt. The next regime should
-verify practical availability of future paths directly.
+Activation extraction remains blocked because lexical, slack, availability,
+source-diversity, and transfer gates do not pass together.
 
 ## Active Objective
 
-Build a paired counterfactual availability verifier for generated
-pseudo/genuine pairs.
+Add an availability-targeted generation regime and rerun the availability-aware
+first-20 four-candidate tournament.
 
-The verifier should judge whether a future path is actually usable, not merely
-mentioned. For each matched pair, it should check paths such as appeal, dissent,
-exit, evidence access, privacy choice, refusal, repair, and proportional review.
+The availability audit and availability-aware tournament now exist. The next
+move is to improve the candidate pool itself: generated candidates must cover
+missing paths such as `evidence_access` and `privacy_choice`, mention each
+declared path in both labels, preserve each path on the genuine side, and tax at
+least one matched path on the pseudo side.
 
-Availability dimensions:
+Selection should preserve the availability dimensions already exposed by the
+audit:
 
 - public enough to be accountable;
 - timely enough to matter;
@@ -51,41 +55,38 @@ Availability dimensions:
 
 ## Definition Of Done
 
-The active objective is complete when the repo can produce an availability audit
-for pairwise generated examples with:
+The active objective is complete when the repo can generate and select a
+first-20 shard with:
 
-- per-pair path-level availability records;
-- positive-minus-negative availability margins;
-- group summaries by primary fault class and future-option path;
-- a readiness gate that blocks activation when any tested path has nonpositive
-  availability margin;
-- tests covering pseudo paths that are mentioned but practically taxed;
+- availability pass rate above the current `1/10` selected baseline;
+- core-gate pass rate above the current `0/10` selected baseline;
+- explicit coverage for `evidence_access` and `privacy_choice`;
+- no regression in score/slack/lexical readiness relative to the current
+  selected tournament;
 - a dated research note interpreting the first run.
 
 ## Likely Files
 
 Implementation should probably follow existing audit patterns:
 
-- `src/social_cohesion_vectors/experiments/slack_preservation_audit.py`
-- `src/social_cohesion_vectors/experiments/generated_audit_bundle.py`
-- `scripts/run_slack_preservation_audit.py`
-- `tests/test_slack_preservation_audit.py`
-- `tests/test_generated_audit_bundle.py`
-
-Create new files only if the availability audit becomes meaningfully different
-from the current slack-preservation audit. A likely split is:
-
+- `src/social_cohesion_vectors/experiments/fault_authorship_tournament.py`
+- `tests/test_fault_authorship_tournament.py`
+- `scripts/run_fault_authorship_tournament.py`
 - `src/social_cohesion_vectors/experiments/availability_audit.py`
-- `scripts/run_availability_audit.py`
-- `tests/test_availability_audit.py`
+- `src/social_cohesion_vectors/experiments/fault_generation.py`
+- `scripts/run_fault_class_modal_generation.py`
+- `tests/test_fault_generation.py`
+- `tests/test_fault_class_api_generation.py`
+- `src/social_cohesion_vectors/experiments/generated_audit_bundle.py`
 
 ## Next Sequence
 
-1. Implement the availability audit as a typed verifier.
-2. Run it on the existing `/tmp` v1/v2/v3/v4 first-20 tournament artifacts.
-3. If it catches the `v4` failure mode, add it to the generated audit bundle.
+1. Add an availability-targeted prompt contract or prompt-slice variant.
+2. Ensure the first-20 slice includes `evidence_access` and `privacy_choice`.
+3. Generate a new candidate batch through Modal HF.
 4. Rerun candidate selection with availability as a core gate.
-5. Only after lexical, slack, source-diversity, component, and availability
+5. Compare selected winners and gate counts against the current tournament.
+6. Only after lexical, slack, source-diversity, component, and availability
    gates pass together, send a generated shard into activation extraction.
 
 ## Decision Gates
@@ -137,4 +138,3 @@ After each serious run or design change:
 4. Put rejected alternatives in the dated note, not only in chat.
 5. Keep claim boundaries explicit: generated-text and activation results do not
    imply human behavioral or neural effects.
-

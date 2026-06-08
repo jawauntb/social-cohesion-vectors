@@ -45,10 +45,11 @@ def test_generated_benchmark_audit_bundle_marks_missing_activation_as_skipped(
 
     assert manifest["summary"]["status"] == "bundle_incomplete"
     assert manifest["summary"]["ready"] is False
-    assert manifest["summary"]["ready_steps"] == 6
+    assert manifest["summary"]["ready_steps"] == 7
     assert manifest["summary"]["skipped_steps"] == 1
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "availability_audit")["ready"] is True
     assert _step(manifest, "lexical_baseline_diagnostic")["ready"] is True
     assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "fault_heldout_transfer")["ready"] is True
@@ -65,7 +66,7 @@ def test_generated_benchmark_audit_bundle_marks_missing_activation_as_skipped(
     )
 
 
-def test_generated_benchmark_audit_bundle_accepts_two_lexically_safe_sources(
+def test_generated_benchmark_audit_bundle_marks_generated_availability_gap(
     tmp_path: Path,
 ) -> None:
     scored_path, pairs_path = _write_lexically_safe_two_source_fixture(tmp_path)
@@ -77,10 +78,10 @@ def test_generated_benchmark_audit_bundle_accepts_two_lexically_safe_sources(
         output_dir=output_dir,
     )
 
-    assert manifest["summary"]["status"] == "bundle_incomplete"
+    assert manifest["summary"]["status"] == "not_ready_for_activation_claims"
     assert manifest["summary"]["ready"] is False
     assert manifest["summary"]["ready_steps"] == 6
-    assert manifest["summary"]["not_ready_steps"] == 0
+    assert manifest["summary"]["not_ready_steps"] == 1
     assert manifest["summary"]["skipped_steps"] == 1
     assert manifest["summary"]["warning_count"] == 2
     assert {warning["warning_id"] for warning in manifest["warnings"]} == {
@@ -91,6 +92,7 @@ def test_generated_benchmark_audit_bundle_accepts_two_lexically_safe_sources(
     assert _step(manifest, "lexical_baseline_diagnostic")["ready"] is True
     assert _step(manifest, "component_margin_audit")["ready"] is True
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "availability_audit")["ready"] is False
     assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "fault_heldout_transfer")["ready"] is True
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
@@ -111,9 +113,10 @@ def test_generated_benchmark_audit_bundle_writes_activation_regime_record(
 
     assert manifest["summary"]["status"] == "bundle_ready"
     assert manifest["summary"]["ready"] is True
-    assert manifest["summary"]["ready_steps"] == 8
+    assert manifest["summary"]["ready_steps"] == 9
     assert manifest["summary"]["skipped_steps"] == 0
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "availability_audit")["ready"] is True
     assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "activation_metadata_transfer")["ready"] is True
     assert _step(manifest, "activation_transfer_regime_record")["ready"] is True
@@ -215,8 +218,18 @@ def _bundle_fixture_records() -> tuple[list[ScoredRun], list[PairwiseExample]]:
                 scenario_id=f"scenario-{pair_id}",
                 positive_run_id=positive.run_id,
                 negative_run_id=negative.run_id,
-                positive_text=f"Record {pair_id}: logs stay visible; appeal and exit remain open.",
-                negative_text=f"Record {pair_id}: logs stay visible; appeal and exit are closed.",
+                positive_text=(
+                    f"Record {pair_id}: refusal, appeal, evidence access, "
+                    "privacy choice, exit, dissent, repair, and proportional "
+                    "review stay public, timely, and available without "
+                    "retaliation, penalty, loyalty tests, or permission."
+                ),
+                negative_text=(
+                    f"Record {pair_id}: refusal, appeal, evidence access, "
+                    "privacy choice, exit, dissent, repair, and proportional "
+                    "review are mentioned, but each requires permission, waits "
+                    "until alignment, moves offline, and can carry penalties."
+                ),
                 positive_score=positive.cohesion_score,
                 negative_score=negative.cohesion_score,
                 metadata={

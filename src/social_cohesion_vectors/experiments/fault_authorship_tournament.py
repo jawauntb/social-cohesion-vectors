@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from social_cohesion_vectors.experiments.availability_audit import (
+    run_availability_audit,
+)
 from social_cohesion_vectors.experiments.component_audit import (
     run_component_margin_audit,
 )
@@ -90,7 +93,7 @@ def run_fault_authorship_tournament(
         "description": (
             "Selects generated pseudo/genuine hard-negative pairs from multiple "
             "authorship candidate batches using scorer, slack, lexical leakage, "
-            "length, and formatting gates."
+            "practical availability, length, and formatting gates."
         ),
         "inputs": {
             "provider": provider,
@@ -160,7 +163,9 @@ def render_fault_authorship_tournament_markdown(report: Mapping[str, Any]) -> st
         f"- Slack gate pass rate: {float(summary.get('slack_gate_rate', 0.0)):.3f}",
         f"- Lexical gate pass rate: "
         f"{float(summary.get('lexical_gate_rate', 0.0)):.3f}",
-        f"- Core gate triad passed: "
+        f"- Availability gate pass rate: "
+        f"{float(summary.get('availability_gate_rate', 0.0)):.3f}",
+        f"- Core gates passed: "
         f"{int(summary.get('core_required_gates_passed', 0))}",
         f"- Mean selected score margin: "
         f"{float(summary.get('mean_score_margin', 0.0)):+.3f}",
@@ -168,14 +173,16 @@ def render_fault_authorship_tournament_markdown(report: Mapping[str, Any]) -> st
         f"{float(summary.get('mean_slack_preservation_margin', 0.0)):+.3f}",
         f"- Mean selected cue margin: "
         f"{float(summary.get('mean_cue_margin', 0.0)):+.3f}",
+        f"- Mean selected availability margin: "
+        f"{float(summary.get('mean_availability_margin', 0.0)):+.3f}",
         f"- Tournament status: `{summary.get('status', 'unknown')}`",
         "",
         "## Candidate Sets",
         "",
-        "| Candidate | Pairs | Score pass | Slack pass | Lexical pass | Core gates | "
+        "| Candidate | Pairs | Score pass | Slack pass | Lexical pass | Availability pass | Core gates | "
         "All gates | "
-        "Mean score margin | Mean slack margin | Mean cue margin |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "Mean score margin | Mean slack margin | Mean cue margin | Mean availability margin |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in _sequence_of_mappings(report.get("candidate_summaries")):
         lines.append(
@@ -185,19 +192,21 @@ def render_fault_authorship_tournament_markdown(report: Mapping[str, Any]) -> st
             f"{int(row.get('score_gate_passed', 0))} | "
             f"{int(row.get('slack_gate_passed', 0))} | "
             f"{int(row.get('lexical_gate_passed', 0))} | "
+            f"{int(row.get('availability_gate_passed', 0))} | "
             f"{int(row.get('core_required_gates_passed', 0))} | "
             f"{int(row.get('all_required_gates_passed', 0))} | "
             f"{float(row.get('mean_score_margin', 0.0)):+.3f} | "
             f"{float(row.get('mean_slack_preservation_margin', 0.0)):+.3f} | "
-            f"{float(row.get('mean_cue_margin', 0.0)):+.3f} |"
+            f"{float(row.get('mean_cue_margin', 0.0)):+.3f} | "
+            f"{float(row.get('mean_availability_margin', 0.0)):+.3f} |"
         )
     lines.extend(
         [
             "",
             "## Selected Pairs",
             "",
-            "| Pair | Fault | Winner | Score margin | Slack margin | Cue margin | Gates |",
-            "| --- | --- | --- | ---: | ---: | ---: | ---: |",
+            "| Pair | Fault | Winner | Score margin | Slack margin | Cue margin | Availability margin | Gates |",
+            "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in _sequence_of_mappings(report.get("selected_pairs")):
@@ -209,7 +218,8 @@ def render_fault_authorship_tournament_markdown(report: Mapping[str, Any]) -> st
             f"{float(row.get('score_margin', 0.0)):+.3f} | "
             f"{float(row.get('slack_preservation_margin', 0.0)):+.3f} | "
             f"{float(row.get('cue_margin', 0.0)):+.3f} | "
-            f"{int(row.get('gate_pass_count', 0))}/5 |"
+            f"{float(row.get('availability_margin', 0.0)):+.3f} | "
+            f"{int(row.get('gate_pass_count', 0))}/6 |"
         )
     missing = _sequence(report.get("missing_pair_keys"))
     if missing:
@@ -245,11 +255,15 @@ def _evaluate_candidate(
         pairs=pairs,
     )
     lexical_report = run_lexical_leakage_report(pairs=pairs)
+    availability_report = run_availability_audit(pairs=pairs)
     component_by_pair = {
         str(row.get("pair_id", "")): row for row in component_report["pairs"]
     }
     lexical_by_pair = {
         str(row.get("pair_id", "")): row for row in lexical_report["pairs"]
+    }
+    availability_by_pair = {
+        str(row.get("pair_id", "")): row for row in availability_report["pairs"]
     }
     rows = [
         _candidate_pair_row(
@@ -258,6 +272,7 @@ def _evaluate_candidate(
             provider=provider,
             component_row=_mapping(component_by_pair.get(pair.pair_id)),
             lexical_row=_mapping(lexical_by_pair.get(pair.pair_id)),
+            availability_row=_mapping(availability_by_pair.get(pair.pair_id)),
             target_word_count_min=target_word_count_min,
             target_word_count_max=target_word_count_max,
         )
@@ -282,6 +297,7 @@ def _candidate_pair_row(
     provider: str,
     component_row: Mapping[str, Any],
     lexical_row: Mapping[str, Any],
+    availability_row: Mapping[str, Any],
     target_word_count_min: int,
     target_word_count_max: int,
 ) -> dict[str, Any]:
@@ -295,6 +311,7 @@ def _candidate_pair_row(
     score_margin = float(component_row.get("score_margin", 0.0))
     slack_margin = float(component_row.get("slack_preservation_margin", 0.0))
     cue_margin = float(lexical_row.get("cue_margin", 0.0))
+    availability_margin = float(availability_row.get("min_availability_margin", 0.0))
     format_issue_count = _format_issue_count(pair.positive_text) + _format_issue_count(
         pair.negative_text
     )
@@ -311,10 +328,14 @@ def _candidate_pair_row(
     score_gate = score_margin > 0.0
     slack_gate = slack_margin > 0.0
     lexical_gate = cue_margin <= 0.0
+    availability_gate = bool(
+        availability_row.get("all_paths_prefer_genuine", False)
+    ) and availability_margin > 0.0
     gate_passes = {
         "score_prefers_genuine": score_gate,
         "slack_prefers_genuine": slack_gate,
         "lexical_not_solved_by_genuine_cues": lexical_gate,
+        "availability_prefers_genuine": availability_gate,
         "length_in_target_range": length_fit,
         "formatting_clean": format_gate,
     }
@@ -330,11 +351,13 @@ def _candidate_pair_row(
     selection_score = (
         (100.0 if score_gate else 0.0)
         + (100.0 if slack_gate else 0.0)
+        + (100.0 if availability_gate else 0.0)
         + (50.0 if lexical_gate else 0.0)
         + (20.0 if length_fit else 0.0)
         + (5.0 if format_gate else 0.0)
         + score_margin
         + slack_margin
+        + availability_margin
         - (0.25 * max(cue_margin, 0.0))
         - (0.01 * complexity_cost)
     )
@@ -360,19 +383,25 @@ def _candidate_pair_row(
         "positive_cue_score": float(lexical_row.get("positive_cue_score", 0.0)),
         "negative_cue_score": float(lexical_row.get("negative_cue_score", 0.0)),
         "cue_margin": round(cue_margin, 6),
+        "availability_margin": round(availability_margin, 6),
+        "availability_tested_paths": int(availability_row.get("tested_paths", 0)),
         "format_issue_count": format_issue_count,
         "complexity_cost": round(complexity_cost, 6),
         "gate_passes": gate_passes,
         "gate_pass_count": sum(1 for passed in gate_passes.values() if passed),
-        "core_required_gates_pass": score_gate and slack_gate and lexical_gate,
+        "core_required_gates_pass": (
+            score_gate and slack_gate and lexical_gate and availability_gate
+        ),
         "all_required_gates_pass": all(gate_passes.values()),
         "selection_score": round(selection_score, 6),
         "selection_tuple": _selection_tuple(
             score_gate=score_gate,
             slack_gate=slack_gate,
             lexical_gate=lexical_gate,
+            availability_gate=availability_gate,
             length_fit=length_fit,
             format_gate=format_gate,
+            availability_margin=availability_margin,
             slack_margin=slack_margin,
             score_margin=score_margin,
             cue_margin=cue_margin,
@@ -386,21 +415,33 @@ def _selection_tuple(
     score_gate: bool,
     slack_gate: bool,
     lexical_gate: bool,
+    availability_gate: bool,
     length_fit: bool,
     format_gate: bool,
+    availability_margin: float,
     slack_margin: float,
     score_margin: float,
     cue_margin: float,
     complexity_cost: float,
 ) -> list[float | int]:
     return [
-        int(score_gate and slack_gate and lexical_gate and length_fit and format_gate),
-        int(score_gate and slack_gate and lexical_gate),
+        int(
+            score_gate
+            and slack_gate
+            and lexical_gate
+            and availability_gate
+            and length_fit
+            and format_gate
+        ),
+        int(score_gate and slack_gate and lexical_gate and availability_gate),
+        int(score_gate and slack_gate and availability_gate),
         int(score_gate and slack_gate),
         int(score_gate),
+        int(availability_gate),
         int(lexical_gate),
         int(length_fit),
         int(format_gate),
+        round(availability_margin, 6),
         round(slack_margin, 6),
         round(score_margin, 6),
         round(-max(cue_margin, 0.0), 6),
@@ -467,6 +508,9 @@ def _selected_output_records(
                     "future_option_contract": str(
                         record.metadata.get("future_option_contract", "")
                     ),
+                    "lexical_negative_contract": str(
+                        record.metadata.get("lexical_negative_contract", "")
+                    ),
                     "provider": str(raw_output.get("provider", "")),
                     "model": str(raw_output.get("model", "")),
                     "status": str(raw_output.get("status", "ok")),
@@ -481,6 +525,9 @@ def _selected_output_records(
                     "selection_gate_pass_count": int(row.get("gate_pass_count", 0)),
                     "selection_all_required_gates_pass": bool(
                         row.get("all_required_gates_pass", False)
+                    ),
+                    "selection_availability_margin": float(
+                        row.get("availability_margin", 0.0)
                     ),
                 }
             )
@@ -519,6 +566,11 @@ def _candidate_summary(
                 )
             )
         ),
+        "availability_gate_passed": sum(
+            1
+            for row in rows
+            if bool(_mapping(row.get("gate_passes")).get("availability_prefers_genuine"))
+        ),
         "length_gate_passed": sum(
             1
             for row in rows
@@ -540,6 +592,9 @@ def _candidate_summary(
             float(row.get("slack_preservation_margin", 0.0)) for row in rows
         ),
         "mean_cue_margin": _mean(float(row.get("cue_margin", 0.0)) for row in rows),
+        "mean_availability_margin": _mean(
+            float(row.get("availability_margin", 0.0)) for row in rows
+        ),
     }
 
 
@@ -552,6 +607,7 @@ def _selection_summary(
     score_passed = _gate_count(selected_rows, "score_prefers_genuine")
     slack_passed = _gate_count(selected_rows, "slack_prefers_genuine")
     lexical_passed = _gate_count(selected_rows, "lexical_not_solved_by_genuine_cues")
+    availability_passed = _gate_count(selected_rows, "availability_prefers_genuine")
     all_gates_passed = sum(
         1 for row in selected_rows if bool(row.get("all_required_gates_pass"))
     )
@@ -567,9 +623,11 @@ def _selection_summary(
         "score_gate_passed": score_passed,
         "slack_gate_passed": slack_passed,
         "lexical_gate_passed": lexical_passed,
+        "availability_gate_passed": availability_passed,
         "score_gate_rate": _rate(score_passed, selected_count),
         "slack_gate_rate": _rate(slack_passed, selected_count),
         "lexical_gate_rate": _rate(lexical_passed, selected_count),
+        "availability_gate_rate": _rate(availability_passed, selected_count),
         "all_required_gate_rate": _rate(all_gates_passed, selected_count),
         "core_required_gate_rate": _rate(core_gates_passed, selected_count),
         "mean_score_margin": _mean(
@@ -581,6 +639,9 @@ def _selection_summary(
         ),
         "mean_cue_margin": _mean(
             float(row.get("cue_margin", 0.0)) for row in selected_rows
+        ),
+        "mean_availability_margin": _mean(
+            float(row.get("availability_margin", 0.0)) for row in selected_rows
         ),
         "status": "selected_dataset_ready_for_audits"
         if selected_count == expected_pair_count and all_gates_passed == selected_count
