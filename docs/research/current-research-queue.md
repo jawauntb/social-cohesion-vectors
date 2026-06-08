@@ -19,13 +19,14 @@ The current bottleneck is no longer practical availability, source diversity,
 source-held-out lexical leakage, fault-class lexical leakage, activation
 extraction, same-family model replication for the generated-text benchmark, the
 first small non-generated control benchmark, a first expansion of that control,
-basic out-of-family separability, source-family bridge robustness, or pair-count
-bridge robustness. The newest four-source generated benchmark
-reaches `bundle_ready` with zero audit warnings and activation metadata
-transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The expanded
-hand-authored procedural-justice control reaches `control_bundle_ready` on
-Qwen2.5-0.5B, Qwen2.5-7B, and SmolLM2-1.7B. The generated benchmark has a
-perfect SmolLM2 pair-LOO layer, Qwen7B-to-SmolLM2 same-prompt alignment is
+basic out-of-family separability, source-family bridge robustness, pair-count
+bridge robustness, or first-pass bridge-set diagnosis. The newest four-source
+generated benchmark reaches `bundle_ready` with zero audit warnings and
+activation metadata transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The
+expanded hand-authored procedural-justice control reaches
+`control_bundle_ready` on Qwen2.5-0.5B, Qwen2.5-7B, and SmolLM2-1.7B. The
+generated benchmark has a perfect SmolLM2 pair-LOO layer,
+Qwen7B-to-SmolLM2 same-prompt alignment is
 accepted for both benchmarks, a pooled SmolLM2 generated+control direction
 separates both benchmarks, and SmolLM2 bridge training passes held-out
 source-family transfer in both domains. A same-domain source-family bridge
@@ -33,13 +34,26 @@ ablation now passes with asymmetric requirements: generated/source holdouts need
 one bridge source family, while control/target holdouts need two. A
 path-stratified pair bridge ablation now finds a six-pair bridge threshold: the
 control/target side is exact at six bridge pairs, while the generated/source
-side is sampled-stable at six. The active bottleneck is now bridge-set
-diagnosis: source-only directions remain domain-specific, bridge directions
-work, and the next question is which six-pair bridge sets are robustly
-sufficient and why.
+side is sampled-stable at six. First-pass bridge-set diagnosis shows
+all-eight future-option coverage is not sufficient by itself: the exact
+target/control five-pair failures can already cover every future-option path.
+The active bottleneck is now intentional bridge-set sufficiency: source-only
+directions remain domain-specific, bridge directions work, and the next
+question is how to construct six-pair bridge sets with procedural-path and
+source-style coverage that survive the exact failing boundary.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-bridge-set-diagnosis.md`: first-pass diagnosis of
+  the target-exact pair-bridge report finds that all `35` target/control
+  five-pair failures concentrate on the held-out
+  `privacy_exit::hand_authored_incident_log_v1` pair. The weakest failed
+  five-pair bridge already covers all eight future-option paths, so
+  future-option coverage alone is not sufficient. Failing five-pair sets
+  overuse case-notes/meeting-minutes rows and underuse policy-review and
+  repair/privacy alternatives. The generated/source sampled five-pair failure
+  is different: it misses `appeal` and `proportional_review`, and adding
+  `fair_allocation` closes the weakest sampled six-pair case.
 - `docs/research/2026-06-08-pair-bridge-ablation-audit.md`: the pair-level
   path-stratified bridge audit uses `slack_options_tested` to sample bridge
   subsets by procedural future-option coverage. On SmolLM2 layer `-2`, the
@@ -189,12 +203,13 @@ validated.
 
 ## Active Objective
 
-Diagnose robust six-pair bridge sets.
+Construct robust six-pair bridge sets.
 
-The next operation should identify which six-pair generated/control bridge
-sets preserve held-out source-family transfer, compare passing six-pair sets
-with failing five-pair sets, and determine whether robustness depends on
-specific procedural future-option coverage. It must still preserve:
+The next operation should construct candidate six-pair generated/control bridge
+sets with explicit procedural-path and source-style coverage, compare them
+against the exact failing five-pair boundary, and determine whether a small
+bridge set can be selected intentionally rather than discovered by sampling. It
+must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -265,16 +280,18 @@ Implementation should probably follow existing audit patterns:
 8. Use the pair bridge ablation as the current pair-count baseline:
    control/target has an exact six-pair threshold, and generated/source has a
    sampled-stable six-pair threshold.
-9. Add bridge-set diagnosis: extract passing six-pair subsets, compare them
-   with failing five-pair subsets, and report procedural future-option coverage
-   differences.
-10. Target the current residuals: generated `privacy_bypass::data_choice`,
+9. Use the bridge-set diagnosis as the current composition baseline:
+   all-eight future-option coverage is insufficient by itself; source-style
+   coverage and case-family coverage matter.
+10. Add an intentional six-pair bridge-set constructor or sufficiency audit with
+   explicit procedural-path and source-style constraints.
+11. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
    fail under the generated direction.
-11. Rerun SmolLM2 generated/control direction transfer before adding more model
+12. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-12. Keep human validation parked until generated, non-generated, cross-setting,
+13. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
