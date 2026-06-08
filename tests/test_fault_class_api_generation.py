@@ -82,6 +82,7 @@ def test_output_records_include_future_option_contract(tmp_path: Path) -> None:
     assert count == 1
     assert raw_records[0]["future_options_tested"]
     assert raw_records[0]["future_option_contract"]
+    assert raw_records[0]["lexical_negative_contract"]
     assert (
         raw_records[0]["prompt_contract_version"]
         == API_HARD_NEGATIVE_CONTRACT_VERSION

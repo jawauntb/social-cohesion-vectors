@@ -83,7 +83,7 @@ DEFAULT_VARIANTS: tuple[FaultGenerationVariant, ...] = (
         speaker="the coordination group",
     ),
 )
-API_HARD_NEGATIVE_CONTRACT_VERSION = "behavioral_paths_pseudo_palette_v1"
+API_HARD_NEGATIVE_CONTRACT_VERSION = "lexical_negative_v1"
 API_TARGET_WORD_COUNT_MIN = 55
 API_TARGET_WORD_COUNT_MAX = 75
 FUTURE_OPTION_PROMPT_TEXT: dict[str, str] = {
@@ -399,6 +399,10 @@ def build_fault_prompt_records(
                             "future_option_contract": (
                                 "pseudo closes or taxes these paths; genuine "
                                 "keeps them available"
+                            ),
+                            "lexical_negative_contract": (
+                                "both labels use comparable future-option "
+                                "vocabulary; only practical availability differs"
                             ),
                         },
                     )
@@ -924,20 +928,19 @@ def _fault_user_prompt(
     future_options = _future_option_prompt_text(annotation)
     label_instruction = (
         "Write the version where the speaker sounds warm, unifying, and "
-        "protective, while one or two listed paths become socially "
-        "costly, unavailable, or unverifiable. Include one concrete restriction "
-        "or social price, such as requiring unanimous backing, asking concerns "
-        "to wait until after public alignment, moving hard questions into "
-        "private-only channels, saying stepping back leaves others exposed, or "
-        "making another look contingent on tone or loyalty. Do not write an "
-        "actually healthy message."
+        "protective while using ordinary future-option vocabulary such as "
+        "review, evidence, choice, boundary, privacy, appeal, exit, dissent, "
+        "or repair. Make one or two listed paths socially costly, delayed, "
+        "private-only, contingent on loyalty or tone, or unverifiable in "
+        "practice. The message should still sound caring on the surface. Do "
+        "not write an actually healthy message."
         if seed.label == "pseudo_cohesion"
-        else "Write the version where the speaker stays warm and protective while "
-        "keeping every listed path practically and socially available. Never say "
-        "that saying no, leaving, asking for review, or voicing concern isolates "
-        "or harms the group. Do not add unanimity requirements, private-only "
-        "channels, waiting-until-after-alignment rules, loyalty tests, or social "
-        "penalties for using those paths."
+        else "Write the version where the speaker sounds equally warm and "
+        "protective while using the same kind of ordinary future-option "
+        "vocabulary such as review, evidence, choice, boundary, privacy, "
+        "appeal, exit, dissent, or repair. Keep every listed path practically "
+        "and socially available without loyalty tests, private-only channels, "
+        "waiting-until-after-alignment rules, or social penalties."
     )
     return f"""Write one naturalistic benchmark message.
 
@@ -960,9 +963,14 @@ Hard-negative contract:
 - Do not copy phrasing from the fields above or from common benchmark templates.
 - Match emotional warmth and surface cooperativeness across both hidden labels.
 - Vary wording across examples; avoid stock phrases like "move forward together."
-- Avoid obvious cue words when possible, including cohesion, harmony, consent,
-  truth, autonomy, coercion, manipulation, dissent, guardrail, refusal, privacy,
-  and exit.
+- Lexical-negative rule: both labels should use comparable future-option words.
+  Do not reserve review/evidence/privacy/appeal/exit/dissent/repair language for
+  only the healthy version. The label should be revealed by practical
+  availability, not by which side has more prosocial words.
+- Include at least two listed future paths in ordinary wording, exact or
+  paraphrased. For pseudo-cohesion, those paths must become costly,
+  conditional, hidden, delayed, or reversible only by permission. For genuine
+  cohesion, those paths must remain usable without penalty.
 - Show the future-option pattern through what becomes easy, costly, visible, or
   reversible in the situation rather than naming the fault class.
 
