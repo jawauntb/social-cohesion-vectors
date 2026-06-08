@@ -784,6 +784,10 @@ def _raw_output_record(
         "availability_targeted_contract": str(
             record.metadata.get("availability_targeted_contract", "")
         ),
+        "availability_repair_contract": str(
+            record.metadata.get("availability_repair_contract", "")
+        ),
+        "repair_focus_options": str(record.metadata.get("repair_focus_options", "")),
         "provider": provider,
         "model": model,
         "status": status,

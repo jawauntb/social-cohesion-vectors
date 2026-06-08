@@ -524,6 +524,16 @@ def _selected_output_records(
                         record,
                         "availability_targeted_contract",
                     ),
+                    "availability_repair_contract": _raw_or_record_metadata(
+                        raw_output,
+                        record,
+                        "availability_repair_contract",
+                    ),
+                    "repair_focus_options": _raw_or_record_metadata(
+                        raw_output,
+                        record,
+                        "repair_focus_options",
+                    ),
                     "provider": str(raw_output.get("provider", "")),
                     "model": str(raw_output.get("model", "")),
                     "status": str(raw_output.get("status", "ok")),

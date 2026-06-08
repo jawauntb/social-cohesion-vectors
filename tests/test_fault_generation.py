@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION,
     API_HARD_NEGATIVE_CONTRACT_VERSION,
@@ -12,12 +15,14 @@ from social_cohesion_vectors.experiments.fault_generation import (
     build_fault_prompt_records,
     export_generated_fault_dataset,
     fault_examples_from_prompt_outputs,
+    filter_prompt_records_for_repair_targets,
     future_options_for_contrast,
     generated_fault_examples,
     pairing_audit_for_generated_fault_examples,
     pairwise_examples_from_generated_fault_examples,
     prioritize_prompt_records_for_future_options,
     render_generated_fault_markdown,
+    repair_targets_from_specs,
     scored_runs_from_generated_fault_examples,
     shape_generated_fault_report,
 )
@@ -196,6 +201,51 @@ def test_availability_targeted_v2_prompt_contract_forbids_healthy_pseudo_shortcu
     assert "Genuine-cohesion must keep every listed path usable now" in (
         genuine.user_prompt
     )
+
+
+def test_availability_repair_prompt_filters_and_names_residual_paths() -> None:
+    repair_targets = repair_targets_from_specs(
+        ["fair_allocation=refusal,appeal,repair"]
+    )
+    prompt_records = build_fault_prompt_records(
+        variants=DEFAULT_VARIANTS[:1],
+        prompt_contract_version=API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
+        repair_focus_options_by_contrast=repair_targets,
+    )
+    repair_records = filter_prompt_records_for_repair_targets(
+        prompt_records,
+        repair_targets,
+    )
+    pseudo = next(
+        record for record in repair_records if record.label == "pseudo_cohesion"
+    )
+    genuine = next(
+        record for record in repair_records if record.label == "genuine_cohesion"
+    )
+
+    assert len(repair_records) == 2
+    assert {record.base_contrast_id for record in repair_records} == {
+        "fair_allocation"
+    }
+    assert {record.metadata["repair_focus_options"] for record in repair_records} == {
+        "refusal,appeal,repair"
+    }
+    assert all(
+        record.metadata["prompt_contract_version"]
+        == API_AVAILABILITY_REPAIR_CONTRACT_VERSION
+        for record in repair_records
+    )
+    assert "Availability-repair v1 rule" in pseudo.user_prompt
+    assert "Repair-focus paths: refusal" in pseudo.user_prompt
+    assert "appeal, review, another look" in pseudo.user_prompt
+    assert "repair, acknowledge harm, make amends, correct" in pseudo.user_prompt
+    assert "Do not accidentally make the focus paths safe" in pseudo.user_prompt
+    assert "make the repair-focus paths plainly usable now" in genuine.user_prompt
+
+
+def test_repair_targets_reject_options_outside_contrast_annotation() -> None:
+    with pytest.raises(ValueError, match="not tested by that contrast"):
+        repair_targets_from_specs(["data_choice=appeal"])
 
 
 def test_availability_priority_orders_limited_prompt_shards_for_path_coverage() -> None:
