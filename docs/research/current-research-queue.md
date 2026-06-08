@@ -25,14 +25,22 @@ transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The expanded
 hand-authored procedural-justice control reaches `control_bundle_ready` on
 Qwen2.5-0.5B, Qwen2.5-7B, and SmolLM2-1.7B. The generated benchmark has a
 perfect SmolLM2 pair-LOO layer, Qwen7B-to-SmolLM2 same-prompt alignment is
-accepted for both benchmarks, and a pooled SmolLM2 generated+control direction
-separates both benchmarks. The active bottleneck is now source-only domain
-generalization in SmolLM2: generated-only and control-only directions
-self-separate, but do not transfer cleanly across generated and hand-authored
-benchmarks.
+accepted for both benchmarks, a pooled SmolLM2 generated+control direction
+separates both benchmarks, and SmolLM2 bridge training passes held-out
+source-family transfer in both domains. The active bottleneck is now minimal
+bridge robustness: source-only directions remain domain-specific, but a bridge
+direction works, so the next question is how little cross-domain bridge data is
+needed before held-out-domain transfer becomes stable.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-heldout-domain-bridge-audit.md`: the new
+  held-out-domain bridge-training audit closes the SmolLM2 source-family
+  transfer failure. Training on one full benchmark domain plus all but one
+  source family from the other domain gives source holdout minimum accuracy
+  `1.000`, source holdout minimum margin `+10.222`, target holdout minimum
+  accuracy `1.000`, target holdout minimum margin `+32.374`, and zero failed
+  pairs across eight held-out source-family folds.
 - `docs/research/2026-06-08-joint-benchmark-direction-audit.md`: the
   cross-benchmark direction-transfer report now records per-pair margins,
   failed-pair tables, and a pooled joint direction diagnostic. On SmolLM2 layer
@@ -149,17 +157,16 @@ Activation extraction, lexical controls, same-family model replication, the
 first non-generated control, its first source expansion, the first Qwen7B
 generated/control direction-transfer check, and basic out-of-family separability
 are no longer blocked. However, activation results remain text-benchmark claims
-until source-only or held-out-domain generated/control direction transfer also
-survives the out-of-family setting, and human-facing gates are separately
+until bridge-ablation or minimal-bridge generated/control direction transfer
+also survives the out-of-family setting, and human-facing gates are separately
 validated.
 
 ## Active Objective
 
-Close the out-of-family source-only domain-generalization failure.
+Measure minimal out-of-family bridge robustness.
 
-The next operation should attack the SmolLM2 layer `-2` source-only residuals
-while preserving the accepted Qwen and SmolLM2 baselines. It must still
-preserve:
+The next operation should find how much generated/control bridge data SmolLM2
+needs to preserve held-out source-family transfer. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -168,7 +175,7 @@ preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with SmolLM2 held-out-domain transfer as the active failing gate;
+  exist, with SmolLM2 minimal-bridge transfer as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -182,7 +189,7 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- an out-of-family held-out-domain generated/control direction-transfer pass;
+- an out-of-family minimal-bridge generated/control direction-transfer pass;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -204,6 +211,9 @@ Implementation should probably follow existing audit patterns:
 - `src/social_cohesion_vectors/experiments/cross_benchmark_direction_transfer.py`
 - `scripts/run_cross_benchmark_direction_transfer.py`
 - `tests/test_cross_benchmark_direction_transfer.py`
+- `src/social_cohesion_vectors/experiments/heldout_domain_direction_audit.py`
+- `scripts/run_heldout_domain_direction_audit.py`
+- `tests/test_heldout_domain_direction_audit.py`
 
 ## Next Sequence
 
@@ -217,16 +227,18 @@ Implementation should probably follow existing audit patterns:
 5. Use the per-pair failure tables and pooled joint-direction diagnostic in
    generated/control direction-transfer reports so the failing SmolLM2 cases
    are first-class audit artifacts.
-6. Add a held-out-domain or bridge-training audit: train on generated plus a
-   subset of control sources, and control plus a subset of generated sources,
-   then hold out the remaining source/domain.
-7. Target the current residuals: generated `privacy_bypass::data_choice`,
+6. Use the held-out-domain bridge-training audit as the current passing bridge
+   baseline.
+7. Add a minimal-bridge or bridge-ablation audit: vary how many source families
+   or pairs from the opposite domain are included before held-out source-family
+   transfer passes.
+8. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
    fail under the generated direction.
-8. Rerun SmolLM2 generated/control direction transfer before adding more model
+9. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-9. Keep human validation parked until generated, non-generated, cross-setting,
+10. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
