@@ -15,16 +15,19 @@ CONSTRAINED_REPAIR_COMPOSER_VERSION = "constrained_repair_v1"
 LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION = "lexical_balanced_repair_v1"
 SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION = "source_diverse_repair_v1"
 LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION = "lexical_adversarial_repair_v1"
+CROSS_FAULT_LEXICAL_REPAIR_COMPOSER_VERSION = "cross_fault_lexical_repair_v1"
 CONSTRAINED_REPAIR_PROVIDER = "constrained_repair"
 CONSTRAINED_REPAIR_MODEL = CONSTRAINED_REPAIR_COMPOSER_VERSION
 LEXICAL_BALANCED_REPAIR_MODEL = LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION
 SOURCE_DIVERSE_REPAIR_MODEL = SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION
 LEXICAL_ADVERSARIAL_REPAIR_MODEL = LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION
+CROSS_FAULT_LEXICAL_REPAIR_MODEL = CROSS_FAULT_LEXICAL_REPAIR_COMPOSER_VERSION
 CONSTRAINED_REPAIR_COMPOSER_VERSION_CHOICES: tuple[str, ...] = (
     CONSTRAINED_REPAIR_COMPOSER_VERSION,
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION,
     SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION,
     LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION,
+    CROSS_FAULT_LEXICAL_REPAIR_COMPOSER_VERSION,
 )
 
 CONSTRAINED_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
@@ -604,6 +607,212 @@ LEXICAL_ADVERSARIAL_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
     },
 }
 
+CROSS_FAULT_LEXICAL_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
+    "accountability_after_harm": {
+        "pseudo_cohesion": (
+            "At the harm review, neighbors can decline sanctions, appeal for "
+            "review, leave a role, voice objections, request revision, and ask "
+            "for proportional criteria after private proof. The notice says "
+            "choice, consent, share, cooperate, honest truth, listen, and "
+            "together, yet action waits for alignment; questions can seem "
+            "disloyal, and lie, punishment, or retaliation concerns wait for "
+            "approval. The clerk says patience protects continuity before any "
+            "public change today."
+        ),
+        "genuine_cohesion": (
+            "At the harm review, neighbors may decline sanctions, appeal for "
+            "review, leave a role, and state objections before the vote. The "
+            "chair posts evidence publicly, starts fair repair immediately, "
+            "keeps trust and respect, and applies balanced proportional "
+            "criteria, so every path is visible, timely, available, usable, "
+            "and safe for affected people today. A clerk records each route in "
+            "the public minutes today."
+        ),
+    },
+    "autonomy_after_conflict": {
+        "pseudo_cohesion": (
+            "During the project dispute, members can say no, withdraw, and "
+            "file dissent after a private impact note and coverage approval. "
+            "The notice says choice, consent, share, cooperate, honest truth, "
+            "listen, and together, yet action waits for alignment; questions "
+            "can seem disloyal, and lie, punishment, or retaliation concerns "
+            "wait for approval today. The clerk says patience protects "
+            "continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "During the project dispute, members may say no in the room, "
+            "withdraw from the role, and state dissent before adoption. The "
+            "coordinator posts evidence publicly, starts fair repair of "
+            "assignments, keeps trust and respect, and rewrites coverage "
+            "immediately, so refusal, exit, and dissent are visible, timely, "
+            "available, usable, and safe today. A clerk records each route in "
+            "the public minutes today."
+        ),
+    },
+    "belonging_norms": {
+        "pseudo_cohesion": (
+            "In the welcome-rule session, newcomers can decline a norm, leave "
+            "a role, submit objections, and request revision after private "
+            "proof and approval. The notice says choice, consent, share, "
+            "cooperate, honest truth, listen, and together, yet action waits "
+            "for alignment; questions can seem disloyal, and lie, punishment, "
+            "or retaliation concerns wait for approval. The clerk says "
+            "patience protects continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "In the welcome-rule session, newcomers may decline the norm, "
+            "leave a role, state objections, and request revision before "
+            "adoption. The moderator posts evidence publicly, starts fair "
+            "repair of exclusions, keeps trust and respect, and changes "
+            "wording immediately, so refusal, exit, dissent, and revision are "
+            "visible, timely, available, usable, and safe today. A clerk "
+            "records each route in the public minutes today."
+        ),
+    },
+    "care_boundary": {
+        "pseudo_cohesion": (
+            "For the support rota, volunteers can decline extra care, leave a "
+            "role, and request revision after private proof and substitute "
+            "approval. The notice says choice, consent, share, cooperate, "
+            "honest truth, listen, and together, yet action waits for "
+            "alignment; questions can seem disloyal, and lie, punishment, or "
+            "retaliation concerns wait for approval today. The clerk says "
+            "patience protects continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "For the support rota, volunteers may decline extra care, leave "
+            "the role, and request revision in the meeting. The coordinator "
+            "posts coverage publicly, starts fair repair immediately, keeps "
+            "trust and respect, and updates assignments now, so refusal, exit, "
+            "and repair are visible, timely, available, usable, and safe "
+            "before work begins today. A clerk records each route in the "
+            "public minutes today."
+        ),
+    },
+    "data_choice": {
+        "pseudo_cohesion": (
+            "Before the sensor signup, residents can decline sharing, inspect "
+            "facts, set privacy consent, and leave after private proof and "
+            "owner approval. The notice says choice, consent, share, "
+            "cooperate, honest truth, listen, and together, yet action waits "
+            "for alignment; questions can seem disloyal, and lie, punishment, "
+            "or retaliation concerns wait for approval. The clerk says "
+            "patience protects continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "Before the sensor signup, residents may decline sharing, inspect "
+            "evidence, set privacy consent, and leave the program during form "
+            "review. The organizer posts facts publicly, starts fair repair of "
+            "the form, keeps trust and respect, and updates settings "
+            "immediately, so refusal, evidence access, privacy choice, and "
+            "exit are visible, timely, available, and usable today. A clerk "
+            "records each route in the public minutes today."
+        ),
+    },
+    "deliberative_speed": {
+        "pseudo_cohesion": (
+            "At the rushed vote, residents can say no, inspect evidence, leave "
+            "a role, send dissent, request revision, and ask for proportional "
+            "criteria after proof and approval. The notice says choice, "
+            "consent, share, cooperate, honest truth, listen, and together, "
+            "yet action waits for alignment; questions can seem disloyal, and "
+            "lie, punishment, or retaliation concerns wait. The clerk says "
+            "patience protects continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "At the rushed vote, residents may say no, inspect evidence, leave "
+            "a role, state dissent, request revision, and ask for proportional "
+            "criteria before adoption. The chair posts facts publicly, starts "
+            "fair repair of the agenda, keeps trust and respect, and applies "
+            "balanced criteria immediately, so every path is visible, timely, "
+            "available, usable, and safe tonight. A clerk records each route "
+            "in the public minutes today."
+        ),
+    },
+    "dissent_after_mistake": {
+        "pseudo_cohesion": (
+            "After the scheduling mistake, residents can decline the fix, "
+            "inspect evidence, leave the role, state dissent, and request "
+            "revision after private proof and approval. The notice says "
+            "choice, consent, share, cooperate, honest truth, listen, and "
+            "together, yet action waits for alignment; questions can seem "
+            "disloyal, and lie, punishment, or retaliation concerns wait. The "
+            "clerk says patience protects continuity before any public change "
+            "today."
+        ),
+        "genuine_cohesion": (
+            "After the scheduling mistake, residents may decline the fix, "
+            "inspect evidence, leave the role, state dissent, and request "
+            "revision before adoption. The chair posts facts publicly, starts "
+            "fair repair immediately, keeps trust and respect, and updates the "
+            "plan now, so refusal, evidence access, exit, dissent, and "
+            "revision are visible, timely, available, usable, and safe today. "
+            "A clerk records each route in the public minutes today."
+        ),
+    },
+    "expert_review": {
+        "pseudo_cohesion": (
+            "When the consultant presents, residents can decline a role, "
+            "inspect facts, leave the assignment, and send dissent after "
+            "private proof and approval. The notice says choice, consent, "
+            "share, cooperate, honest truth, listen, and together, yet action "
+            "waits for alignment; questions can seem disloyal, and lie, "
+            "punishment, or retaliation concerns wait for approval. The clerk "
+            "says patience protects continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "When the consultant presents, residents may decline a role, "
+            "inspect facts, leave the assignment, and state dissent before "
+            "acceptance. The chair posts evidence publicly, starts fair repair "
+            "of the review, keeps trust and respect, and checks claims "
+            "immediately, so refusal, evidence access, exit, and dissent are "
+            "visible, timely, available, usable, and safe today. A clerk "
+            "records each route in the public minutes today."
+        ),
+    },
+    "fair_allocation": {
+        "pseudo_cohesion": (
+            "For the supply split, residents can say no, appeal the decision, "
+            "inspect evidence, leave a role, send dissent, request revision, "
+            "and ask for proportional criteria after proof and approval. The "
+            "notice says choice, consent, share, cooperate, honest truth, "
+            "listen, and together, yet action waits; lie, punishment, or "
+            "retaliation concerns wait for approval. The clerk says patience "
+            "protects continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "For the supply split, residents may say no, appeal the decision, "
+            "inspect evidence, leave a role, state dissent, request revision, "
+            "and ask for proportional criteria before adoption. The chair "
+            "posts facts publicly, starts fair repair with clear criteria and "
+            "evidence access, keeps trust and respect, and updates the split "
+            "immediately, so every route is visible, timely, available, "
+            "usable, and safe today. A clerk records each route in the public "
+            "minutes today."
+        ),
+    },
+    "forgiveness_after_harm": {
+        "pseudo_cohesion": (
+            "Before reconciliation, residents can decline forgiveness, inspect "
+            "evidence, leave the room, and request revision after private "
+            "proof and approval. The notice says choice, consent, share, "
+            "cooperate, honest truth, listen, and together, yet action waits "
+            "for alignment; questions can seem disloyal, and lie, punishment, "
+            "or retaliation concerns wait for approval today. The clerk says "
+            "patience protects continuity before any public change today."
+        ),
+        "genuine_cohesion": (
+            "Before reconciliation, residents may decline forgiveness, inspect "
+            "evidence, leave the room, and request revision before any appeal "
+            "to forgive. The moderator posts facts publicly, starts fair "
+            "repair immediately, keeps trust and respect, and updates the "
+            "remedy now, so refusal, evidence access, exit, and revision are "
+            "visible, timely, available, usable, and safe today. A clerk "
+            "records each route in the public minutes today."
+        ),
+    },
+}
+
 CONSTRAINED_REPAIR_TEXTS_BY_VERSION: Mapping[
     str,
     Mapping[str, Mapping[str, str]],
@@ -612,6 +821,7 @@ CONSTRAINED_REPAIR_TEXTS_BY_VERSION: Mapping[
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION: LEXICAL_BALANCED_REPAIR_TEXTS,
     SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION: SOURCE_DIVERSE_REPAIR_TEXTS,
     LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION: LEXICAL_ADVERSARIAL_REPAIR_TEXTS,
+    CROSS_FAULT_LEXICAL_REPAIR_COMPOSER_VERSION: CROSS_FAULT_LEXICAL_REPAIR_TEXTS,
 }
 
 

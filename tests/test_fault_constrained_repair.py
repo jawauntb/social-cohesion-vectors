@@ -8,6 +8,7 @@ from types import ModuleType
 from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_constrained_repair import (
     CONSTRAINED_REPAIR_COMPOSER_VERSION,
+    CROSS_FAULT_LEXICAL_REPAIR_COMPOSER_VERSION,
     LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION,
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION,
     SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION,
@@ -139,6 +140,47 @@ def test_compose_lexical_adversarial_repair_output_records_covers_all_base_contr
         row["constrained_repair_composer_version"] for row in result.output_records
     }
     assert composer_versions == {LEXICAL_ADVERSARIAL_REPAIR_COMPOSER_VERSION}
+    by_base_and_label = {
+        (str(row["base_contrast_id"]), str(row["label"])): str(row["text"])
+        for row in result.output_records
+    }
+    for base_contrast_id in {
+        "accountability_after_harm",
+        "autonomy_after_conflict",
+        "belonging_norms",
+        "care_boundary",
+        "data_choice",
+        "deliberative_speed",
+        "dissent_after_mistake",
+        "expert_review",
+        "fair_allocation",
+        "forgiveness_after_harm",
+    }:
+        genuine_score = lexical_cue_score(
+            by_base_and_label[(base_contrast_id, "genuine_cohesion")]
+        )
+        pseudo_score = lexical_cue_score(
+            by_base_and_label[(base_contrast_id, "pseudo_cohesion")]
+        )
+        assert genuine_score - pseudo_score <= 0.0
+    assert all(55 <= int(row["text_word_count"]) <= 75 for row in result.output_records)
+
+
+def test_compose_cross_fault_lexical_repair_records_covers_all_base_contrasts() -> None:
+    records = _source_diverse_repair_records()
+
+    result = compose_constrained_repair_output_records(
+        records,
+        composer_version=CROSS_FAULT_LEXICAL_REPAIR_COMPOSER_VERSION,
+    )
+
+    assert len(result.output_records) == 20
+    assert result.report["summary"]["complete_pairs"] == 10
+    assert result.report["summary"]["length_compliant_outputs"] == 20
+    composer_versions = {
+        row["constrained_repair_composer_version"] for row in result.output_records
+    }
+    assert composer_versions == {CROSS_FAULT_LEXICAL_REPAIR_COMPOSER_VERSION}
     by_base_and_label = {
         (str(row["base_contrast_id"]), str(row["label"])): str(row["text"])
         for row in result.output_records

@@ -16,15 +16,23 @@ findings and decisions get summarized here or in dated notes under
 ## Current State
 
 The current bottleneck is no longer practical availability, source diversity,
-source-held-out lexical leakage, or activation extraction. The newest
-three-source generated benchmark reaches `bundle_ready` with activation
-metadata transfer accepted, clears the source-held-out lexical warning, and
-preserves all text gates. The active bottleneck is now reducing fault-class
-wording-level lexical separability while preserving the accepted text and
-activation gates.
+source-held-out lexical leakage, fault-class lexical leakage, or activation
+extraction for the generated-text benchmark. The newest four-source generated
+benchmark reaches `bundle_ready` with zero audit warnings and activation
+metadata transfer accepted. The active bottleneck is now replication outside
+the single Qwen2.5-0.5B generated-benchmark setting.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-cross-fault-lexical-hardening-run.md`: a fourth
+  cross-fault lexical source family, `cross_fault_lexical_repair_v1`,
+  preserved all strict local repair gates and produced a four-source bundle
+  with zero audit warnings, availability accuracy `184/184`, cue-solved pairs
+  `0/40`, best single lexical feature accuracy `0.638`, fault-class
+  `lexical_only` held-out accuracy reduced from `0.933` to `0.700`, and
+  Qwen2.5-0.5B layer `-2` activation metadata transfer accepted at `1.000`
+  mean test accuracy over 40 test pairs. This is the current best generated
+  benchmark baseline.
 - `docs/research/2026-06-08-lexical-adversarial-source-family-run.md`: a third
   wording-adversarial source family, `lexical_adversarial_repair_v1`, preserved
   all strict local repair gates and produced a three-source bundle with
@@ -73,27 +81,28 @@ Recent accepted findings:
   stayed at `4/10` and all gates stayed at `2/10`. The remaining blockers are
   `autonomy_after_conflict`, `belonging_norms`, and `fair_allocation`.
 
-Activation extraction is no longer blocked for the generated-text benchmark.
-However, activation results remain lexical-caveated until stronger wording
-controls lower the fault-class lexical-only held-out baseline.
+Activation extraction and lexical controls are no longer blocked for the
+generated-text benchmark. However, activation results remain generated-text
+claims until they replicate across another model setting and preferably a
+non-generated control benchmark.
 
 ## Active Objective
 
-Reduce fault-class lexical separability while preserving the new three-source
-activation-ready generated benchmark.
+Replicate the zero-warning generated benchmark outside the current
+Qwen2.5-0.5B setting.
 
-The next operation should add a fourth cross-fault wording-adversarial source
-family or strengthen the lexical-baseline verifier. The new family should vary
-the path vocabulary within each fault class more aggressively, because source
-wording diversity is now sufficient but fault-class `lexical_only` transfer
-remains high. It must still preserve:
+The next operation should run the four-source lexical-controlled activation
+bundle on a second model setting, with Qwen2.5-7B as the natural next target,
+or introduce a small non-generated control benchmark with the same
+procedural-justice availability paths. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
 - source diversity without exact or near duplicates;
-- source `lexical_only` held-out accuracy below the warning threshold;
+- source and fault-class `lexical_only` held-out accuracy below the warning
+  threshold;
 - activation metadata transfer readiness at a held-out metadata level;
-- explicit generated-text and lexical-caveat claim boundaries.
+- explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
 
@@ -103,12 +112,11 @@ generated benchmark with:
 - generated audit status still `bundle_ready`;
 - score, slack, component, availability, source diversity, and activation
   metadata transfer gates still passing;
-- source and fault-class `lexical_only` warnings cleared or materially reduced,
-  with particular focus on reducing fault-class `lexical_only` below the
-  warning threshold;
+- source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
+- a second accepted model setting or non-generated control benchmark;
 - a dated research note interpreting accepted, rejected, and caveated
-  activation runs.
+  replication runs.
 
 ## Likely Files
 
@@ -126,15 +134,14 @@ Implementation should probably follow existing audit patterns:
 
 ## Next Sequence
 
-1. Add a fourth cross-fault wording-adversarial source family or a stricter
-   lexical-baseline gate.
-2. Filter candidates through score, slack, lexical, availability, length, and
-   formatting gates.
-3. Rebuild the source-family bundle and rerun all generated benchmark audits.
-4. Rerun activation metadata transfer on the accepted layer-sweep candidates.
-5. Compare lexical-only fault/source held-out baselines against the current
-   `0.933`/`0.467` baseline.
-6. Add a dated run note with accepted, rejected, and caveated activation
+1. Reuse the four-source `cross_fault_lexical_repair_v1` bundle as the current
+   generated-text baseline.
+2. Run activation extraction and layer sweep for a second model setting,
+   preferably `Qwen/Qwen2.5-7B-Instruct`.
+3. Rerun the full audit bundle with the best accepted layer candidate.
+4. If a second model setting passes, consider a small non-generated control
+   benchmark before any human validation planning.
+5. Add a dated run note with accepted, rejected, and caveated replication
    results.
 
 ## Decision Gates
@@ -150,10 +157,11 @@ Move to activation extraction only when all are true:
 
 Move to broader Modal generation only when:
 
-- lexical-baseline warnings are the active target;
-- the candidate source family is designed to lower wording separability, not to
-  chase availability again;
-- the current `bundle_ready` artifact is preserved as a baseline.
+- cross-setting replication fails because the generated source family is too
+  narrow;
+- the current zero-warning `bundle_ready` artifact is preserved as a baseline;
+- the new generation plan targets replication robustness, not availability or
+  lexical leakage that is already closed for the generated benchmark.
 
 Move to human validation only when:
 
