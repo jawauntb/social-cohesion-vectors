@@ -19,7 +19,8 @@ The current bottleneck is no longer practical availability, source diversity,
 source-held-out lexical leakage, fault-class lexical leakage, activation
 extraction, same-family model replication for the generated-text benchmark, the
 first small non-generated control benchmark, a first expansion of that control,
-or basic out-of-family separability. The newest four-source generated benchmark
+basic out-of-family separability, or source-family bridge robustness. The
+newest four-source generated benchmark
 reaches `bundle_ready` with zero audit warnings and activation metadata
 transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The expanded
 hand-authored procedural-justice control reaches `control_bundle_ready` on
@@ -27,13 +28,26 @@ Qwen2.5-0.5B, Qwen2.5-7B, and SmolLM2-1.7B. The generated benchmark has a
 perfect SmolLM2 pair-LOO layer, Qwen7B-to-SmolLM2 same-prompt alignment is
 accepted for both benchmarks, a pooled SmolLM2 generated+control direction
 separates both benchmarks, and SmolLM2 bridge training passes held-out
-source-family transfer in both domains. The active bottleneck is now minimal
-bridge robustness: source-only directions remain domain-specific, but a bridge
-direction works, so the next question is how little cross-domain bridge data is
-needed before held-out-domain transfer becomes stable.
+source-family transfer in both domains. A same-domain source-family bridge
+ablation now passes with asymmetric requirements: generated/source holdouts need
+one bridge source family, while control/target holdouts need two. The active
+bottleneck is now pair-level bridge robustness: source-only directions remain
+domain-specific, but source-family bridge directions work, so the next question
+is how little path-stratified cross-domain bridge data is needed before
+held-out-domain transfer remains stable.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-minimal-bridge-ablation-audit.md`: the
+  minimal-bridge source-family ablation estimates how much same-domain bridge
+  diversity SmolLM2 layer `-2` needs when training on the full opposite
+  benchmark domain. Generated/source holdouts become ready with one bridge
+  source family: bridge count `1` has minimum accuracy `1.000` and minimum
+  margin `+6.162`. Control/target holdouts are stricter: bridge count `1`
+  still fails with minimum accuracy `0.750` and minimum margin `-1.243`, while
+  bridge count `2` passes with minimum accuracy `1.000` and minimum margin
+  `+12.384`. The next residual is individual bridge-pair and procedural-path
+  sufficiency, not whole-source-family sufficiency.
 - `docs/research/2026-06-08-heldout-domain-bridge-audit.md`: the new
   held-out-domain bridge-training audit closes the SmolLM2 source-family
   transfer failure. Training on one full benchmark domain plus all but one
@@ -157,16 +171,19 @@ Activation extraction, lexical controls, same-family model replication, the
 first non-generated control, its first source expansion, the first Qwen7B
 generated/control direction-transfer check, and basic out-of-family separability
 are no longer blocked. However, activation results remain text-benchmark claims
-until bridge-ablation or minimal-bridge generated/control direction transfer
-also survives the out-of-family setting, and human-facing gates are separately
-validated.
+until pair-level bridge sufficiency or minimal-pair generated/control direction
+transfer also survives the out-of-family setting, and human-facing gates are
+separately validated.
 
 ## Active Objective
 
-Measure minimal out-of-family bridge robustness.
+Measure minimal pair-level bridge robustness.
 
-The next operation should find how much generated/control bridge data SmolLM2
-needs to preserve held-out source-family transfer. It must still preserve:
+The next operation should find how many individual generated/control bridge
+pairs SmolLM2 needs to preserve held-out source-family transfer, with bridge
+pairs stratified by procedural path so timely voice, evidence access,
+accountability, non-retaliatory exit, and proportionate repair cannot vanish
+from the training subset. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -175,7 +192,7 @@ needs to preserve held-out source-family transfer. It must still preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with SmolLM2 minimal-bridge transfer as the active gate;
+  exist, with SmolLM2 pair-level minimal-bridge transfer as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -189,7 +206,7 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- an out-of-family minimal-bridge generated/control direction-transfer pass;
+- an out-of-family minimal pair-level generated/control bridge-transfer pass;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -213,6 +230,7 @@ Implementation should probably follow existing audit patterns:
 - `tests/test_cross_benchmark_direction_transfer.py`
 - `src/social_cohesion_vectors/experiments/heldout_domain_direction_audit.py`
 - `scripts/run_heldout_domain_direction_audit.py`
+- `scripts/run_minimal_bridge_direction_audit.py`
 - `tests/test_heldout_domain_direction_audit.py`
 
 ## Next Sequence
@@ -229,16 +247,19 @@ Implementation should probably follow existing audit patterns:
    are first-class audit artifacts.
 6. Use the held-out-domain bridge-training audit as the current passing bridge
    baseline.
-7. Add a minimal-bridge or bridge-ablation audit: vary how many source families
-   or pairs from the opposite domain are included before held-out source-family
-   transfer passes.
-8. Target the current residuals: generated `privacy_bypass::data_choice`,
+7. Use the source-family minimal bridge ablation as the current bridge-count
+   baseline: generated/source holdouts need one bridge source family, while
+   control/target holdouts need two.
+8. Add pair-count bridge ablation: vary how many individual bridge pairs from
+   the held-out domain are included, stratify by procedural path, and preserve
+   the failed source-only and one-bridge control folds as regression cases.
+9. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
    fail under the generated direction.
-9. Rerun SmolLM2 generated/control direction transfer before adding more model
+10. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-10. Keep human validation parked until generated, non-generated, cross-setting,
+11. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
