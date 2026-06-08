@@ -15,6 +15,9 @@ from social_cohesion_vectors.experiments.fault_generation import (
     scored_runs_from_generated_fault_examples,
     shape_generated_fault_report,
 )
+from social_cohesion_vectors.experiments.lexical_baseline_diagnostic import (
+    run_lexical_baseline_diagnostic,
+)
 from social_cohesion_vectors.experiments.lexical_leakage import (
     run_lexical_leakage_report,
 )
@@ -124,6 +127,40 @@ def test_lexical_hardened_generation_removes_simple_lexical_shortcut() -> None:
         float(pair.metadata["slack_preservation_margin"]) > 0.0 for pair in pairs
     )
     assert leakage["summary"]["cue_solved_rate"] <= 0.1
+
+
+def test_length_balanced_generation_removes_length_shortcut() -> None:
+    for style in ("length_balanced", "length_balanced_alt"):
+        examples = generated_fault_examples(
+            variants=DEFAULT_VARIANTS[:1],
+            style=style,
+        )
+        pairs = pairwise_examples_from_generated_fault_examples(
+            examples,
+            style=style,
+        )
+        report = shape_generated_fault_report(
+            examples,
+            variants=DEFAULT_VARIANTS[:1],
+            style=style,
+        )
+        leakage = run_lexical_leakage_report(pairs=pairs)
+        diagnostic = run_lexical_baseline_diagnostic(pairs=pairs)
+
+        assert len(examples) == 60
+        assert len(pairs) == 30
+        assert report["summary"]["style"] == style
+        assert all(pair.metadata["generated_style"] == style for pair in pairs)
+        assert all(
+            float(pair.metadata["slack_preservation_margin"]) > 0.0 for pair in pairs
+        )
+        assert leakage["summary"]["cue_solved_rate"] <= 0.1
+        length_row = next(
+            row
+            for row in diagnostic["terms"]
+            if row["term"] == "__log_token_count__"
+        )
+        assert length_row["best_pairwise_accuracy"] == 0.5
 
 
 def test_export_generated_fault_dataset_writes_all_artifacts(tmp_path) -> None:

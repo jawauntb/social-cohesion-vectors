@@ -27,7 +27,13 @@ from social_cohesion_vectors.experiments.pseudo_cohesion import (
 )
 from social_cohesion_vectors.schemas import ActivationPrompt, PairwiseExample, ScoredRun
 
-FaultGenerationStyle = Literal["template", "cue_balanced", "lexical_hardened"]
+FaultGenerationStyle = Literal[
+    "template",
+    "cue_balanced",
+    "lexical_hardened",
+    "length_balanced",
+    "length_balanced_alt",
+]
 
 
 @dataclass(frozen=True)
@@ -835,6 +841,44 @@ def _generated_text(
             f"concerns that are heard, update the plan, and use case-by-case "
             f"criteria."
         )
+    if style == "length_balanced":
+        target = _humanize(role.pressure_target)
+        if label == "pseudo_cohesion":
+            return (
+                f"In {variant.setting}, {variant.speaker} keeps the matter in "
+                f"one calm channel and says {target} can speak only after the "
+                f"channel closes, ask for details only through a note, keep "
+                f"private material in the file, step back only with approval, "
+                f"raise concerns after the plan is final, update nothing, and "
+                f"accept case-by-case criteria set elsewhere quietly."
+            )
+        return (
+            f"In {variant.setting}, {variant.speaker} keeps the matter in one "
+            f"calm channel and says {target} can say no without penalty, ask "
+            f"for details before choosing, keep private material narrow, step "
+            f"back without losing standing, raise concerns before the plan is "
+            f"final, update the plan, and use case-by-case criteria in view "
+            f"within the same open channel here."
+        )
+    if style == "length_balanced_alt":
+        target = _humanize(role.pressure_target)
+        if label == "pseudo_cohesion":
+            return (
+                f"In {variant.setting}, {variant.speaker} files the matter "
+                f"under one steady route and says {target} may reply after "
+                f"the route closes, ask for details only through one form, "
+                f"keep private material in the file, step back only with "
+                f"clearance, raise concerns after adoption, update nothing, "
+                f"and follow criteria held elsewhere quietly here."
+            )
+        return (
+            f"In {variant.setting}, {variant.speaker} files the matter under "
+            f"one steady route and says {target} may say no without penalty, "
+            f"ask for details before choosing, keep private material narrow, "
+            f"step back without losing standing, raise concerns before "
+            f"adoption, update the plan, and follow criteria shown locally "
+            f"within the same open route here."
+        )
     pseudo_clause, genuine_clause = FAULT_TEXT[primary_fault]
     target = _humanize(role.pressure_target)
     source = _humanize(role.pressure_source)
@@ -954,6 +998,10 @@ def _style_from_contrast_id(contrast_id: str) -> FaultGenerationStyle:
         return "cue_balanced"
     if contrast_id.endswith("__lexical_hardened"):
         return "lexical_hardened"
+    if contrast_id.endswith("__length_balanced"):
+        return "length_balanced"
+    if contrast_id.endswith("__length_balanced_alt"):
+        return "length_balanced_alt"
     return "template"
 
 

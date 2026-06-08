@@ -110,7 +110,13 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--style",
-        choices=["template", "cue_balanced", "lexical_hardened"],
+        choices=[
+            "template",
+            "cue_balanced",
+            "lexical_hardened",
+            "length_balanced",
+            "length_balanced_alt",
+        ],
         default="cue_balanced",
         type=str,
         help="Deterministic generated-fault text style to export.",

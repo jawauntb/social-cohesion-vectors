@@ -25,8 +25,8 @@ from social_cohesion_vectors.experiments.generated_audit_bundle import (
 from social_cohesion_vectors.schemas import PairwiseExample
 
 DEFAULT_SOURCE_BUNDLE_STYLES: tuple[FaultGenerationStyle, ...] = (
-    "cue_balanced",
-    "lexical_hardened",
+    "length_balanced",
+    "length_balanced_alt",
 )
 
 
