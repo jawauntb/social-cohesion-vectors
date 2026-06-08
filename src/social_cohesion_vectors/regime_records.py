@@ -9,7 +9,9 @@ They are intentionally lane-agnostic; CK cocktail perturbation records remain in
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable, Mapping, Sequence
+from numbers import Real
 from pathlib import Path
 from typing import Any, Literal
 
@@ -106,6 +108,101 @@ def build_regime_transition_record(
         gates=[_coerce_gate(gate) for gate in gates],
         residual_content=[dict(finding) for finding in residual_records],
         notes=list(notes),
+    )
+
+
+def build_activation_metadata_transfer_regime_record(
+    report: Mapping[str, Any],
+    *,
+    source_id: str = "",
+    record_id: str | None = None,
+    title: str | None = None,
+) -> RegimeTransitionRecord:
+    """Build a regime record from an activation metadata transfer report."""
+
+    inputs = _mapping(report.get("inputs"))
+    metadata_readiness = _mapping(report.get("readiness"))
+    transfer_readiness = _mapping(report.get("transfer_readiness"))
+    metadata_key = str(inputs.get("metadata_key", "metadata"))
+    resolved_record_id = record_id or _record_id_from_source(
+        prefix=f"activation-metadata-transfer-{metadata_key}",
+        source_id=source_id,
+    )
+    ready_for_metadata = bool(metadata_readiness.get("ready", False))
+    ready_for_transfer = bool(transfer_readiness.get("ready", False))
+    accepted = ready_for_metadata and ready_for_transfer
+    return build_regime_transition_record(
+        record_id=resolved_record_id,
+        title=title or "Activation metadata transfer readiness audit",
+        status="accepted" if accepted else "rejected",
+        source_id=source_id,
+        old_regime={
+            "activation_transfer_report": "held_out_metadata_margins",
+            "metadata_coverage_readiness": "not_recorded",
+            "transfer_readiness": "not_recorded",
+        },
+        new_regime={
+            "activation_transfer_report": "held_out_metadata_margins_with_readiness",
+            "metadata_key": metadata_key,
+            "coverage_metadata_keys": _strings(
+                _sequence(inputs.get("coverage_metadata_keys"))
+            ),
+            "required_coverage_metadata_keys": _strings(
+                _sequence(inputs.get("required_coverage_metadata_keys"))
+            ),
+            "metadata_coverage_readiness": str(
+                metadata_readiness.get("status", "not_ready")
+            ),
+            "transfer_readiness": str(transfer_readiness.get("status", "not_ready")),
+            "thresholds": {
+                "min_coverage_groups_per_key": inputs.get(
+                    "min_coverage_groups_per_key"
+                ),
+                "min_transfer_metadata_groups": inputs.get(
+                    "min_transfer_metadata_groups"
+                ),
+                "min_transfer_test_pairs_per_fold": inputs.get(
+                    "min_transfer_test_pairs_per_fold"
+                ),
+                "min_transfer_test_accuracy": inputs.get(
+                    "min_transfer_test_accuracy"
+                ),
+                "min_transfer_min_margin": inputs.get("min_transfer_min_margin"),
+            },
+        },
+        preserved_artifacts=_preserved_activation_artifacts(report),
+        new_artifact_types=[
+            "activation_metadata_coverage_readiness",
+            "activation_transfer_readiness",
+            "activation_metadata_transfer_regime_record",
+        ],
+        new_verifiers=[
+            "metadata_coverage_readiness",
+            "activation_transfer_readiness",
+        ],
+        rejected_alternatives=_activation_transfer_rejected_alternatives(
+            metadata_readiness,
+            transfer_readiness,
+        ),
+        gates=[
+            *_regime_gates_from_readiness(
+                metadata_readiness,
+                prefix="metadata_coverage",
+            ),
+            *_regime_gates_from_readiness(
+                transfer_readiness,
+                prefix="activation_transfer",
+            ),
+        ],
+        residual_content=_activation_transfer_residual_content(
+            report,
+            metadata_readiness,
+            transfer_readiness,
+        ),
+        notes=[
+            "Activation fold computation is preserved; this record audits "
+            "whether the report is ready for metadata coverage and transfer claims.",
+        ],
     )
 
 
@@ -227,6 +324,114 @@ def _coerce_gate(gate: Mapping[str, Any] | RegimeGateRecord) -> RegimeGateRecord
     return RegimeGateRecord.model_validate(gate)
 
 
+def _regime_gates_from_readiness(
+    readiness: Mapping[str, Any],
+    *,
+    prefix: str,
+) -> list[RegimeGateRecord]:
+    gates: list[RegimeGateRecord] = []
+    for gate in _sequence(readiness.get("gates")):
+        gate_map = _mapping(gate)
+        gate_id = str(gate_map.get("gate_id", "gate"))
+        gates.append(
+            RegimeGateRecord(
+                gate_id=f"{prefix}.{gate_id}",
+                status="passed" if bool(gate_map.get("passed", False)) else "failed",
+                metric=gate_id,
+                observed=_optional_number(gate_map.get("value")),
+                threshold=_optional_number(gate_map.get("threshold")),
+            )
+        )
+    return gates
+
+
+def _activation_transfer_rejected_alternatives(
+    metadata_readiness: Mapping[str, Any],
+    transfer_readiness: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    alternatives: list[dict[str, Any]] = []
+    if not bool(metadata_readiness.get("ready", False)):
+        alternatives.append(
+            {
+                "alternative_id": "interpret_transfer_without_complete_metadata",
+                "reason": (
+                    "Metadata coverage readiness failed; source/provider/fault "
+                    "coverage cannot be treated as complete."
+                ),
+                "failed_metadata_keys": _strings(
+                    _sequence(metadata_readiness.get("failed_metadata_keys"))
+                ),
+            }
+        )
+    if not bool(transfer_readiness.get("ready", False)):
+        alternatives.append(
+            {
+                "alternative_id": "claim_transfer_without_fold_readiness",
+                "reason": (
+                    "Transfer readiness failed; held-out folds are missing, too "
+                    "thin, below accuracy threshold, or below margin threshold."
+                ),
+                "failed_metadata_values": _strings(
+                    _sequence(transfer_readiness.get("failed_metadata_values"))
+                ),
+            }
+        )
+    return alternatives
+
+
+def _activation_transfer_residual_content(
+    report: Mapping[str, Any],
+    metadata_readiness: Mapping[str, Any],
+    transfer_readiness: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    summary = _mapping(report.get("summary"))
+    residual = [
+        {
+            "finding_id": "metadata_coverage_readiness",
+            "description": (
+                "Metadata coverage readiness is "
+                f"{metadata_readiness.get('status', 'not_ready')}."
+            ),
+            "ready": bool(metadata_readiness.get("ready", False)),
+        },
+        {
+            "finding_id": "activation_transfer_readiness",
+            "description": (
+                "Activation transfer readiness is "
+                f"{transfer_readiness.get('status', 'not_ready')}."
+            ),
+            "ready": bool(transfer_readiness.get("ready", False)),
+        },
+    ]
+    if "mean_test_accuracy" in summary:
+        residual.append(
+            {
+                "finding_id": "held_out_activation_summary",
+                "description": (
+                    "Held-out activation transfer summary preserved in regime "
+                    "record."
+                ),
+                "folds": summary.get("folds"),
+                "test_pairs": summary.get("test_pairs"),
+                "mean_test_accuracy": summary.get("mean_test_accuracy"),
+                "mean_test_margin": summary.get("mean_test_margin"),
+            }
+        )
+    return residual
+
+
+def _preserved_activation_artifacts(report: Mapping[str, Any]) -> list[str]:
+    inputs = _mapping(report.get("inputs"))
+    artifacts = ["activation_metadata_transfer_report"]
+    activation_npz = str(inputs.get("activation_npz", ""))
+    pairs_path = str(inputs.get("pairs_path", ""))
+    if activation_npz:
+        artifacts.append(activation_npz)
+    if pairs_path and pairs_path != "None":
+        artifacts.append(pairs_path)
+    return artifacts
+
+
 def _record_markdown_lines(record: RegimeTransitionRecord) -> list[str]:
     lines = [
         f"## {record.title}",
@@ -299,12 +504,47 @@ def _optional_float(value: float | None) -> str:
     return "" if value is None else f"{value:.3f}"
 
 
+def _optional_number(value: object) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, Real | str):
+        return float(value)
+    try:
+        return float(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
 def _compact_json(value: object) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ": "))
 
 
 def _unique_sorted(values: Sequence[str]) -> list[str]:
     return sorted({str(value) for value in values if str(value)})
+
+
+def _mapping(value: object) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _sequence(value: object) -> Sequence[object]:
+    return value if isinstance(value, Sequence) and not isinstance(value, str) else ()
+
+
+def _strings(values: Sequence[object]) -> list[str]:
+    return [str(value) for value in values if str(value)]
+
+
+def _record_id_from_source(*, prefix: str, source_id: str) -> str:
+    suffix = Path(source_id).stem if source_id else "report"
+    return f"{_slug(prefix)}-{_slug(suffix)}"
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
+    return slug or "record"
 
 
 def _increment(counts: dict[str, int], key: str) -> None:

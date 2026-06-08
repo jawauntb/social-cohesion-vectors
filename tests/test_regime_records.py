@@ -6,10 +6,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.export_regime_transition_records import main  # noqa: E402
+from scripts.export_activation_transfer_regime_record import (  # noqa: E402
+    main as export_activation_transfer_regime_main,
+)
+from scripts.export_regime_transition_records import (  # noqa: E402
+    main as export_regime_records_main,
+)
 
 from social_cohesion_vectors.regime_records import (  # noqa: E402
     DEFAULT_CLAIM_BOUNDARY,
+    build_activation_metadata_transfer_regime_record,
     build_regime_transition_record,
     load_regime_transition_records,
     render_regime_transition_markdown,
@@ -191,6 +197,88 @@ def test_regime_markdown_renders_rejections_gates_and_claim_boundary() -> None:
     assert "Does not claim human, neural" in markdown
 
 
+def test_activation_transfer_report_builds_accepted_regime_record() -> None:
+    record = build_activation_metadata_transfer_regime_record(
+        _activation_transfer_report(),
+        source_id="data/reports/activation_metadata_transfer.json",
+    )
+
+    assert record.record_id == (
+        "activation-metadata-transfer-primary-fault-class-"
+        "activation-metadata-transfer"
+    )
+    assert record.status == "accepted"
+    assert record.new_artifact_types == [
+        "activation_metadata_coverage_readiness",
+        "activation_metadata_transfer_regime_record",
+        "activation_transfer_readiness",
+    ]
+    assert record.new_verifiers == [
+        "activation_transfer_readiness",
+        "metadata_coverage_readiness",
+    ]
+    assert record.rejected_alternatives == []
+    assert {gate.gate_id for gate in record.gates} == {
+        "metadata_coverage.complete_pair_coverage",
+        "activation_transfer.min_test_accuracy_per_fold",
+    }
+    assert {gate.status for gate in record.gates} == {"passed"}
+    assert record.residual_count == 3
+
+
+def test_activation_transfer_failed_readiness_rejects_downstream_claim() -> None:
+    report = _activation_transfer_report()
+    report["readiness"]["ready"] = False
+    report["readiness"]["status"] = "not_ready_for_metadata_coverage_claims"
+    report["readiness"]["failed_metadata_keys"] = ["provider"]
+    report["readiness"]["gates"][0]["passed"] = False
+    report["readiness"]["gates"][0]["value"] = 2
+    report["transfer_readiness"]["ready"] = False
+    report["transfer_readiness"]["status"] = "not_ready_for_transfer_claims"
+    report["transfer_readiness"]["failed_metadata_values"] = ["exit_rights"]
+    report["transfer_readiness"]["gates"][0]["passed"] = False
+    report["transfer_readiness"]["gates"][0]["value"] = 0.5
+
+    record = build_activation_metadata_transfer_regime_record(report)
+    summary = summarize_regime_transition_records([record])
+
+    assert record.status == "rejected"
+    assert summary["gate_status"] == {"failed": 2}
+    assert [item["alternative_id"] for item in record.rejected_alternatives] == [
+        "interpret_transfer_without_complete_metadata",
+        "claim_transfer_without_fold_readiness",
+    ]
+    assert record.rejected_alternatives[0]["failed_metadata_keys"] == ["provider"]
+    assert record.rejected_alternatives[1]["failed_metadata_values"] == [
+        "exit_rights"
+    ]
+
+
+def test_export_activation_transfer_regime_record_script(tmp_path) -> None:
+    input_path = tmp_path / "activation_metadata_transfer.json"
+    output_path = tmp_path / "activation_transfer_regime_record.jsonl"
+    markdown_path = tmp_path / "activation_transfer_regime_record.md"
+    input_path.write_text(json.dumps(_activation_transfer_report()), encoding="utf-8")
+
+    exit_code = export_activation_transfer_regime_main(
+        [
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--markdown-output",
+            str(markdown_path),
+        ]
+    )
+
+    assert exit_code == 0
+    loaded = load_regime_transition_records(output_path)
+    assert loaded[0].record_id.endswith("activation-metadata-transfer")
+    assert loaded[0].gates[0].gate_id.startswith("metadata_coverage.")
+    assert "Activation metadata transfer readiness audit" in (
+        markdown_path.read_text(encoding="utf-8")
+    )
+
+
 def test_export_regime_records_script_normalizes_json_input(tmp_path) -> None:
     input_path = tmp_path / "regime_records.json"
     output_path = tmp_path / "regime_records.jsonl"
@@ -212,7 +300,7 @@ def test_export_regime_records_script_normalizes_json_input(tmp_path) -> None:
         encoding="utf-8",
     )
 
-    exit_code = main(
+    exit_code = export_regime_records_main(
         [
             str(input_path),
             "--output",
@@ -348,3 +436,71 @@ def _steering_bottleneck_record():
             }
         ],
     )
+
+
+def _activation_transfer_report():
+    return {
+        "experiment": "activation_metadata_transfer",
+        "inputs": {
+            "activation_npz": "data/reports/qwen_acts.npz",
+            "pairs_path": "data/training/generated_fault_pairs.jsonl",
+            "metadata_key": "primary_fault_class",
+            "pairs": 3,
+            "prompts": 6,
+            "activation_dim": 4,
+            "groups": 2,
+            "coverage_metadata_keys": [
+                "primary_fault_class",
+                "source",
+                "provider",
+            ],
+            "required_coverage_metadata_keys": [
+                "primary_fault_class",
+                "source",
+                "provider",
+            ],
+            "min_coverage_groups_per_key": 1,
+            "min_transfer_metadata_groups": 2,
+            "min_transfer_test_pairs_per_fold": 1,
+            "min_transfer_test_accuracy": 1.0,
+            "min_transfer_min_margin": 0.0,
+            "metadata_coverage": [],
+        },
+        "summary": {
+            "folds": 2,
+            "test_pairs": 3,
+            "mean_test_accuracy": 1.0,
+            "mean_test_margin": 1.25,
+            "metadata_coverage_readiness": "metadata_coverage_ready",
+            "ready_for_metadata_coverage_claims": True,
+            "transfer_readiness": "transfer_ready",
+            "ready_for_transfer_claims": True,
+        },
+        "readiness": {
+            "status": "metadata_coverage_ready",
+            "ready": True,
+            "failed_metadata_keys": [],
+            "gates": [
+                {
+                    "gate_id": "complete_pair_coverage",
+                    "value": 3,
+                    "threshold": 3,
+                    "passed": True,
+                }
+            ],
+        },
+        "transfer_readiness": {
+            "status": "transfer_ready",
+            "ready": True,
+            "failed_metadata_values": [],
+            "gates": [
+                {
+                    "gate_id": "min_test_accuracy_per_fold",
+                    "value": 1.0,
+                    "threshold": 1.0,
+                    "passed": True,
+                }
+            ],
+        },
+        "folds": [],
+    }
