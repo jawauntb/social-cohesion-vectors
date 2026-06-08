@@ -39,10 +39,11 @@ def test_generated_benchmark_audit_bundle_marks_missing_activation_as_skipped(
 
     assert manifest["summary"]["status"] == "bundle_incomplete"
     assert manifest["summary"]["ready"] is False
-    assert manifest["summary"]["ready_steps"] == 4
+    assert manifest["summary"]["ready_steps"] == 5
     assert manifest["summary"]["skipped_steps"] == 1
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "fault_heldout_transfer")["ready"] is True
     assert "activation_npz_not_provided" in markdown
     assert (output_dir / "generated_benchmark_audit_bundle.json").exists()
@@ -72,9 +73,10 @@ def test_generated_benchmark_audit_bundle_writes_activation_regime_record(
 
     assert manifest["summary"]["status"] == "bundle_ready"
     assert manifest["summary"]["ready"] is True
-    assert manifest["summary"]["ready_steps"] == 6
+    assert manifest["summary"]["ready_steps"] == 7
     assert manifest["summary"]["skipped_steps"] == 0
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "source_diversity_audit")["ready"] is True
     assert _step(manifest, "activation_metadata_transfer")["ready"] is True
     assert _step(manifest, "activation_transfer_regime_record")["ready"] is True
     records = load_regime_transition_records(
