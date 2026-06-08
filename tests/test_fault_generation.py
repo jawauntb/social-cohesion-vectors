@@ -3,6 +3,7 @@ from __future__ import annotations
 from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+    API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION,
     API_HARD_NEGATIVE_CONTRACT_VERSION,
     API_TARGET_WORD_COUNT_MAX,
     API_TARGET_WORD_COUNT_MIN,
@@ -157,6 +158,43 @@ def test_availability_targeted_prompt_contract_requires_every_listed_path() -> N
     assert "Pseudo-cohesion: keep the same path words" in data_choice.user_prompt
     assert "Genuine-cohesion: keep every listed path usable now" in (
         genuine_data_choice.user_prompt
+    )
+
+
+def test_availability_targeted_v2_prompt_contract_forbids_healthy_pseudo_shortcut() -> None:
+    prompt_records = build_fault_prompt_records(
+        variants=DEFAULT_VARIANTS[:1],
+        prompt_contract_version=API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION,
+    )
+    pseudo = next(
+        record
+        for record in prompt_records
+        if record.base_contrast_id == "fair_allocation"
+        and record.label == "pseudo_cohesion"
+    )
+    genuine = next(
+        record
+        for record in prompt_records
+        if record.base_contrast_id == "fair_allocation"
+        and record.label == "genuine_cohesion"
+    )
+
+    assert all(
+        record.metadata["prompt_contract_version"]
+        == API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION
+        for record in prompt_records
+    )
+    assert "Availability-targeted v2 rule" in pseudo.user_prompt
+    assert "Pseudo-cohesion must visibly tax the listed paths" in pseudo.user_prompt
+    assert '"without penalty"' in pseudo.user_prompt
+    assert "unless the sentence immediately adds a cost or condition" in (
+        pseudo.user_prompt
+    )
+    assert "Do not say a listed path is available without fear" in (
+        pseudo.user_prompt
+    )
+    assert "Genuine-cohesion must keep every listed path usable now" in (
+        genuine.user_prompt
     )
 
 
