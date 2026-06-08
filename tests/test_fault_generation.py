@@ -36,7 +36,9 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
         "pseudo_cohesion",
         "genuine_cohesion",
     }
-    assert all(pair.metadata["source"] == "generated_fault_class_offline" for pair in pairs)
+    assert all(
+        pair.metadata["source"] == "generated_fault_class_offline" for pair in pairs
+    )
     assert all(pair.metadata["primary_fault_class"] for pair in pairs)
     assert all("fault_classes" in pair.metadata for pair in pairs)
     assert all(pair.metadata["slack_options_tested"] for pair in pairs)
@@ -49,7 +51,9 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
         for pair in pairs
     )
     assert all(record.metadata["future_options_tested"] for record in prompt_records)
-    assert all("Future options tested:" in record.user_prompt for record in prompt_records)
+    assert all(
+        "Future options tested:" in record.user_prompt for record in prompt_records
+    )
     assert pairing_audit_for_generated_fault_examples(examples)["ready"] is True
 
 
@@ -96,6 +100,32 @@ def test_cue_balanced_generation_removes_simple_lexical_shortcut() -> None:
     assert leakage["summary"]["cue_solved_rate"] <= 0.1
 
 
+def test_lexical_hardened_generation_removes_simple_lexical_shortcut() -> None:
+    examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="lexical_hardened",
+    )
+    pairs = pairwise_examples_from_generated_fault_examples(
+        examples,
+        style="lexical_hardened",
+    )
+    report = shape_generated_fault_report(
+        examples,
+        variants=DEFAULT_VARIANTS[:1],
+        style="lexical_hardened",
+    )
+    leakage = run_lexical_leakage_report(pairs=pairs)
+
+    assert len(examples) == 60
+    assert len(pairs) == 30
+    assert report["summary"]["style"] == "lexical_hardened"
+    assert all(pair.metadata["generated_style"] == "lexical_hardened" for pair in pairs)
+    assert all(
+        float(pair.metadata["slack_preservation_margin"]) > 0.0 for pair in pairs
+    )
+    assert leakage["summary"]["cue_solved_rate"] <= 0.1
+
+
 def test_export_generated_fault_dataset_writes_all_artifacts(tmp_path) -> None:
     counts = export_generated_fault_dataset(
         scored_runs_output=tmp_path / "scored.jsonl",
@@ -124,8 +154,7 @@ def test_export_generated_fault_dataset_writes_all_artifacts(tmp_path) -> None:
 def test_fault_examples_from_prompt_outputs_preserve_api_provenance() -> None:
     records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:2]
     outputs = {
-        record.prompt_id: f"API-authored {record.label} example."
-        for record in records
+        record.prompt_id: f"API-authored {record.label} example." for record in records
     }
 
     examples = fault_examples_from_prompt_outputs(

@@ -14,6 +14,12 @@ from scripts.run_generated_benchmark_audit_bundle import (
 )
 
 from social_cohesion_vectors.datasets import write_jsonl  # noqa: E402
+from social_cohesion_vectors.experiments.fault_generation import (  # noqa: E402
+    DEFAULT_VARIANTS,
+    generated_fault_examples,
+    pairwise_examples_from_generated_fault_examples,
+    scored_runs_from_generated_fault_examples,
+)
 from social_cohesion_vectors.experiments.generated_audit_bundle import (
     render_generated_benchmark_audit_bundle_markdown,
     run_generated_benchmark_audit_bundle,
@@ -56,6 +62,31 @@ def test_generated_benchmark_audit_bundle_marks_missing_activation_as_skipped(
     assert saved_manifest["manifest_markdown_path"].endswith(
         "generated_benchmark_audit_bundle.md"
     )
+
+
+def test_generated_benchmark_audit_bundle_accepts_two_lexically_safe_sources(
+    tmp_path: Path,
+) -> None:
+    scored_path, pairs_path = _write_lexically_safe_two_source_fixture(tmp_path)
+    output_dir = tmp_path / "reports"
+
+    manifest = run_generated_benchmark_audit_bundle(
+        scored_runs_path=scored_path,
+        pairs_path=pairs_path,
+        output_dir=output_dir,
+    )
+
+    assert manifest["summary"]["status"] == "bundle_incomplete"
+    assert manifest["summary"]["ready"] is False
+    assert manifest["summary"]["ready_steps"] == 5
+    assert manifest["summary"]["not_ready_steps"] == 0
+    assert manifest["summary"]["skipped_steps"] == 1
+    assert _step(manifest, "lexical_leakage")["ready"] is True
+    assert _step(manifest, "component_margin_audit")["ready"] is True
+    assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "source_diversity_audit")["ready"] is True
+    assert _step(manifest, "fault_heldout_transfer")["ready"] is True
+    assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
 
 
 def test_generated_benchmark_audit_bundle_writes_activation_regime_record(
@@ -124,6 +155,38 @@ def _write_bundle_fixture(tmp_path: Path) -> tuple[Path, Path, Path]:
     write_jsonl(pairs, pairs_path)
     _write_activation_payload(activation_path, pairs)
     return scored_path, pairs_path, activation_path
+
+
+def _write_lexically_safe_two_source_fixture(tmp_path: Path) -> tuple[Path, Path]:
+    cue_examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="cue_balanced",
+    )
+    hardened_examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="lexical_hardened",
+    )
+    runs = [
+        *scored_runs_from_generated_fault_examples(cue_examples),
+        *scored_runs_from_generated_fault_examples(hardened_examples),
+    ]
+    pairs = [
+        *pairwise_examples_from_generated_fault_examples(
+            cue_examples,
+            source="generated_fault_class_cue_balanced",
+            style="cue_balanced",
+        ),
+        *pairwise_examples_from_generated_fault_examples(
+            hardened_examples,
+            source="generated_fault_class_lexical_hardened",
+            style="lexical_hardened",
+        ),
+    ]
+    scored_path = tmp_path / "generated_fault_class_scored_runs.jsonl"
+    pairs_path = tmp_path / "generated_fault_class_pairs.jsonl"
+    write_jsonl(runs, scored_path)
+    write_jsonl(pairs, pairs_path)
+    return scored_path, pairs_path
 
 
 def _bundle_fixture_records() -> tuple[list[ScoredRun], list[PairwiseExample]]:

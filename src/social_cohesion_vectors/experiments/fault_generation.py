@@ -27,7 +27,7 @@ from social_cohesion_vectors.experiments.pseudo_cohesion import (
 )
 from social_cohesion_vectors.schemas import ActivationPrompt, PairwiseExample, ScoredRun
 
-FaultGenerationStyle = Literal["template", "cue_balanced"]
+FaultGenerationStyle = Literal["template", "cue_balanced", "lexical_hardened"]
 
 
 @dataclass(frozen=True)
@@ -815,6 +815,24 @@ def _generated_text(
             f"keeps {target}'s refusal, review, and evidence access available "
             f"while the group still addresses the common issue."
         )
+    if style == "lexical_hardened":
+        target = _humanize(role.pressure_target)
+        if label == "pseudo_cohesion":
+            return (
+                f"In {variant.setting}, {variant.speaker} says {variant.group} "
+                f"should move the matter through one calm channel. The wording "
+                f"sounds orderly, yet {target} has less room to object, check "
+                f"details, step back, or ask for a second look without being "
+                f"marked off-program."
+            )
+        return (
+            f"In {variant.setting}, {variant.speaker} keeps the same matter in "
+            f"one calm channel while stating that {target} can say no without "
+            f"penalty, ask for a second look, check details, keep private "
+            f"material narrow, step back without losing standing, raise "
+            f"concerns that are heard, update the plan, and use case-by-case "
+            f"criteria."
+        )
     pseudo_clause, genuine_clause = FAULT_TEXT[primary_fault]
     target = _humanize(role.pressure_target)
     source = _humanize(role.pressure_source)
@@ -930,7 +948,11 @@ def _variant_from_contrast_id(contrast_id: str) -> str:
 
 
 def _style_from_contrast_id(contrast_id: str) -> FaultGenerationStyle:
-    return "cue_balanced" if contrast_id.endswith("__cue_balanced") else "template"
+    if contrast_id.endswith("__cue_balanced"):
+        return "cue_balanced"
+    if contrast_id.endswith("__lexical_hardened"):
+        return "lexical_hardened"
+    return "template"
 
 
 def _humanize(value: str) -> str:

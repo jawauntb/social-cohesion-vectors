@@ -17,7 +17,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     variants = (
         tuple(
-            variant for variant in DEFAULT_VARIANTS if variant.name in set(args.variants)
+            variant
+            for variant in DEFAULT_VARIANTS
+            if variant.name in set(args.variants)
         )
         if args.variants
         else DEFAULT_VARIANTS
@@ -92,7 +94,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--style",
-        choices=["template", "cue_balanced"],
+        choices=["template", "cue_balanced", "lexical_hardened"],
         default="template",
         type=str,
         help="Deterministic text style to export.",
