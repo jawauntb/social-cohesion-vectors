@@ -1,20 +1,29 @@
 from __future__ import annotations
 
+import sys
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, cast
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts.run_source_diversity_audit import (  # noqa: E402
+    main as source_audit_main,
+)
+
+from social_cohesion_vectors.datasets import write_jsonl  # noqa: E402
 from social_cohesion_vectors.experiments.fault_generation import (
     DEFAULT_VARIANTS,
     generated_fault_examples,
     pairwise_examples_from_generated_fault_examples,
-)
+)  # noqa: E402
 from social_cohesion_vectors.experiments.source_diversity_audit import (
     render_source_diversity_markdown,
     run_source_diversity_audit,
     run_source_diversity_audit_from_file,
     save_source_diversity_audit,
-)
-from social_cohesion_vectors.schemas import PairwiseExample
+)  # noqa: E402
+from social_cohesion_vectors.schemas import PairwiseExample  # noqa: E402
 
 
 def test_source_diversity_audit_blocks_single_source_generated_pairs() -> None:
@@ -73,6 +82,40 @@ def test_source_diversity_audit_round_trips_files(tmp_path) -> None:
     assert report["inputs"]["paths"]["pairs"] == str(pairs_path)
     assert (tmp_path / "source.json").exists()
     assert "# Source Diversity" in (tmp_path / "source.md").read_text(encoding="utf-8")
+
+
+def test_source_diversity_audit_cli_writes_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    examples = generated_fault_examples(variants=DEFAULT_VARIANTS[:1])
+    offline_pairs = pairwise_examples_from_generated_fault_examples(examples)
+    api_pairs = _clone_source_pairs(
+        offline_pairs,
+        source="generated_fault_class_openai",
+    )
+    pairs_path = tmp_path / "pairs.jsonl"
+    json_path = tmp_path / "source.json"
+    markdown_path = tmp_path / "source.md"
+    write_jsonl([*offline_pairs, *api_pairs], pairs_path)
+
+    exit_code = source_audit_main(
+        [
+            "--pairs",
+            str(pairs_path),
+            "--json-output",
+            str(json_path),
+            "--markdown-output",
+            str(markdown_path),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "status=source_diversity_ready" in captured.out
+    assert "sources=2" in captured.out
+    assert json_path.exists()
+    assert markdown_path.exists()
 
 
 def _gate(report: Mapping[str, Any], gate_id: str) -> Mapping[str, Any]:
