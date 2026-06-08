@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ def run_source_diversity_audit_from_file(
     min_pairs_per_source: int = 2,
     min_groups_per_source: int = 2,
     min_shared_groups: int = 2,
+    max_cross_source_duplicate_pairs: int = 0,
 ) -> dict[str, Any]:
     """Load pairwise examples and audit source/fault coverage."""
 
@@ -31,6 +33,7 @@ def run_source_diversity_audit_from_file(
         min_pairs_per_source=min_pairs_per_source,
         min_groups_per_source=min_groups_per_source,
         min_shared_groups=min_shared_groups,
+        max_cross_source_duplicate_pairs=max_cross_source_duplicate_pairs,
         input_paths={"pairs": str(pairs_path)},
     )
 
@@ -44,6 +47,7 @@ def run_source_diversity_audit(
     min_pairs_per_source: int = 2,
     min_groups_per_source: int = 2,
     min_shared_groups: int = 2,
+    max_cross_source_duplicate_pairs: int = 0,
     input_paths: Mapping[str, str | None] | None = None,
 ) -> dict[str, Any]:
     """Audit whether source-held-out claims have enough source coverage."""
@@ -55,6 +59,10 @@ def run_source_diversity_audit(
         group_metadata_key=group_metadata_key,
     )
     shared_groups = _shared_groups(groups_by_source)
+    duplicate_text_pairs = _cross_source_duplicate_text_pairs(
+        pairs,
+        source_metadata_key=source_metadata_key,
+    )
     failed_pair_sources = sorted(
         source
         for source, count in source_counts.items()
@@ -101,6 +109,12 @@ def run_source_diversity_audit(
             "passed": len(shared_groups) >= min_shared_groups,
         },
         {
+            "gate_id": "cross_source_duplicate_text_pairs",
+            "value": float(len(duplicate_text_pairs)),
+            "threshold": float(max_cross_source_duplicate_pairs),
+            "passed": len(duplicate_text_pairs) <= max_cross_source_duplicate_pairs,
+        },
+        {
             "gate_id": "missing_source_pairs",
             "value": float(missing_source_pairs),
             "threshold": 0.0,
@@ -129,6 +143,7 @@ def run_source_diversity_audit(
             "min_pairs_per_source": min_pairs_per_source,
             "min_groups_per_source": min_groups_per_source,
             "min_shared_groups": min_shared_groups,
+            "max_cross_source_duplicate_pairs": max_cross_source_duplicate_pairs,
         },
         "summary": {
             "status": "source_diversity_ready" if ready else "not_ready",
@@ -140,6 +155,7 @@ def run_source_diversity_audit(
             "sources": len(source_counts),
             "groups": len(_metadata_values(pairs, group_metadata_key)),
             "shared_groups": len(shared_groups),
+            "cross_source_duplicate_text_pairs": len(duplicate_text_pairs),
             "missing_source_pairs": missing_source_pairs,
             "missing_group_pairs": missing_group_pairs,
             "failed_pair_sources": failed_pair_sources,
@@ -152,6 +168,7 @@ def run_source_diversity_audit(
             for source, groups in sorted(groups_by_source.items())
         },
         "shared_groups": shared_groups,
+        "cross_source_duplicate_text_pairs": duplicate_text_pairs,
     }
 
 
@@ -192,6 +209,8 @@ def render_source_diversity_markdown(report: Mapping[str, Any]) -> str:
         f"- Sources: {int(summary.get('sources', 0))}",
         f"- Fault groups: {int(summary.get('groups', 0))}",
         f"- Shared fault groups: {int(summary.get('shared_groups', 0))}",
+        f"- Cross-source duplicate text pairs: "
+        f"{int(summary.get('cross_source_duplicate_text_pairs', 0))}",
         f"- Missing source pairs: {int(summary.get('missing_source_pairs', 0))}",
         f"- Missing group pairs: {int(summary.get('missing_group_pairs', 0))}",
         "",
@@ -233,6 +252,26 @@ def render_source_diversity_markdown(report: Mapping[str, Any]) -> str:
                 ", ".join(str(group) for group in shared_groups),
             ]
         )
+    duplicates = _sequence(report.get("cross_source_duplicate_text_pairs"))
+    if duplicates:
+        lines.extend(
+            [
+                "",
+                "## Cross-Source Duplicate Text Pairs",
+                "",
+                "| Sources | Pair ids |",
+                "| --- | --- |",
+            ]
+        )
+        for raw_duplicate in duplicates[:12]:
+            duplicate = _mapping(raw_duplicate)
+            lines.append(
+                "| "
+                f"{', '.join(str(item) for item in _sequence(duplicate.get('sources')))} | "
+                f"{', '.join(str(item) for item in _sequence(duplicate.get('pair_ids')))} |"
+            )
+        if len(duplicates) > 12:
+            lines.append(f"| ... | {len(duplicates) - 12} more |")
     return "\n".join(lines) + "\n"
 
 
@@ -270,6 +309,64 @@ def _shared_groups(groups_by_source: Mapping[str, set[str]]) -> list[str]:
         return []
     shared = set.intersection(*groups_by_source.values())
     return sorted(shared)
+
+
+def _cross_source_duplicate_text_pairs(
+    pairs: Sequence[PairwiseExample],
+    *,
+    source_metadata_key: str,
+) -> list[dict[str, object]]:
+    by_fingerprint: dict[str, dict[str, object]] = {}
+    for pair in pairs:
+        source = str(pair.metadata.get(source_metadata_key, "")).strip()
+        if not source:
+            continue
+        fingerprint = _pair_text_fingerprint(pair)
+        entry = by_fingerprint.setdefault(
+            fingerprint,
+            {
+                "sources": set(),
+                "pair_ids": [],
+            },
+        )
+        sources = entry["sources"]
+        pair_ids = entry["pair_ids"]
+        if isinstance(sources, set):
+            sources.add(source)
+        if isinstance(pair_ids, list):
+            pair_ids.append(pair.pair_id)
+    duplicates = []
+    for entry in by_fingerprint.values():
+        sources = entry["sources"]
+        pair_ids = entry["pair_ids"]
+        if not isinstance(sources, set) or not isinstance(pair_ids, list):
+            continue
+        if len(sources) <= 1:
+            continue
+        duplicates.append(
+            {
+                "sources": sorted(sources),
+                "pair_ids": sorted(str(pair_id) for pair_id in pair_ids),
+            }
+        )
+    return sorted(duplicates, key=_duplicate_sort_key)
+
+
+def _pair_text_fingerprint(pair: PairwiseExample) -> str:
+    return "\n".join(
+        [
+            _normalize_text(pair.positive_text),
+            _normalize_text(pair.negative_text),
+        ]
+    )
+
+
+def _duplicate_sort_key(duplicate: Mapping[str, object]) -> str:
+    return ",".join(str(item) for item in _sequence(duplicate.get("pair_ids")))
+
+
+def _normalize_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text.casefold()).strip()
 
 
 def _metadata_values(

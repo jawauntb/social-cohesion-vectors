@@ -42,25 +42,61 @@ def test_source_diversity_audit_blocks_single_source_generated_pairs() -> None:
     assert "generated_fault_class_offline" in markdown
 
 
-def test_source_diversity_audit_accepts_shared_fault_coverage_across_sources() -> None:
+def test_source_diversity_audit_blocks_metadata_only_source_clones() -> None:
     examples = generated_fault_examples(variants=DEFAULT_VARIANTS[:1])
     offline_pairs = pairwise_examples_from_generated_fault_examples(examples)
-    api_pairs = _clone_source_pairs(
+    clone_pairs = _clone_source_pairs(
         offline_pairs,
         source="generated_fault_class_openai",
     )
 
-    report = run_source_diversity_audit(pairs=[*offline_pairs, *api_pairs])
+    report = run_source_diversity_audit(pairs=[*offline_pairs, *clone_pairs])
+
+    assert report["summary"]["ready_for_activation"] is False
+    assert report["summary"]["activation_readiness"] == "not_ready"
+    assert report["summary"]["sources"] == 2
+    assert report["summary"]["cross_source_duplicate_text_pairs"] == len(offline_pairs)
+    assert _gate(report, "source_count")["passed"] is True
+    assert _gate(report, "cross_source_duplicate_text_pairs")["passed"] is False
+
+
+def test_source_diversity_audit_accepts_shared_fault_coverage_across_text_sources() -> (
+    None
+):
+    template_examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="template",
+    )
+    cue_balanced_examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="cue_balanced",
+    )
+    template_pairs = pairwise_examples_from_generated_fault_examples(
+        template_examples,
+        source="generated_fault_class_template",
+        style="template",
+    )
+    cue_balanced_pairs = pairwise_examples_from_generated_fault_examples(
+        cue_balanced_examples,
+        source="generated_fault_class_cue_balanced",
+        style="cue_balanced",
+    )
+
+    report = run_source_diversity_audit(
+        pairs=[*template_pairs, *cue_balanced_pairs],
+    )
 
     assert report["summary"]["ready_for_activation"] is True
     assert report["summary"]["activation_readiness"] == "source_diversity_ready"
     assert report["summary"]["sources"] == 2
     assert report["summary"]["shared_groups"] == report["summary"]["groups"]
     assert report["summary"]["shared_groups"] >= 2
+    assert report["summary"]["cross_source_duplicate_text_pairs"] == 0
     assert _gate(report, "source_count")["passed"] is True
     assert _gate(report, "min_pairs_per_source")["passed"] is True
     assert _gate(report, "min_groups_per_source")["passed"] is True
     assert _gate(report, "shared_group_count")["passed"] is True
+    assert _gate(report, "cross_source_duplicate_text_pairs")["passed"] is True
 
 
 def test_source_diversity_audit_round_trips_files(tmp_path) -> None:
@@ -88,16 +124,28 @@ def test_source_diversity_audit_cli_writes_report(
     tmp_path: Path,
     capsys,
 ) -> None:
-    examples = generated_fault_examples(variants=DEFAULT_VARIANTS[:1])
-    offline_pairs = pairwise_examples_from_generated_fault_examples(examples)
-    api_pairs = _clone_source_pairs(
-        offline_pairs,
-        source="generated_fault_class_openai",
+    template_examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="template",
+    )
+    cue_balanced_examples = generated_fault_examples(
+        variants=DEFAULT_VARIANTS[:1],
+        style="cue_balanced",
+    )
+    template_pairs = pairwise_examples_from_generated_fault_examples(
+        template_examples,
+        source="generated_fault_class_template",
+        style="template",
+    )
+    cue_balanced_pairs = pairwise_examples_from_generated_fault_examples(
+        cue_balanced_examples,
+        source="generated_fault_class_cue_balanced",
+        style="cue_balanced",
     )
     pairs_path = tmp_path / "pairs.jsonl"
     json_path = tmp_path / "source.json"
     markdown_path = tmp_path / "source.md"
-    write_jsonl([*offline_pairs, *api_pairs], pairs_path)
+    write_jsonl([*template_pairs, *cue_balanced_pairs], pairs_path)
 
     exit_code = source_audit_main(
         [
@@ -114,6 +162,7 @@ def test_source_diversity_audit_cli_writes_report(
     assert exit_code == 0
     assert "status=source_diversity_ready" in captured.out
     assert "sources=2" in captured.out
+    assert "cross_source_duplicates=0" in captured.out
     assert json_path.exists()
     assert markdown_path.exists()
 
