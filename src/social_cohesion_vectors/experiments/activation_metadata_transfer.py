@@ -21,6 +21,7 @@ def run_activation_metadata_transfer_from_files(
     activation_npz: str | Path,
     pairs_path: str | Path,
     metadata_key: str = "primary_fault_class",
+    coverage_metadata_keys: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Load activations and pairs, then evaluate held-out metadata transfer."""
 
@@ -28,6 +29,7 @@ def run_activation_metadata_transfer_from_files(
         activation_npz=activation_npz,
         pairs=load_pairwise_examples_jsonl(pairs_path),
         metadata_key=metadata_key,
+        coverage_metadata_keys=coverage_metadata_keys,
         pairs_path=str(pairs_path),
     )
 
@@ -37,12 +39,15 @@ def run_activation_metadata_transfer(
     activation_npz: str | Path,
     pairs: Sequence[PairwiseExample],
     metadata_key: str = "primary_fault_class",
+    coverage_metadata_keys: Sequence[str] | None = None,
     pairs_path: str | None = None,
 ) -> dict[str, Any]:
     """Train on all but one metadata value and evaluate activation margins."""
 
     payload = load_activation_payload(activation_npz)
     pair_values = _pair_metadata_values(pairs, metadata_key)
+    coverage_keys = _coverage_metadata_keys(metadata_key, coverage_metadata_keys)
+    metadata_coverage = _metadata_coverage(pairs, coverage_keys)
     folds: list[dict[str, Any]] = []
     for held_out in sorted({value for values in pair_values.values() for value in values}):
         test_pair_ids = {
@@ -71,6 +76,8 @@ def run_activation_metadata_transfer(
             "prompts": int(payload.activations.shape[0]),
             "activation_dim": int(payload.activations.shape[1]),
             "groups": len(folds),
+            "coverage_metadata_keys": coverage_keys,
+            "metadata_coverage": metadata_coverage,
         },
         "summary": _summary(folds),
         "folds": folds,
@@ -114,17 +121,36 @@ def render_activation_metadata_transfer_markdown(report: Mapping[str, Any]) -> s
         f"- Activation dim: {int(inputs.get('activation_dim', 0))}",
         f"- Groups: {int(inputs.get('groups', 0))}",
         "",
-        "## Summary",
+        "## Metadata Coverage",
         "",
-        f"- Test pairs: {int(summary.get('test_pairs', 0))}",
-        f"- Mean test accuracy: {float(summary.get('mean_test_accuracy', 0.0)):.3f}",
-        f"- Mean test margin: {float(summary.get('mean_test_margin', 0.0)):+.3f}",
-        "",
-        "## Held-Out Groups",
-        "",
-        "| Held-out | Train pairs | Test pairs | Test accuracy | Test margin | Min margin |",
-        "| --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Metadata key | Pairs with values | Missing pairs | Groups | Values |",
+        "| --- | ---: | ---: | ---: | --- |",
     ]
+    for row in _sequence(inputs.get("metadata_coverage")):
+        row_map = _mapping(row)
+        lines.append(
+            "| "
+            f"`{row_map.get('metadata_key', '')}` | "
+            f"{int(row_map.get('pairs_with_values', 0))} | "
+            f"{int(row_map.get('missing_pairs', 0))} | "
+            f"{int(row_map.get('groups', 0))} | "
+            f"{', '.join(f'`{value}`' for value in _sequence(row_map.get('values')))} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Summary",
+            "",
+            f"- Test pairs: {int(summary.get('test_pairs', 0))}",
+            f"- Mean test accuracy: {float(summary.get('mean_test_accuracy', 0.0)):.3f}",
+            f"- Mean test margin: {float(summary.get('mean_test_margin', 0.0)):+.3f}",
+            "",
+            "## Held-Out Groups",
+            "",
+            "| Held-out | Train pairs | Test pairs | Test accuracy | Test margin | Min margin |",
+            "| --- | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
     for fold in _sequence(report.get("folds")):
         fold_map = _mapping(fold)
         lines.append(
@@ -201,6 +227,43 @@ def _pair_metadata_values(
             part.strip() for part in str(raw or "").split(",") if part.strip()
         )
     return values
+
+
+def _coverage_metadata_keys(
+    metadata_key: str,
+    requested_keys: Sequence[str] | None,
+) -> list[str]:
+    keys = [
+        metadata_key,
+        "fault_classes",
+        "source",
+        "provider",
+        "generated_style",
+    ]
+    if requested_keys is not None:
+        keys.extend(requested_keys)
+    return list(dict.fromkeys(key for key in keys if key))
+
+
+def _metadata_coverage(
+    pairs: Sequence[PairwiseExample],
+    metadata_keys: Sequence[str],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for metadata_key in metadata_keys:
+        pair_values = _pair_metadata_values(pairs, metadata_key)
+        values = sorted({value for item in pair_values.values() for value in item})
+        pairs_with_values = sum(1 for item in pair_values.values() if item)
+        rows.append(
+            {
+                "metadata_key": metadata_key,
+                "pairs_with_values": pairs_with_values,
+                "missing_pairs": len(pairs) - pairs_with_values,
+                "groups": len(values),
+                "values": values,
+            }
+        )
+    return rows
 
 
 def _summary(folds: Sequence[Mapping[str, Any]]) -> dict[str, Any]:

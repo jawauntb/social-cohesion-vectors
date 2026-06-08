@@ -19,6 +19,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         activation_npz=args.activation_npz,
         pairs_path=args.pairs,
         metadata_key=args.metadata_key,
+        coverage_metadata_keys=args.coverage_metadata_key,
     )
     save_activation_metadata_transfer_report(
         report,
@@ -47,6 +48,15 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         default=paths.training / "generated_fault_class_pairwise_probe_dataset.jsonl",
     )
     parser.add_argument("--metadata-key", default="primary_fault_class")
+    parser.add_argument(
+        "--coverage-metadata-key",
+        action="append",
+        default=None,
+        help=(
+            "Additional pair metadata key to summarize for audit coverage. "
+            "May be provided multiple times."
+        ),
+    )
     parser.add_argument(
         "--json-output",
         type=Path,
