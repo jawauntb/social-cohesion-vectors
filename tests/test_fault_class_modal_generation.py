@@ -5,9 +5,12 @@ import json
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 from social_cohesion_vectors.datasets import read_jsonl, write_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
     API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
+    API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     DEFAULT_VARIANTS,
     FaultPromptRecord,
@@ -103,8 +106,16 @@ def test_modal_generation_cli_replays_raw_outputs_and_runs_audit_bundle(
     assert "audit_bundle" in report
 
 
+@pytest.mark.parametrize(
+    "contract_version",
+    [
+        API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
+        API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
+    ],
+)
 def test_modal_generation_cli_filters_repair_targets_in_replay(
     tmp_path: Path,
+    contract_version: str,
 ) -> None:
     script = _load_script()
     records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])
@@ -121,7 +132,7 @@ def test_modal_generation_cli_filters_repair_targets_in_replay(
             "--variants",
             DEFAULT_VARIANTS[0].name,
             "--prompt-contract-version",
-            API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
+            contract_version,
             "--repair-target",
             "fair_allocation=refusal,appeal,repair",
             "--raw-outputs",
@@ -148,7 +159,7 @@ def test_modal_generation_cli_filters_repair_targets_in_replay(
         "fair_allocation"
     }
     assert {row["prompt_contract_version"] for row in normalized_outputs} == {
-        API_AVAILABILITY_REPAIR_CONTRACT_VERSION
+        contract_version
     }
     assert {row["repair_focus_options"] for row in normalized_outputs} == {
         "refusal,appeal,repair"
