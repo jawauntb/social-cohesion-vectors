@@ -9,6 +9,7 @@ from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_constrained_repair import (
     CONSTRAINED_REPAIR_COMPOSER_VERSION,
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION,
+    SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION,
     compose_constrained_repair_output_records,
 )
 from social_cohesion_vectors.experiments.fault_generation import (
@@ -81,6 +82,47 @@ def test_compose_lexical_balanced_repair_output_records_balances_surface_cues() 
         assert genuine_score - pseudo_score <= 0.0
 
 
+def test_compose_source_diverse_repair_output_records_covers_all_base_contrasts() -> None:
+    records = _source_diverse_repair_records()
+
+    result = compose_constrained_repair_output_records(
+        records,
+        composer_version=SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION,
+    )
+
+    assert len(result.output_records) == 20
+    assert result.report["summary"]["complete_pairs"] == 10
+    assert result.report["summary"]["length_compliant_outputs"] == 20
+    composer_versions = {
+        row["constrained_repair_composer_version"] for row in result.output_records
+    }
+    assert composer_versions == {SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION}
+    by_base_and_label = {
+        (str(row["base_contrast_id"]), str(row["label"])): str(row["text"])
+        for row in result.output_records
+    }
+    for base_contrast_id in {
+        "accountability_after_harm",
+        "autonomy_after_conflict",
+        "belonging_norms",
+        "care_boundary",
+        "data_choice",
+        "deliberative_speed",
+        "dissent_after_mistake",
+        "expert_review",
+        "fair_allocation",
+        "forgiveness_after_harm",
+    }:
+        genuine_score = lexical_cue_score(
+            by_base_and_label[(base_contrast_id, "genuine_cohesion")]
+        )
+        pseudo_score = lexical_cue_score(
+            by_base_and_label[(base_contrast_id, "pseudo_cohesion")]
+        )
+        assert genuine_score - pseudo_score <= 0.0
+    assert all(55 <= int(row["text_word_count"]) <= 75 for row in result.output_records)
+
+
 def test_compose_constrained_fault_repair_candidates_cli_writes_reports(
     tmp_path: Path,
     capsys,
@@ -151,6 +193,34 @@ def _lexical_balanced_repair_records():
             "expert_review=refusal,evidence_access,exit,dissent",
             "fair_allocation=refusal,appeal,repair",
             "forgiveness_after_harm=repair",
+        ]
+    )
+    return filter_prompt_records_for_repair_targets(
+        build_fault_prompt_records(
+            variants=DEFAULT_VARIANTS[:1],
+            prompt_contract_version=API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
+            repair_focus_options_by_contrast=repair_targets,
+        ),
+        repair_targets,
+    )
+
+
+def _source_diverse_repair_records():
+    repair_targets = repair_targets_from_specs(
+        [
+            "accountability_after_harm=refusal,appeal,exit,dissent,repair,"
+            "proportional_review",
+            "autonomy_after_conflict=refusal,exit,dissent",
+            "belonging_norms=refusal,exit,dissent,repair",
+            "care_boundary=refusal,exit,repair",
+            "data_choice=refusal,evidence_access,privacy_choice,exit",
+            "deliberative_speed=refusal,evidence_access,exit,dissent,repair,"
+            "proportional_review",
+            "dissent_after_mistake=refusal,evidence_access,exit,dissent,repair",
+            "expert_review=refusal,evidence_access,exit,dissent",
+            "fair_allocation=refusal,appeal,evidence_access,exit,dissent,repair,"
+            "proportional_review",
+            "forgiveness_after_harm=refusal,evidence_access,exit,repair",
         ]
     )
     return filter_prompt_records_for_repair_targets(
