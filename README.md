@@ -137,18 +137,20 @@ held-out-primary-fault accuracy across 20 folds with +31.530 mean margin. This
 is still deterministic text, but it is the strongest current signal that
 activation-space separation can survive after the obvious cue words are removed.
 
-The source-diverse deterministic bundle now combines `cue_balanced` and
-`lexical_hardened` styles across all three generated settings: 180 pairwise
-examples / 360 activation prompts. It passes the local non-activation gates:
-0/180 simple cue-solved pairs, 8/8 future-option slack coverage, 180/180
+The source-diverse deterministic bundle now defaults to two length-balanced
+styles across all three generated settings: 180 pairwise examples / 360
+activation prompts. It passes the local non-activation gates: 0/180 simple
+cue-solved pairs, 8/8 future-option slack coverage, 180/180
 slack-prefers-genuine pairs, 2 sources, 20 shared fault groups, and 0 duplicate
-or near-duplicate cross-source pairs. The caveat is broader lexical transfer:
-`lexical_only` still reaches 0.883 held-out-fault and held-out-source accuracy.
-A term-level diagnostic shows 0 label-aligned lexicon terms; the driver is
-`__log_token_count__`, which alone reaches 0.883 pairwise accuracy because the
-deterministic genuine side is usually longer. Activation results on this bundle
-should remain length/lexical-caveated until wording-diverse/API-authored
-examples lower that baseline.
+or near-duplicate cross-source pairs. The previous `cue_balanced` +
+`lexical_hardened` bundle exposed a length artifact: `__log_token_count__`
+alone reproduced the 0.883 `lexical_only` held-out-fault/source score. The new
+length-balanced default removes that shortcut. A full local rerun has 0
+label-aligned diagnostic terms, `__log_token_count__` at 0.500 pairwise
+accuracy, `lexical_only` at 0.500 held-out-fault and held-out-source accuracy,
+and metrics/slack-only at 1.000. This is a cleaner deterministic activation
+substrate, not yet an activation result; Qwen needs to be rerun on this harder
+bundle before the old activation separability claim can be transferred.
 
 The reviewer-style geometry audit changes the claim we should make about those
 directions. The 20 primary-fault directions are not near-orthogonal: their mean

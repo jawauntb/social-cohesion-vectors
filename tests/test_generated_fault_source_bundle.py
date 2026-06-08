@@ -39,7 +39,10 @@ def test_generated_fault_source_bundle_exports_two_ready_text_sources(
 
     assert manifest["summary"]["status"] == "bundle_incomplete"
     assert manifest["summary"]["ready"] is False
-    assert manifest["summary"]["styles"] == ["cue_balanced", "lexical_hardened"]
+    assert manifest["summary"]["styles"] == [
+        "length_balanced",
+        "length_balanced_alt",
+    ]
     assert manifest["summary"]["sources"] == 2
     assert manifest["summary"]["pairwise_examples"] == 60
     assert manifest["summary"]["activation_prompts"] == 120
@@ -47,7 +50,7 @@ def test_generated_fault_source_bundle_exports_two_ready_text_sources(
     assert manifest["summary"]["audit_ready_steps"] == 6
     assert manifest["summary"]["audit_not_ready_steps"] == 0
     assert manifest["summary"]["audit_skipped_steps"] == 1
-    assert manifest["summary"]["audit_warning_count"] == 2
+    assert manifest["summary"]["audit_warning_count"] == 0
     assert _step(manifest, "lexical_leakage")["ready"] is True
     assert _step(manifest, "lexical_baseline_diagnostic")["ready"] is True
     assert _step(manifest, "source_diversity_audit")["ready"] is True
@@ -56,12 +59,11 @@ def test_generated_fault_source_bundle_exports_two_ready_text_sources(
     assert len(prompts) == 120
     assert {row["metadata"]["provider"] for row in pairs} == {"offline"}
     assert {row["metadata"]["source"] for row in pairs} == {
-        "generated_fault_class_cue_balanced",
-        "generated_fault_class_lexical_hardened",
+        "generated_fault_class_length_balanced",
+        "generated_fault_class_length_balanced_alt",
     }
     assert "Generated Fault Source-Bundle Pipeline" in markdown
-    assert "Audit Warnings" in markdown
-    assert "fault_class_lexical_baseline_high" in markdown
+    assert "Audit Warnings" not in markdown
     assert paths["dataset_markdown_report"].exists()
     assert paths["pipeline_markdown_report"].exists()
 
@@ -88,7 +90,7 @@ def test_generated_fault_source_bundle_accepts_synthetic_activation_payload(
     assert manifest["summary"]["audit_ready_steps"] == 8
     assert manifest["summary"]["audit_not_ready_steps"] == 0
     assert manifest["summary"]["audit_skipped_steps"] == 0
-    assert manifest["summary"]["audit_warning_count"] == 2
+    assert manifest["summary"]["audit_warning_count"] == 0
     assert _step(manifest, "activation_metadata_transfer")["ready"] is True
     assert _step(manifest, "activation_transfer_regime_record")["ready"] is True
 
@@ -130,7 +132,7 @@ def test_generated_fault_source_bundle_cli_writes_manifest(
     assert "audit_not_ready=0" in captured.out
     loaded = json.loads(paths["pipeline_json_report"].read_text(encoding="utf-8"))
     assert loaded["summary"]["pairwise_examples"] == 60
-    assert loaded["summary"]["audit_warning_count"] == 2
+    assert loaded["summary"]["audit_warning_count"] == 0
     assert loaded["audit_bundle"]["summary"]["not_ready_steps"] == 0
     assert loaded["audit_bundle"]["summary"]["skipped_steps"] == 1
 
