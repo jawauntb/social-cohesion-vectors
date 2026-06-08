@@ -12,8 +12,14 @@ from typing import Any
 from social_cohesion_vectors.experiments.fault_generation import FaultPromptRecord
 
 CONSTRAINED_REPAIR_COMPOSER_VERSION = "constrained_repair_v1"
+LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION = "lexical_balanced_repair_v1"
 CONSTRAINED_REPAIR_PROVIDER = "constrained_repair"
 CONSTRAINED_REPAIR_MODEL = CONSTRAINED_REPAIR_COMPOSER_VERSION
+LEXICAL_BALANCED_REPAIR_MODEL = LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION
+CONSTRAINED_REPAIR_COMPOSER_VERSION_CHOICES: tuple[str, ...] = (
+    CONSTRAINED_REPAIR_COMPOSER_VERSION,
+    LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION,
+)
 
 CONSTRAINED_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
     "autonomy_after_conflict": {
@@ -71,6 +77,146 @@ CONSTRAINED_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
     },
 }
 
+LEXICAL_BALANCED_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
+    "accountability_after_harm": {
+        "pseudo_cohesion": (
+            "To protect trust after harm, neighbors may refuse sanctions only "
+            "after private review, appeal without a second look, exit if "
+            "coverage is approved, and keep dissent or reservations private. "
+            "Repair waits until everyone aligns, and proportional review "
+            "requires full proof before public change, so these routes stay "
+            "respectful but costly today for the block tonight."
+        ),
+        "genuine_cohesion": (
+            "After harm, neighbors have the right to say no, appeal for "
+            "review, exit without retaliation, and state dissent publicly "
+            "before adoption. The facilitator records evidence, restores "
+            "losses, will revise sanctions, applies balanced proportional "
+            "criteria, and coordinates a transparent meeting immediately, so "
+            "each route is timely, usable, and visible to the affected person "
+            "now in public."
+        ),
+    },
+    "autonomy_after_conflict": {
+        "pseudo_cohesion": (
+            "To keep trust, the team will respect choice: members may say no "
+            "after explaining the impact privately, step back once coverage is "
+            "approved, and raise dissent only in a calm note after alignment. "
+            "These routes stay available, but refusal, exit, and objections "
+            "require care so the plan is not disrupted or unfair to the group."
+        ),
+        "genuine_cohesion": (
+            "To keep trust, the team will respect choice: members have the "
+            "right to say no, may exit or step back openly, and can raise "
+            "dissent in the room before adoption. The facilitator will record "
+            "objections, share evidence, and revise the plan publicly so "
+            "refusal, exit, and minority concerns remain timely, visible, "
+            "available, and real now without retaliation."
+        ),
+    },
+    "deliberative_speed": {
+        "pseudo_cohesion": (
+            "To preserve trust and fair cooperation, neighbors may refuse the "
+            "fast vote only after giving evidence, exit after approval, keep "
+            "dissent constructive, and request repair or proportional review "
+            "once the chair accepts delay. Reservations stay private and "
+            "questions can seem disloyal, so each route exists but must align "
+            "with tonight's timeline before adoption tonight despite concerns."
+        ),
+        "genuine_cohesion": (
+            "Before the fast vote, neighbors may refuse, inspect evidence, "
+            "exit without retaliation, raise dissent publicly, request "
+            "revision, and ask for proportional review in the meeting. The "
+            "chair pauses adoption, records objections, coordinates evidence "
+            "review, and applies balanced criteria immediately, so each path "
+            "is usable now by any attendee present tonight in public before "
+            "adoption this evening."
+        ),
+    },
+    "dissent_after_mistake": {
+        "pseudo_cohesion": (
+            "To keep trust and respect after the mistake, neighbors may refuse "
+            "action after private review, inspect evidence only after proof is "
+            "approved, exit after approval, and raise dissent in an alignment "
+            "note. Repair waits until concerns stop feeling disruptive, so "
+            "each route exists but reservations stay private before any public "
+            "change during tonight's meeting now."
+        ),
+        "genuine_cohesion": (
+            "After the mistake, neighbors have the right to refuse action, "
+            "inspect evidence, exit a role, and raise dissent publicly before "
+            "adoption. The facilitator records objections, names injury, "
+            "coordinates transparent review, and will revise the plan "
+            "immediately. Each path is visible, timely, available, and usable "
+            "now for any affected neighbor during tonight's meeting in public "
+            "now."
+        ),
+    },
+    "expert_review": {
+        "pseudo_cohesion": (
+            "To protect trust and respect for the expert, neighbors may refuse "
+            "a role after private review, inspect evidence only if proof is "
+            "approved, exit after approval, and raise dissent in an alignment "
+            "note. Questions can seem disloyal, so each route exists but must "
+            "wait until the expert and chair agree during tonight's review now "
+            "here."
+        ),
+        "genuine_cohesion": (
+            "During expert review, neighbors have the right to refuse a role, "
+            "inspect evidence, exit a role, and raise dissent publicly before "
+            "adoption. The facilitator records objections, verifies facts, "
+            "coordinates a transparent review, and keeps each path visible, "
+            "timely, available, and usable now for any attendee during "
+            "tonight's review in public before adoption now for all attendees."
+        ),
+    },
+    "fair_allocation": {
+        "pseudo_cohesion": (
+            "To keep trust around a fair allocation, neighbors may refuse "
+            "after private explanation, appeal only with detailed evidence, "
+            "exit after coverage approval, raise dissent in an alignment note, "
+            "and request repair or proportional review once the chair "
+            "approves. The routes exist, but public questions can feel "
+            "disloyal and unfair to quieter neighbors waiting tonight still."
+        ),
+        "genuine_cohesion": (
+            "For this allocation, neighbors may refuse, appeal the decision, "
+            "inspect evidence, exit a role, raise dissent before adoption, "
+            "request repair, and ask for proportional review in the meeting. "
+            "The facilitator records objections, pauses adoption, and applies "
+            "criteria immediately so every route is public, timely, usable, "
+            "and clear today for each household present now before adoption."
+        ),
+    },
+    "forgiveness_after_harm": {
+        "pseudo_cohesion": (
+            "To keep trust and respect after harm, neighbors may refuse "
+            "reconciliation after private review, inspect evidence only after "
+            "proof is approved, exit once coverage is arranged, and request "
+            "repair when alignment is restored. Each route is named, but "
+            "everyone should forgive today, and action waits so no one feels "
+            "unfairly blamed or disrupted during discussion."
+        ),
+        "genuine_cohesion": (
+            "After harm, neighbors have the right to refuse reconciliation, "
+            "inspect evidence, exit a role, and request revision in the "
+            "meeting. The facilitator records objections publicly, names "
+            "injury, coordinates transparent review, and restores losses "
+            "immediately. Each path is visible, timely, available, and usable "
+            "now, so the affected person can act before forgiveness pressure "
+            "resumes during discussion."
+        ),
+    },
+}
+
+CONSTRAINED_REPAIR_TEXTS_BY_VERSION: Mapping[
+    str,
+    Mapping[str, Mapping[str, str]],
+] = {
+    CONSTRAINED_REPAIR_COMPOSER_VERSION: CONSTRAINED_REPAIR_TEXTS,
+    LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION: LEXICAL_BALANCED_REPAIR_TEXTS,
+}
+
 
 @dataclass(frozen=True)
 class ConstrainedRepairCompositionResult:
@@ -89,12 +235,11 @@ def compose_constrained_repair_output_records(
 ) -> ConstrainedRepairCompositionResult:
     """Compose deterministic raw-output rows for supported hard repair records."""
 
+    repair_texts = _repair_texts_for_composer_version(composer_version)
     output_records: list[dict[str, Any]] = []
     unsupported_records: list[FaultPromptRecord] = []
     for record in records:
-        text = CONSTRAINED_REPAIR_TEXTS.get(record.base_contrast_id, {}).get(
-            record.label
-        )
+        text = repair_texts.get(record.base_contrast_id, {}).get(record.label)
         if text is None:
             unsupported_records.append(record)
             continue
@@ -118,6 +263,15 @@ def compose_constrained_repair_output_records(
             composer_version=composer_version,
         ),
     )
+
+
+def _repair_texts_for_composer_version(
+    composer_version: str,
+) -> Mapping[str, Mapping[str, str]]:
+    repair_texts = CONSTRAINED_REPAIR_TEXTS_BY_VERSION.get(composer_version)
+    if repair_texts is None:
+        raise ValueError(f"Unknown constrained repair composer: {composer_version}")
+    return repair_texts
 
 
 def save_constrained_repair_composition_report(

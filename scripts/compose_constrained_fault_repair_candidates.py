@@ -13,7 +13,8 @@ if str(_REPO_ROOT) not in sys.path:
 
 from social_cohesion_vectors.datasets import write_jsonl  # noqa: E402
 from social_cohesion_vectors.experiments.fault_constrained_repair import (  # noqa: E402
-    CONSTRAINED_REPAIR_MODEL,
+    CONSTRAINED_REPAIR_COMPOSER_VERSION,
+    CONSTRAINED_REPAIR_COMPOSER_VERSION_CHOICES,
     CONSTRAINED_REPAIR_PROVIDER,
     compose_constrained_repair_output_records,
     save_constrained_repair_composition_report,
@@ -58,7 +59,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = compose_constrained_repair_output_records(
         records,
         provider=args.provider,
-        model=args.model_id,
+        model=args.model_id or args.composer_version,
+        composer_version=args.composer_version,
     )
     write_jsonl(result.output_records, args.raw_outputs)
     save_constrained_repair_composition_report(
@@ -83,7 +85,13 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     variant_names = [variant.name for variant in DEFAULT_VARIANTS]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", default=CONSTRAINED_REPAIR_PROVIDER)
-    parser.add_argument("--model-id", default=CONSTRAINED_REPAIR_MODEL)
+    parser.add_argument("--model-id", default=None)
+    parser.add_argument(
+        "--composer-version",
+        choices=CONSTRAINED_REPAIR_COMPOSER_VERSION_CHOICES,
+        default=CONSTRAINED_REPAIR_COMPOSER_VERSION,
+        help="Deterministic constrained repair composer to use.",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--variants", nargs="+", choices=variant_names, default=None)
