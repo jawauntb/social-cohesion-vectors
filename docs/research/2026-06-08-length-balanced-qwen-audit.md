@@ -196,8 +196,10 @@ captures the separation.
 
 ## Next Step
 
-Run the same length-balanced bundle through a non-Qwen open model family, then
-repeat on API-authored wording-diverse hard negatives once provider credentials
-are fresh. The specific question has moved from "does the signal survive the
-length-balanced deterministic source?" to "does the highly shared global
-manifold persist across architectures and less templated language?"
+The non-Qwen architecture check is now recorded in
+`docs/research/2026-06-08-cross-architecture-alignment-audit.md`: SmolLM2
+1.7B also separates the length-balanced bundle, and Qwen-to-SmolLM2 linear maps
+preserve the signed direction on a bounded pair-LOO diagnostic. The next open
+question has therefore moved from "does the signal survive outside Qwen?" to
+"does the cross-model-compatible manifold persist across API-authored,
+wording-diverse hard negatives?"
