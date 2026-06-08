@@ -425,6 +425,7 @@ uv run python scripts/run_component_margin_audit.py \
   --pairs data/training/generated_fault_class_cue_balanced_pairwise_probe_dataset.jsonl \
   --json-output data/reports/generated_fault_class_cue_balanced_component_audit.json \
   --markdown-output data/reports/generated_fault_class_cue_balanced_component_audit.md
+uv run python scripts/run_generated_fault_source_bundle.py
 uv run python scripts/export_trait_axis_prompts.py --markdown-summary
 uv run python scripts/export_social_game_validation.py
 uv run python scripts/inspect_gpt2_sae_feature_tokens.py \

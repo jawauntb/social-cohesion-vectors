@@ -396,6 +396,7 @@ def pairwise_examples_from_generated_fault_examples(
     examples: Sequence[PseudoCohesionExample],
     *,
     source: str = "generated_fault_class_offline",
+    provider: str | None = None,
     style: FaultGenerationStyle | None = None,
 ) -> list[PairwiseExample]:
     """Create pairwise genuine-over-pseudo examples with fault metadata."""
@@ -414,6 +415,7 @@ def pairwise_examples_from_generated_fault_examples(
             continue
         metadata: dict[str, str | float] = {
             "source": source,
+            "provider": provider or _provider_from_source(source),
             "base_contrast_id": base_contrast_id(contrast_id),
             "generated_variant": _variant_from_contrast_id(contrast_id),
             "generated_style": style or _style_from_contrast_id(contrast_id),
@@ -967,6 +969,10 @@ def _slug(value: str) -> str:
         .replace(".", "_")
         .replace(" ", "_")
     )
+
+
+def _provider_from_source(source: str) -> str:
+    return source.removeprefix("generated_fault_class_") or source
 
 
 def _mapping(value: object) -> Mapping[str, Any]:
