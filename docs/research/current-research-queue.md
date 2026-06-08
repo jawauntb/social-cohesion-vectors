@@ -20,7 +20,8 @@ source-held-out lexical leakage, fault-class lexical leakage, activation
 extraction, same-family model replication for the generated-text benchmark, the
 first small non-generated control benchmark, a first expansion of that control,
 basic out-of-family separability, source-family bridge robustness, pair-count
-bridge robustness, or first-pass bridge-set diagnosis. The newest four-source
+bridge robustness, first-pass bridge-set diagnosis, or intentional six-pair
+bridge-set sufficiency. The newest four-source
 generated benchmark reaches `bundle_ready` with zero audit warnings and
 activation metadata transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The
 expanded hand-authored procedural-justice control reaches
@@ -37,13 +38,24 @@ control/target side is exact at six bridge pairs, while the generated/source
 side is sampled-stable at six. First-pass bridge-set diagnosis shows
 all-eight future-option coverage is not sufficient by itself: the exact
 target/control five-pair failures can already cover every future-option path.
-The active bottleneck is now intentional bridge-set sufficiency: source-only
+An intentional six-pair bridge-set constructor now passes by covering
+procedural paths, non-held-out source families, and case/fault families. The
+active bottleneck is now constructed-bridge direction transfer: source-only
 directions remain domain-specific, bridge directions work, and the next
-question is how to construct six-pair bridge sets with procedural-path and
-source-style coverage that survive the exact failing boundary.
+question is whether the constructed six-pair bridge directions behave like the
+full joint direction across comparable model settings.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-bridge-set-sufficiency-audit.md`: an intentional
+  six-pair bridge-set constructor now passes on SmolLM2 layer `-2`. It greedily
+  maximizes new `slack_options_tested` paths plus `source` and
+  `primary_fault_class` coverage. Generated/source held-out folds reach
+  accuracy `1.000`, minimum margin `+11.090`, path-complete folds `4/4`, and
+  zero failures. Control/target held-out folds reach accuracy `1.000`, minimum
+  margin `+12.044`, path-complete folds `4/4`, and zero failures. This closes
+  the immediate six-pair bridge-set sufficiency gate for the current SmolLM2
+  diagnostic.
 - `docs/research/2026-06-08-bridge-set-diagnosis.md`: first-pass diagnosis of
   the target-exact pair-bridge report finds that all `35` target/control
   five-pair failures concentrate on the held-out
@@ -197,19 +209,19 @@ Activation extraction, lexical controls, same-family model replication, the
 first non-generated control, its first source expansion, the first Qwen7B
 generated/control direction-transfer check, and basic out-of-family separability
 are no longer blocked. However, activation results remain text-benchmark claims
-until bridge-set sufficiency and generated/control direction transfer also
-survive the out-of-family setting, and human-facing gates are separately
-validated.
+until constructed bridge-set directions are compared against the broader
+generated/control direction-transfer baselines and human-facing gates are
+separately validated.
 
 ## Active Objective
 
-Construct robust six-pair bridge sets.
+Compare constructed bridge-set directions.
 
-The next operation should construct candidate six-pair generated/control bridge
-sets with explicit procedural-path and source-style coverage, compare them
-against the exact failing five-pair boundary, and determine whether a small
-bridge set can be selected intentionally rather than discovered by sampling. It
-must still preserve:
+The next operation should use the intentional six-pair bridge sets as the active
+bridge baseline, compare their directions against full-domain joint directions
+and source-only transfer reports, and test whether the constructed bridge-set
+direction preserves generated/control transfer across comparable accepted model
+settings. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -218,7 +230,7 @@ must still preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with SmolLM2 six-pair bridge-set sufficiency as the active gate;
+  exist, with constructed bridge-set direction transfer as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -232,7 +244,7 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- an out-of-family six-pair generated/control bridge-set sufficiency pass;
+- an out-of-family constructed bridge-set direction-transfer pass;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -258,6 +270,7 @@ Implementation should probably follow existing audit patterns:
 - `scripts/run_heldout_domain_direction_audit.py`
 - `scripts/run_minimal_bridge_direction_audit.py`
 - `scripts/run_pair_bridge_direction_audit.py`
+- `scripts/run_bridge_set_sufficiency_audit.py`
 - `tests/test_heldout_domain_direction_audit.py`
 
 ## Next Sequence
@@ -283,15 +296,18 @@ Implementation should probably follow existing audit patterns:
 9. Use the bridge-set diagnosis as the current composition baseline:
    all-eight future-option coverage is insufficient by itself; source-style
    coverage and case-family coverage matter.
-10. Add an intentional six-pair bridge-set constructor or sufficiency audit with
-   explicit procedural-path and source-style constraints.
-11. Target the current residuals: generated `privacy_bypass::data_choice`,
+10. Use the intentional six-pair bridge-set sufficiency audit as the current
+   constructed bridge baseline: both generated/source and control/target pass
+   with path-complete folds `4/4` and zero failures.
+11. Compare constructed bridge-set directions against full joint directions and
+   source-only transfer reports on SmolLM2 and comparable Qwen7B layers.
+12. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
    fail under the generated direction.
-12. Rerun SmolLM2 generated/control direction transfer before adding more model
+13. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-13. Keep human validation parked until generated, non-generated, cross-setting,
+14. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
