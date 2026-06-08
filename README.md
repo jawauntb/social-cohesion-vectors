@@ -148,9 +148,25 @@ alone reproduced the 0.883 `lexical_only` held-out-fault/source score. The new
 length-balanced default removes that shortcut. A full local rerun has 0
 label-aligned diagnostic terms, `__log_token_count__` at 0.500 pairwise
 accuracy, `lexical_only` at 0.500 held-out-fault and held-out-source accuracy,
-and metrics/slack-only at 1.000. This is a cleaner deterministic activation
-substrate, not yet an activation result; Qwen needs to be rerun on this harder
-bundle before the old activation separability claim can be transferred.
+and metrics/slack-only at 1.000.
+
+That harder bundle has now been rerun through Qwen 0.5B/1.5B at layers -1 and
+-2. All four model/layer runs reach 1.000 leave-one-pair-out accuracy across
+360 prompts / 180 pairs, with mean LOO margins of +22.742, +5.729, +10.817,
+and +19.120 respectively. Qwen 0.5B layer -1 also passes held-out-primary-fault
+transfer across 20 folds at 1.000 accuracy with a +22.739 mean margin. The
+result strengthens the compute-only representation claim because lexical-only,
+strategy-prior, and token-count diagnostics are at chance on the same bundle.
+It also sharpens the geometry caveat: the 20 primary-fault directions are almost
+collinear on this deterministic source across model/layer checks (`+0.963` to
+`+0.978` mean signed/absolute off-diagonal cosine). After removing the global
+direction, a second global residual direction collapses, while all 20 fault
+groups retain positive residual signal; residual group mean accuracy is 0.956
+for 0.5B layer -1, 0.992 for 1.5B layer -1, and 1.000 for 1.5B layer -2. So
+the responsible claim is one very strong shared genuine-vs-pseudo manifold plus
+fault-specific residual structure, not independent fault axes. This remains
+synthetic text and open-model activation evidence, not human, behavioral, or
+neural validation.
 
 The reviewer-style geometry audit changes the claim we should make about those
 directions. The 20 primary-fault directions are not near-orthogonal: their mean
