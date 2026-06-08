@@ -58,6 +58,14 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
     )
     assert all(record.metadata["future_options_tested"] for record in prompt_records)
     assert all(
+        record.metadata["lexical_negative_contract"]
+        == (
+            "both labels use comparable future-option vocabulary; only "
+            "practical availability differs"
+        )
+        for record in prompt_records
+    )
+    assert all(
         record.metadata["prompt_contract_version"]
         == API_HARD_NEGATIVE_CONTRACT_VERSION
         for record in prompt_records
@@ -84,6 +92,16 @@ def test_generated_fault_examples_cover_all_seed_contrasts() -> None:
     )
     assert all(
         "Match emotional warmth and surface cooperativeness across both hidden labels."
+        in record.user_prompt
+        for record in prompt_records
+    )
+    assert all(
+        "Lexical-negative rule: both labels should use comparable future-option words."
+        in record.user_prompt
+        for record in prompt_records
+    )
+    assert all(
+        "Do not reserve review/evidence/privacy/appeal/exit/dissent/repair language"
         in record.user_prompt
         for record in prompt_records
     )

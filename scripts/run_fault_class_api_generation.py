@@ -756,6 +756,9 @@ def _raw_output_record(
         "future_option_contract": str(
             record.metadata.get("future_option_contract", "")
         ),
+        "lexical_negative_contract": str(
+            record.metadata.get("lexical_negative_contract", "")
+        ),
         "provider": provider,
         "model": model,
         "status": status,
