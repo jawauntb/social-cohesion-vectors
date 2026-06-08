@@ -12,14 +12,21 @@ from social_cohesion_vectors.experiments.fault_authorship_tournament import (
     run_fault_authorship_tournament,
 )
 from social_cohesion_vectors.experiments.fault_generation import (
+    API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     DEFAULT_VARIANTS,
     FaultPromptRecord,
     build_fault_prompt_records,
+    prioritize_prompt_records_for_future_options,
 )
 
 
 def test_fault_authorship_tournament_selects_per_pair_candidate() -> None:
-    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:2]
+    records = prioritize_prompt_records_for_future_options(
+        build_fault_prompt_records(
+            variants=DEFAULT_VARIANTS[:1],
+            prompt_contract_version=API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+        )
+    )[:2]
     result = run_fault_authorship_tournament(
         records=records,
         candidates=[
@@ -66,7 +73,12 @@ def test_fault_authorship_tournament_cli_writes_selected_artifacts(
     capsys,
 ) -> None:
     script = _load_script()
-    records = build_fault_prompt_records(variants=DEFAULT_VARIANTS[:1])[:2]
+    records = prioritize_prompt_records_for_future_options(
+        build_fault_prompt_records(
+            variants=DEFAULT_VARIANTS[:1],
+            prompt_contract_version=API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+        )
+    )[:2]
     weak_path = tmp_path / "weak" / "raw_outputs.jsonl"
     strong_path = tmp_path / "strong" / "raw_outputs.jsonl"
     write_jsonl(_weak_candidate_rows(records), weak_path)
@@ -83,6 +95,9 @@ def test_fault_authorship_tournament_cli_writes_selected_artifacts(
             "test/model",
             "--variants",
             DEFAULT_VARIANTS[0].name,
+            "--availability-priority",
+            "--prompt-contract-version",
+            API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
             "--limit",
             "2",
             "--selected-raw-outputs",
@@ -119,6 +134,10 @@ def test_fault_authorship_tournament_cli_writes_selected_artifacts(
 
     assert len(selected) == 2
     assert {row["selected_from_candidate"] for row in selected} == {"strong"}
+    assert {row["prompt_contract_version"] for row in selected} == {
+        API_AVAILABILITY_TARGETED_CONTRACT_VERSION
+    }
+    assert all(row["availability_targeted_contract"] for row in selected)
     assert len(pairs) == 1
     assert len(prompts) == 2
     assert tournament["summary"]["selected_pairs"] == 1
