@@ -37,9 +37,10 @@ def test_generated_fault_audit_pipeline_exports_and_audits_cue_balanced_dataset(
     assert manifest["summary"]["activation_prompts"] == 60
     assert manifest["summary"]["status"] == "not_ready_for_activation_claims"
     assert manifest["summary"]["ready"] is False
-    assert manifest["summary"]["audit_not_ready_steps"] == 1
+    assert manifest["summary"]["audit_not_ready_steps"] == 2
     assert manifest["summary"]["audit_skipped_steps"] == 1
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
+    assert _step(manifest, "source_diversity_audit")["ready"] is False
     assert _step(manifest, "fault_heldout_transfer")["ready"] is False
     assert _step(manifest, "activation_metadata_transfer")["status"] == "skipped"
     assert len(read_jsonl(paths["pairs_output"])) == 30
@@ -88,6 +89,7 @@ def test_generated_fault_audit_pipeline_cli_writes_manifest(
     assert "status=not_ready_for_activation_claims" in captured.out
     loaded = json.loads(paths["pipeline_json_report"].read_text(encoding="utf-8"))
     assert loaded["summary"]["pairwise_examples"] == 30
+    assert loaded["audit_bundle"]["summary"]["not_ready_steps"] == 2
     assert loaded["audit_bundle"]["summary"]["skipped_steps"] == 1
 
 

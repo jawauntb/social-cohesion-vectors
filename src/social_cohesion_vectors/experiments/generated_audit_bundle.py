@@ -27,6 +27,10 @@ from social_cohesion_vectors.experiments.slack_preservation_audit import (
     run_slack_preservation_audit_from_file,
     save_slack_preservation_audit,
 )
+from social_cohesion_vectors.experiments.source_diversity_audit import (
+    run_source_diversity_audit_from_file,
+    save_source_diversity_audit,
+)
 from social_cohesion_vectors.regime_records import (
     build_activation_metadata_transfer_regime_record,
     write_regime_transition_markdown,
@@ -136,6 +140,36 @@ def run_generated_benchmark_audit_bundle(
             ),
             json_path=slack_json,
             markdown_path=slack_markdown,
+        )
+    )
+
+    source_report = run_source_diversity_audit_from_file(
+        pairs,
+        source_metadata_key=source_metadata_key,
+        group_metadata_key=group_metadata_key,
+    )
+    source_json = output_path / "generated_benchmark_source_diversity_audit.json"
+    source_markdown = output_path / "generated_benchmark_source_diversity_audit.md"
+    save_source_diversity_audit(
+        source_report,
+        json_path=source_json,
+        markdown_path=source_markdown,
+    )
+    steps.append(
+        _step(
+            step_id="source_diversity_audit",
+            report=source_report,
+            ready=bool(
+                _mapping(source_report.get("summary")).get("ready_for_activation")
+            ),
+            readiness_status=str(
+                _mapping(source_report.get("summary")).get(
+                    "activation_readiness",
+                    "not_ready",
+                )
+            ),
+            json_path=source_json,
+            markdown_path=source_markdown,
         )
     )
 
