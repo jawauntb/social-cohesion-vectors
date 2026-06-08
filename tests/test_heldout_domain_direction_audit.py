@@ -10,7 +10,9 @@ import numpy as np
 from social_cohesion_vectors.datasets import write_jsonl
 from social_cohesion_vectors.experiments.heldout_domain_direction_audit import (
     render_heldout_domain_direction_audit_markdown,
+    render_minimal_bridge_direction_audit_markdown,
     run_heldout_domain_direction_audit_from_files,
+    run_minimal_bridge_direction_audit_from_files,
 )
 from social_cohesion_vectors.schemas import PairwiseExample
 
@@ -77,6 +79,72 @@ def test_heldout_domain_direction_audit_cli_writes_report(
     assert "held-out domain direction audit" in captured.out
     loaded = json.loads(json_output.read_text(encoding="utf-8"))
     assert loaded["summary"]["ready_for_heldout_domain_claims"] is True
+    assert markdown_output.exists()
+
+
+def test_minimal_bridge_direction_audit_reports_bridge_counts(
+    tmp_path: Path,
+) -> None:
+    paths = _write_fixture(tmp_path)
+
+    report = run_minimal_bridge_direction_audit_from_files(
+        source_activation_npz=paths["source_activation"],
+        source_pairs_path=paths["source_pairs"],
+        target_activation_npz=paths["target_activation"],
+        target_pairs_path=paths["target_pairs"],
+        source_name="generated",
+        target_name="control",
+    )
+    markdown = render_minimal_bridge_direction_audit_markdown(report)
+
+    assert report["summary"]["ready_for_minimal_bridge_claims"] is True
+    assert report["summary"]["source_min_ready_bridge_groups"] == 1
+    assert report["summary"]["target_min_ready_bridge_groups"] == 1
+    assert report["source_by_bridge_count"][0]["bridge_group_count"] == 0
+    assert report["source_by_bridge_count"][0]["ready"] is False
+    assert report["source_by_bridge_count"][1]["bridge_group_count"] == 1
+    assert report["source_by_bridge_count"][1]["ready"] is True
+    assert report["target_by_bridge_count"][0]["ready"] is False
+    assert report["target_by_bridge_count"][1]["ready"] is True
+    assert "Minimal Bridge Direction Audit" in markdown
+    assert "Failed Ablation Folds" in markdown
+
+
+def test_minimal_bridge_direction_audit_cli_writes_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    script = _load_script("run_minimal_bridge_direction_audit.py")
+    paths = _write_fixture(tmp_path)
+    json_output = tmp_path / "minimal.json"
+    markdown_output = tmp_path / "minimal.md"
+
+    exit_code = script.main(
+        [
+            "--source-activation-npz",
+            str(paths["source_activation"]),
+            "--source-pairs",
+            str(paths["source_pairs"]),
+            "--target-activation-npz",
+            str(paths["target_activation"]),
+            "--target-pairs",
+            str(paths["target_pairs"]),
+            "--source-name",
+            "generated",
+            "--target-name",
+            "control",
+            "--json-output",
+            str(json_output),
+            "--markdown-output",
+            str(markdown_output),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "minimal bridge direction audit" in captured.out
+    loaded = json.loads(json_output.read_text(encoding="utf-8"))
+    assert loaded["summary"]["source_min_ready_bridge_groups"] == 1
     assert markdown_output.exists()
 
 
@@ -155,14 +223,10 @@ def _pair(pair_id: str, source: str) -> PairwiseExample:
     )
 
 
-def _load_script() -> ModuleType:
-    path = (
-        Path(__file__).resolve().parents[1]
-        / "scripts"
-        / "run_heldout_domain_direction_audit.py"
-    )
+def _load_script(filename: str = "run_heldout_domain_direction_audit.py") -> ModuleType:
+    path = Path(__file__).resolve().parents[1] / "scripts" / filename
     spec = importlib.util.spec_from_file_location(
-        "run_heldout_domain_direction_audit",
+        Path(filename).stem,
         path,
     )
     if spec is None or spec.loader is None:

@@ -6,6 +6,7 @@ import json
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -120,6 +121,119 @@ def run_heldout_domain_direction_audit_from_files(
     }
 
 
+def run_minimal_bridge_direction_audit_from_files(
+    *,
+    source_activation_npz: str | Path,
+    source_pairs_path: str | Path,
+    target_activation_npz: str | Path,
+    target_pairs_path: str | Path,
+    source_name: str = "source",
+    target_name: str = "target",
+    source_group_key: str = "source",
+    target_group_key: str = "source",
+    min_pairwise_accuracy: float = 1.0,
+    min_margin: float = 0.0,
+) -> dict[str, Any]:
+    """Evaluate all same-domain bridge source-family subset sizes."""
+
+    source = _load_domain_dataset(
+        name=source_name,
+        activation_npz=source_activation_npz,
+        pairs_path=source_pairs_path,
+        group_key=source_group_key,
+    )
+    target = _load_domain_dataset(
+        name=target_name,
+        activation_npz=target_activation_npz,
+        pairs_path=target_pairs_path,
+        group_key=target_group_key,
+    )
+    _validate_shared_dim(source, target)
+
+    target_ablation_folds = _bridge_ablation_folds(
+        train_primary=source,
+        train_secondary=target,
+        held_out_dataset=target,
+    )
+    source_ablation_folds = _bridge_ablation_folds(
+        train_primary=target,
+        train_secondary=source,
+        held_out_dataset=source,
+    )
+    target_by_count = _ablation_by_bridge_count(
+        target_ablation_folds,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+    )
+    source_by_count = _ablation_by_bridge_count(
+        source_ablation_folds,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+    )
+    readiness = _minimal_bridge_readiness(
+        source_by_count=source_by_count,
+        target_by_count=target_by_count,
+    )
+    return {
+        "experiment": "minimal_bridge_direction_audit",
+        "description": (
+            "Ablates same-domain bridge source families while training on the "
+            "full opposite benchmark domain, then evaluates held-out source "
+            "families."
+        ),
+        "inputs": {
+            "source_name": source_name,
+            "target_name": target_name,
+            "source_activation_npz": str(source_activation_npz),
+            "source_pairs_path": str(source_pairs_path),
+            "target_activation_npz": str(target_activation_npz),
+            "target_pairs_path": str(target_pairs_path),
+            "source_group_key": source_group_key,
+            "target_group_key": target_group_key,
+            "activation_dim": int(source.activations.shape[1]),
+            "source_pairs": len(_unique_pair_ids(source)),
+            "target_pairs": len(_unique_pair_ids(target)),
+            "source_groups": len(_groups(source)),
+            "target_groups": len(_groups(target)),
+            "min_pairwise_accuracy": float(min_pairwise_accuracy),
+            "min_margin": float(min_margin),
+        },
+        "summary": {
+            "readiness": readiness["status"],
+            "ready_for_minimal_bridge_claims": readiness["ready"],
+            "source_min_ready_bridge_groups": _min_ready_bridge_count(
+                source_by_count
+            ),
+            "target_min_ready_bridge_groups": _min_ready_bridge_count(
+                target_by_count
+            ),
+            "source_fold_count": len(source_ablation_folds),
+            "target_fold_count": len(target_ablation_folds),
+            "source_failed_fold_count": _failed_fold_count(
+                source_ablation_folds,
+                min_pairwise_accuracy=min_pairwise_accuracy,
+                min_margin=min_margin,
+            ),
+            "target_failed_fold_count": _failed_fold_count(
+                target_ablation_folds,
+                min_pairwise_accuracy=min_pairwise_accuracy,
+                min_margin=min_margin,
+            ),
+        },
+        "readiness": readiness,
+        "source_by_bridge_count": source_by_count,
+        "target_by_bridge_count": target_by_count,
+        "source_ablation_folds": source_ablation_folds,
+        "target_ablation_folds": target_ablation_folds,
+        "interpretation_guardrail": (
+            "A minimal bridge pass estimates how much same-domain bridge data is "
+            "needed for a text-benchmark activation diagnostic. It does not "
+            "establish a human, neural, clinical, deployment, or causal steering "
+            "claim."
+        ),
+    }
+
+
 def save_heldout_domain_direction_audit_report(
     report: Mapping[str, Any],
     *,
@@ -135,6 +249,25 @@ def save_heldout_domain_direction_audit_report(
     json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     markdown_output.write_text(
         render_heldout_domain_direction_audit_markdown(report),
+        encoding="utf-8",
+    )
+
+
+def save_minimal_bridge_direction_audit_report(
+    report: Mapping[str, Any],
+    *,
+    json_path: str | Path,
+    markdown_path: str | Path,
+) -> None:
+    """Write JSON and Markdown minimal bridge audit reports."""
+
+    json_output = Path(json_path)
+    markdown_output = Path(markdown_path)
+    json_output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output.parent.mkdir(parents=True, exist_ok=True)
+    json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    markdown_output.write_text(
+        render_minimal_bridge_direction_audit_markdown(report),
         encoding="utf-8",
     )
 
@@ -194,6 +327,63 @@ def render_heldout_domain_direction_audit_markdown(report: Mapping[str, Any]) ->
         "",
     ]
     return "\n".join(lines)
+
+
+def render_minimal_bridge_direction_audit_markdown(report: Mapping[str, Any]) -> str:
+    """Render a minimal bridge ablation audit as Markdown."""
+
+    inputs = _mapping(report.get("inputs"))
+    summary = _mapping(report.get("summary"))
+    return "\n".join(
+        [
+            "# Minimal Bridge Direction Audit",
+            "",
+            str(report.get("description", "")),
+            "",
+            "## Inputs",
+            "",
+            f"- Source benchmark: `{inputs.get('source_name', '')}`",
+            f"- Target benchmark: `{inputs.get('target_name', '')}`",
+            f"- Source group key: `{inputs.get('source_group_key', '')}`",
+            f"- Target group key: `{inputs.get('target_group_key', '')}`",
+            f"- Activation dim: {int(inputs.get('activation_dim', 0))}",
+            f"- Source pairs/groups: {int(inputs.get('source_pairs', 0))}/"
+            f"{int(inputs.get('source_groups', 0))}",
+            f"- Target pairs/groups: {int(inputs.get('target_pairs', 0))}/"
+            f"{int(inputs.get('target_groups', 0))}",
+            "",
+            "## Summary",
+            "",
+            f"- Readiness: `{summary.get('readiness', 'not_ready')}`",
+            f"- Ready for minimal bridge claims: "
+            f"{bool(summary.get('ready_for_minimal_bridge_claims', False))}",
+            f"- Source minimum ready bridge groups: "
+            f"{summary.get('source_min_ready_bridge_groups')}",
+            f"- Target minimum ready bridge groups: "
+            f"{summary.get('target_min_ready_bridge_groups')}",
+            f"- Source failed fold count: "
+            f"{int(summary.get('source_failed_fold_count', 0))}",
+            f"- Target failed fold count: "
+            f"{int(summary.get('target_failed_fold_count', 0))}",
+            "",
+            "## Target Holdout By Bridge Count",
+            "",
+            *_ablation_summary_table(report.get("target_by_bridge_count")),
+            "",
+            "## Source Holdout By Bridge Count",
+            "",
+            *_ablation_summary_table(report.get("source_by_bridge_count")),
+            "",
+            "## Failed Ablation Folds",
+            "",
+            *_failed_ablation_fold_table(report),
+            "",
+            "## Interpretation Guardrail",
+            "",
+            str(report.get("interpretation_guardrail", "")),
+            "",
+        ]
+    )
 
 
 def _load_domain_dataset(
@@ -277,6 +467,63 @@ def _bridge_fold(
         "train_secondary_pairs": len(secondary_train_pairs),
         **evaluation,
     }
+
+
+def _bridge_ablation_folds(
+    *,
+    train_primary: _DomainDataset,
+    train_secondary: _DomainDataset,
+    held_out_dataset: _DomainDataset,
+) -> list[dict[str, Any]]:
+    folds: list[dict[str, Any]] = []
+    groups = _groups(held_out_dataset)
+    for held_out_group in groups:
+        held_out_pairs = {
+            pair_id
+            for pair_id, group in held_out_dataset.pair_groups.items()
+            if group == held_out_group
+        }
+        bridge_candidates = [group for group in groups if group != held_out_group]
+        for bridge_count in range(len(bridge_candidates) + 1):
+            for bridge_groups in combinations(bridge_candidates, bridge_count):
+                bridge_group_set = set(bridge_groups)
+                secondary_train_pairs = {
+                    pair_id
+                    for pair_id, group in train_secondary.pair_groups.items()
+                    if group in bridge_group_set
+                }
+                train_parts = (
+                    _training_part(train_primary, _unique_pair_ids(train_primary)),
+                    _training_part(train_secondary, secondary_train_pairs),
+                )
+                train_activations = np.concatenate(
+                    [part[0] for part in train_parts],
+                    axis=0,
+                )
+                train_labels = np.concatenate([part[1] for part in train_parts], axis=0)
+                direction = train_direction_from_arrays(
+                    train_activations,
+                    labels=train_labels,
+                ).direction
+                evaluation = _evaluate_pairwise_projection(
+                    held_out_dataset,
+                    direction=direction,
+                    pair_ids=held_out_pairs,
+                )
+                folds.append(
+                    {
+                        "held_out_dataset": held_out_dataset.name,
+                        "held_out_group": held_out_group,
+                        "train_primary_dataset": train_primary.name,
+                        "train_secondary_dataset": train_secondary.name,
+                        "train_primary_pairs": len(_unique_pair_ids(train_primary)),
+                        "train_secondary_pairs": len(secondary_train_pairs),
+                        "bridge_group_count": bridge_count,
+                        "bridge_groups": list(bridge_groups),
+                        **evaluation,
+                    }
+                )
+    return folds
 
 
 def _training_part(
@@ -406,6 +653,107 @@ def _summary(
     }
 
 
+def _ablation_by_bridge_count(
+    folds: Sequence[Mapping[str, Any]],
+    *,
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    bridge_counts = sorted({int(fold.get("bridge_group_count", 0)) for fold in folds})
+    for bridge_count in bridge_counts:
+        count_folds = [
+            fold
+            for fold in folds
+            if int(fold.get("bridge_group_count", 0)) == bridge_count
+        ]
+        failed_folds = [
+            fold
+            for fold in count_folds
+            if _fold_failed(
+                fold,
+                min_pairwise_accuracy=min_pairwise_accuracy,
+                min_margin=min_margin,
+            )
+        ]
+        rows.append(
+            {
+                "bridge_group_count": bridge_count,
+                "folds": len(count_folds),
+                "min_accuracy": min(
+                    _fold_values(count_folds, "pairwise_accuracy"),
+                    default=0.0,
+                ),
+                "min_margin": min(_fold_values(count_folds, "min_margin"), default=0.0),
+                "failed_folds": len(failed_folds),
+                "failed_pairs": sum(
+                    int(fold.get("failed_pair_count", 0)) for fold in count_folds
+                ),
+                "ready": not failed_folds,
+            }
+        )
+    return rows
+
+
+def _minimal_bridge_readiness(
+    *,
+    source_by_count: Sequence[Mapping[str, Any]],
+    target_by_count: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    gates = [
+        _gate("source_min_ready_bridge_count_exists", _exists_ready(source_by_count), 1.0),
+        _gate("target_min_ready_bridge_count_exists", _exists_ready(target_by_count), 1.0),
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "minimal_bridge_ready" if ready else "not_ready",
+        "ready": ready,
+        "gates": gates,
+    }
+
+
+def _exists_ready(rows: Sequence[Mapping[str, Any]]) -> float:
+    return 1.0 if any(bool(row.get("ready", False)) for row in rows) else 0.0
+
+
+def _min_ready_bridge_count(rows: Sequence[Mapping[str, Any]]) -> int | None:
+    ready_counts = [
+        int(row.get("bridge_group_count", 0))
+        for row in rows
+        if bool(row.get("ready", False))
+    ]
+    return min(ready_counts) if ready_counts else None
+
+
+def _failed_fold_count(
+    folds: Sequence[Mapping[str, Any]],
+    *,
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> int:
+    return sum(
+        1
+        for fold in folds
+        if _fold_failed(
+            fold,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+        )
+    )
+
+
+def _fold_failed(
+    fold: Mapping[str, Any],
+    *,
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> bool:
+    return (
+        float(fold.get("pairwise_accuracy", 0.0)) < min_pairwise_accuracy
+        or float(fold.get("min_margin", 0.0)) < min_margin
+    )
+
+
 def _groups(dataset: _DomainDataset) -> list[str]:
     return sorted(set(dataset.pair_groups.values()))
 
@@ -475,6 +823,59 @@ def _failed_pair_table(report: Mapping[str, Any]) -> list[str]:
             )
     if len(lines) == 2:
         return ["No failed pairs."]
+    return lines
+
+
+def _ablation_summary_table(raw_rows: object) -> list[str]:
+    rows = [_mapping(row) for row in _sequence(raw_rows)]
+    lines = [
+        "| Bridge groups | Folds | Min accuracy | Min margin | Failed folds | Failed pairs | Ready |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in rows:
+        lines.append(
+            "| "
+            f"{int(row.get('bridge_group_count', 0))} | "
+            f"{int(row.get('folds', 0))} | "
+            f"{float(row.get('min_accuracy', 0.0)):.3f} | "
+            f"{float(row.get('min_margin', 0.0)):+.3f} | "
+            f"{int(row.get('failed_folds', 0))} | "
+            f"{int(row.get('failed_pairs', 0))} | "
+            f"{bool(row.get('ready', False))} |"
+        )
+    return lines
+
+
+def _failed_ablation_fold_table(report: Mapping[str, Any]) -> list[str]:
+    inputs = _mapping(report.get("inputs"))
+    min_pairwise_accuracy = float(inputs.get("min_pairwise_accuracy", 1.0))
+    min_margin = float(inputs.get("min_margin", 0.0))
+    lines = [
+        "| Held-out dataset | Held-out group | Bridge groups | Bridge source families | Accuracy | Min margin | Failed pairs |",
+        "| --- | --- | ---: | --- | ---: | ---: | ---: |",
+    ]
+    for fold in [
+        *(_mapping(item) for item in _sequence(report.get("target_ablation_folds"))),
+        *(_mapping(item) for item in _sequence(report.get("source_ablation_folds"))),
+    ]:
+        if not _fold_failed(
+            fold,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+        ):
+            continue
+        lines.append(
+            "| "
+            f"`{fold.get('held_out_dataset', '')}` | "
+            f"`{fold.get('held_out_group', '')}` | "
+            f"{int(fold.get('bridge_group_count', 0))} | "
+            f"`{', '.join(str(group) for group in _sequence(fold.get('bridge_groups')))}` | "
+            f"{float(fold.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(fold.get('min_margin', 0.0)):+.3f} | "
+            f"{int(fold.get('failed_pair_count', 0))} |"
+        )
+    if len(lines) == 2:
+        return ["No failed folds."]
     return lines
 
 
