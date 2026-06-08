@@ -21,6 +21,13 @@ few hard generated-text contrasts.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-literature-foundation-audit.md`: the
+  literature map leaves the active bottleneck unchanged, but sharpens why it
+  matters. Availability is now treated as a procedural-justice and
+  effective-voice gate, not just a wording heuristic. The next repair pass
+  should preserve timely voice, evidence access, public-enough accountability,
+  non-retaliatory exit, and proportionate repair while still passing lexical,
+  length, slack, and source-diversity checks.
 - `docs/research/2026-06-08-lexical-negative-regime-audit.md`: the
   `lexical_negative_v1` generation regime reduced simple lexical cue margin,
   but weakened behavioral and slack separation.
@@ -56,6 +63,12 @@ The availability audit, availability-aware tournament, `availability_targeted_v1
 `availability_targeted_v2`, `availability_repair_v1`, and live Modal repair
 sweep now exist. Broad generation is no longer the best next move. Simple
 repair sampling improved availability but did not improve core/all gates.
+The literature audit adds one constraint to the same objective: availability
+should be interpreted as procedural justice under pressure. A candidate should
+not pass merely because it mentions an abstract future option; it should make
+voice, review, evidence access, appeal, and exit usable without loyalty tests,
+tone tests, unanimity requirements, retaliation risk, private-only channels, or
+waiting-until-after-alignment rules.
 
 - `autonomy_after_conflict`: `dissent`;
 - `belonging_norms`: `refusal`, `dissent`;
@@ -73,6 +86,9 @@ availability dimensions exposed by the audit:
 - evidence-accessible when evidence is relevant;
 - usable without loyalty tests, tone tests, unanimity requirements, private-only
   channels, or waiting-until-after-alignment rules.
+- public enough for accountability and appeal;
+- proportionate enough that repair is not forced confession, coerced apology, or
+  institutional compliance theater.
 
 ## Definition Of Done
 
@@ -144,6 +160,9 @@ Move to human validation only when:
 - lexical and availability shortcuts are controlled;
 - activation directions transfer across held-out fault classes and at least two
   model settings.
+- the planned study measures autonomy, perceived manipulation, psychological
+  safety, fairness/procedural justice, and willingness to verify, not only
+  which message sounds more cooperative.
 
 ## Parked Tracks
 
