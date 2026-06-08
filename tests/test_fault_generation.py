@@ -5,6 +5,7 @@ import pytest
 from social_cohesion_vectors.datasets import read_jsonl
 from social_cohesion_vectors.experiments.fault_generation import (
     API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
+    API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION,
     API_HARD_NEGATIVE_CONTRACT_VERSION,
@@ -241,6 +242,53 @@ def test_availability_repair_prompt_filters_and_names_residual_paths() -> None:
     assert "repair, acknowledge harm, make amends, correct" in pseudo.user_prompt
     assert "Do not accidentally make the focus paths safe" in pseudo.user_prompt
     assert "make the repair-focus paths plainly usable now" in genuine.user_prompt
+
+
+def test_availability_repair_v2_prompt_preserves_same_paths_and_blocks_shortcuts() -> None:
+    repair_targets = repair_targets_from_specs(
+        ["fair_allocation=refusal,appeal,repair"]
+    )
+    prompt_records = build_fault_prompt_records(
+        variants=DEFAULT_VARIANTS[:1],
+        prompt_contract_version=API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
+        repair_focus_options_by_contrast=repair_targets,
+    )
+    repair_records = filter_prompt_records_for_repair_targets(
+        prompt_records,
+        repair_targets,
+    )
+    pseudo = next(
+        record for record in repair_records if record.label == "pseudo_cohesion"
+    )
+    genuine = next(
+        record for record in repair_records if record.label == "genuine_cohesion"
+    )
+
+    assert len(repair_records) == 2
+    assert {record.metadata["prompt_contract_version"] for record in repair_records} == {
+        API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION
+    }
+    assert {record.metadata["repair_focus_options"] for record in repair_records} == {
+        "refusal,appeal,repair"
+    }
+    assert all(
+        "strict repair-focused generation"
+        in str(record.metadata["availability_repair_contract"])
+        for record in repair_records
+    )
+    assert "Availability-repair v2 rule" in pseudo.user_prompt
+    assert "exactly one paragraph of 55-75 words" in pseudo.user_prompt
+    assert "contrast hinge only on the" in pseudo.user_prompt
+    assert "All paths still tested and must be preserved" in pseudo.user_prompt
+    assert "Do not use healthy shortcut phrases" in pseudo.user_prompt
+    assert '"without penalty"' in pseudo.user_prompt
+    assert "same sentence immediately" in pseudo.user_prompt
+    assert "Keep non-focus paths present with comparable vocabulary" in (
+        pseudo.user_prompt
+    )
+    assert "same named focus path must" in pseudo.user_prompt
+    assert "same repair-focus paths plainly usable now" in genuine.user_prompt
+    assert "free of approval, private-only routing" in genuine.user_prompt
 
 
 def test_repair_targets_reject_options_outside_contrast_annotation() -> None:

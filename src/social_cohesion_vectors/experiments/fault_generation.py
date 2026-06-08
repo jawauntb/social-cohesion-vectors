@@ -39,6 +39,7 @@ FaultPromptContractVersion = Literal[
     "availability_targeted_v1",
     "availability_targeted_v2",
     "availability_repair_v1",
+    "availability_repair_v2",
 ]
 
 
@@ -93,11 +94,13 @@ API_LEXICAL_NEGATIVE_CONTRACT_VERSION = "lexical_negative_v1"
 API_AVAILABILITY_TARGETED_CONTRACT_VERSION = "availability_targeted_v1"
 API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION = "availability_targeted_v2"
 API_AVAILABILITY_REPAIR_CONTRACT_VERSION = "availability_repair_v1"
+API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION = "availability_repair_v2"
 API_PROMPT_CONTRACT_VERSION_CHOICES: tuple[FaultPromptContractVersion, ...] = (
     API_LEXICAL_NEGATIVE_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION,
     API_AVAILABILITY_REPAIR_CONTRACT_VERSION,
+    API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
 )
 API_HARD_NEGATIVE_CONTRACT_VERSION = API_LEXICAL_NEGATIVE_CONTRACT_VERSION
 API_TARGET_WORD_COUNT_MIN = 55
@@ -436,9 +439,9 @@ def build_fault_prompt_records(
                                 "taxes the same paths in practice"
                             ),
                             "availability_repair_contract": (
-                                "repair-focused generation emphasizes residual "
-                                "failed paths while preserving all listed "
-                                "future-option paths"
+                                _availability_repair_metadata_contract(
+                                    prompt_contract_version
+                                )
                             )
                             if repair_focus_options
                             else "",
@@ -1079,6 +1082,15 @@ def _fault_user_prompt(
             annotation,
             repair_focus_options=repair_focus_options,
         )
+    elif prompt_contract_version == API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION:
+        label_instruction = _availability_repair_strict_label_instruction(
+            seed.label,
+            repair_focus_options=repair_focus_options,
+        )
+        path_contract = _availability_repair_strict_path_contract(
+            annotation,
+            repair_focus_options=repair_focus_options,
+        )
     elif prompt_contract_version == API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION:
         label_instruction = _availability_targeted_strict_label_instruction(
             seed.label
@@ -1279,6 +1291,74 @@ def _availability_repair_path_contract(
   unanimity, private-only, or permission tests.
 - Do not repair a focus path by inventing an unlisted substitute path. The same
   named path must be available in genuine and taxed in pseudo."""
+
+
+def _availability_repair_strict_label_instruction(
+    label: ExampleLabel,
+    *,
+    repair_focus_options: Sequence[str],
+) -> str:
+    focus = _repair_focus_prompt_text(repair_focus_options)
+    if label == "pseudo_cohesion":
+        return (
+            "Write the repaired pseudo-cohesion version in exactly one "
+            "paragraph of 55-75 words. Name or clearly paraphrase every listed "
+            "path, but make only the repair-focus paths do the contrast work: "
+            f"{focus}. For each focus path, attach an immediate practical tax "
+            "such as approval, private-only routing, wait-until-aligned timing, "
+            "tone or loyalty tests, detailed-proof thresholds, withheld "
+            "evidence, disruption risk, or consequences. Keep the surface warm."
+        )
+    return (
+        "Write the repaired genuine-cohesion version in exactly one paragraph "
+        "of 55-75 words. Name or clearly paraphrase every listed path, but make "
+        f"the same repair-focus paths plainly usable now: {focus}. For each "
+        "focus path, make availability visible, timely, non-retaliatory, and "
+        "free of approval, private-only routing, loyalty, tone, unanimity, or "
+        "detailed-proof conditions. Keep surface warmth comparable."
+    )
+
+
+def _availability_repair_strict_path_contract(
+    annotation: FaultAnnotation,
+    *,
+    repair_focus_options: Sequence[str],
+) -> str:
+    return f"""- Availability-repair v2 rule: include every listed future path in ordinary
+  wording on both hidden labels, while making the contrast hinge only on the
+  named repair-focus paths.
+- All paths still tested and must be preserved: {_availability_path_word_text(annotation)}
+- Repair-focus paths: {_repair_focus_word_text(repair_focus_options)}
+- One-paragraph length discipline is part of this repair: stay within
+  {API_TARGET_WORD_COUNT_MIN}-{API_TARGET_WORD_COUNT_MAX} words while preserving
+  every tested path.
+- Pseudo-cohesion must tax every repair-focus path with an immediate concrete
+  cost or condition. Do not use healthy shortcut phrases such as "without fear",
+  "without penalty", "without retaliation", "without repercussion", "freely",
+  "openly", or "safe to" for a focus path unless the same sentence immediately
+  adds the cost or condition.
+- Genuine-cohesion must make those same repair-focus paths usable now, visible
+  enough to audit, timely enough to matter, non-retaliatory, and free of
+  approval, loyalty, tone, unanimity, private-only, or detailed-proof tests.
+- Keep non-focus paths present with comparable vocabulary, but do not add extra
+  healthy escape hatches that compensate for a taxed focus path.
+- Do not repair by swapping in a different path. The same named focus path must
+  be usable in genuine and taxed in pseudo."""
+
+
+def _availability_repair_metadata_contract(
+    prompt_contract_version: FaultPromptContractVersion,
+) -> str:
+    if prompt_contract_version == API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION:
+        return (
+            "strict repair-focused generation preserves all listed paths, "
+            "contrasts only named residual failed paths, enforces 55-75 words, "
+            "and blocks healthy pseudo shortcuts"
+        )
+    return (
+        "repair-focused generation emphasizes residual failed paths while "
+        "preserving all listed future-option paths"
+    )
 
 
 def _availability_path_word_text(annotation: FaultAnnotation) -> str:
