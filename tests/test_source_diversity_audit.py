@@ -56,8 +56,35 @@ def test_source_diversity_audit_blocks_metadata_only_source_clones() -> None:
     assert report["summary"]["activation_readiness"] == "not_ready"
     assert report["summary"]["sources"] == 2
     assert report["summary"]["cross_source_duplicate_text_pairs"] == len(offline_pairs)
+    assert report["summary"]["cross_source_near_duplicate_text_pairs"] == len(
+        offline_pairs
+    )
     assert _gate(report, "source_count")["passed"] is True
     assert _gate(report, "cross_source_duplicate_text_pairs")["passed"] is False
+    assert _gate(report, "cross_source_near_duplicate_text_pairs")["passed"] is False
+
+
+def test_source_diversity_audit_blocks_lightly_edited_source_clones() -> None:
+    examples = generated_fault_examples(variants=DEFAULT_VARIANTS[:1])
+    offline_pairs = pairwise_examples_from_generated_fault_examples(examples)
+    near_clone_pairs = _near_clone_source_pairs(
+        offline_pairs,
+        source="generated_fault_class_openai",
+    )
+
+    report = run_source_diversity_audit(pairs=[*offline_pairs, *near_clone_pairs])
+
+    assert report["summary"]["ready_for_activation"] is False
+    assert report["summary"]["activation_readiness"] == "not_ready"
+    assert report["summary"]["sources"] == 2
+    assert report["summary"]["cross_source_duplicate_text_pairs"] == 0
+    assert report["summary"]["cross_source_near_duplicate_text_pairs"] == len(
+        offline_pairs
+    )
+    assert report["summary"]["max_cross_source_text_similarity"] >= 0.82
+    assert _gate(report, "source_count")["passed"] is True
+    assert _gate(report, "cross_source_duplicate_text_pairs")["passed"] is True
+    assert _gate(report, "cross_source_near_duplicate_text_pairs")["passed"] is False
 
 
 def test_source_diversity_audit_accepts_shared_fault_coverage_across_text_sources() -> (
@@ -92,11 +119,13 @@ def test_source_diversity_audit_accepts_shared_fault_coverage_across_text_source
     assert report["summary"]["shared_groups"] == report["summary"]["groups"]
     assert report["summary"]["shared_groups"] >= 2
     assert report["summary"]["cross_source_duplicate_text_pairs"] == 0
+    assert report["summary"]["cross_source_near_duplicate_text_pairs"] == 0
     assert _gate(report, "source_count")["passed"] is True
     assert _gate(report, "min_pairs_per_source")["passed"] is True
     assert _gate(report, "min_groups_per_source")["passed"] is True
     assert _gate(report, "shared_group_count")["passed"] is True
     assert _gate(report, "cross_source_duplicate_text_pairs")["passed"] is True
+    assert _gate(report, "cross_source_near_duplicate_text_pairs")["passed"] is True
 
 
 def test_source_diversity_audit_round_trips_files(tmp_path) -> None:
@@ -163,6 +192,7 @@ def test_source_diversity_audit_cli_writes_report(
     assert "status=source_diversity_ready" in captured.out
     assert "sources=2" in captured.out
     assert "cross_source_duplicates=0" in captured.out
+    assert "cross_source_near_duplicates=0" in captured.out
     assert json_path.exists()
     assert markdown_path.exists()
 
@@ -191,3 +221,31 @@ def _clone_source_pairs(
             )
         )
     return cloned
+
+
+def _near_clone_source_pairs(
+    pairs: list[PairwiseExample],
+    *,
+    source: str,
+) -> list[PairwiseExample]:
+    cloned = []
+    for pair in pairs:
+        metadata = dict(pair.metadata)
+        metadata["source"] = source
+        cloned.append(
+            pair.model_copy(
+                update={
+                    "pair_id": f"{source}::near::{pair.pair_id}",
+                    "positive_text": _light_edit(pair.positive_text),
+                    "negative_text": _light_edit(pair.negative_text),
+                    "metadata": metadata,
+                }
+            )
+        )
+    return cloned
+
+
+def _light_edit(text: str) -> str:
+    edited = text.replace("The message", "The note", 1)
+    edited = edited.replace("The plan", "The note", 1)
+    return edited if edited != text else f"{text} Please note."
