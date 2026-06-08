@@ -22,6 +22,8 @@ def run_source_diversity_audit_from_file(
     min_groups_per_source: int = 2,
     min_shared_groups: int = 2,
     max_cross_source_duplicate_pairs: int = 0,
+    max_cross_source_near_duplicate_pairs: int = 0,
+    near_duplicate_similarity_threshold: float = 0.82,
 ) -> dict[str, Any]:
     """Load pairwise examples and audit source/fault coverage."""
 
@@ -34,6 +36,8 @@ def run_source_diversity_audit_from_file(
         min_groups_per_source=min_groups_per_source,
         min_shared_groups=min_shared_groups,
         max_cross_source_duplicate_pairs=max_cross_source_duplicate_pairs,
+        max_cross_source_near_duplicate_pairs=max_cross_source_near_duplicate_pairs,
+        near_duplicate_similarity_threshold=near_duplicate_similarity_threshold,
         input_paths={"pairs": str(pairs_path)},
     )
 
@@ -48,6 +52,8 @@ def run_source_diversity_audit(
     min_groups_per_source: int = 2,
     min_shared_groups: int = 2,
     max_cross_source_duplicate_pairs: int = 0,
+    max_cross_source_near_duplicate_pairs: int = 0,
+    near_duplicate_similarity_threshold: float = 0.82,
     input_paths: Mapping[str, str | None] | None = None,
 ) -> dict[str, Any]:
     """Audit whether source-held-out claims have enough source coverage."""
@@ -63,6 +69,12 @@ def run_source_diversity_audit(
         pairs,
         source_metadata_key=source_metadata_key,
     )
+    similarity_diagnostics = _cross_source_similarity_diagnostics(
+        pairs,
+        source_metadata_key=source_metadata_key,
+        similarity_threshold=near_duplicate_similarity_threshold,
+    )
+    near_duplicate_text_pairs = similarity_diagnostics["near_duplicates"]
     failed_pair_sources = sorted(
         source
         for source, count in source_counts.items()
@@ -115,6 +127,13 @@ def run_source_diversity_audit(
             "passed": len(duplicate_text_pairs) <= max_cross_source_duplicate_pairs,
         },
         {
+            "gate_id": "cross_source_near_duplicate_text_pairs",
+            "value": float(len(near_duplicate_text_pairs)),
+            "threshold": float(max_cross_source_near_duplicate_pairs),
+            "passed": len(near_duplicate_text_pairs)
+            <= max_cross_source_near_duplicate_pairs,
+        },
+        {
             "gate_id": "missing_source_pairs",
             "value": float(missing_source_pairs),
             "threshold": 0.0,
@@ -144,6 +163,10 @@ def run_source_diversity_audit(
             "min_groups_per_source": min_groups_per_source,
             "min_shared_groups": min_shared_groups,
             "max_cross_source_duplicate_pairs": max_cross_source_duplicate_pairs,
+            "max_cross_source_near_duplicate_pairs": (
+                max_cross_source_near_duplicate_pairs
+            ),
+            "near_duplicate_similarity_threshold": near_duplicate_similarity_threshold,
         },
         "summary": {
             "status": "source_diversity_ready" if ready else "not_ready",
@@ -156,6 +179,11 @@ def run_source_diversity_audit(
             "groups": len(_metadata_values(pairs, group_metadata_key)),
             "shared_groups": len(shared_groups),
             "cross_source_duplicate_text_pairs": len(duplicate_text_pairs),
+            "cross_source_near_duplicate_text_pairs": len(near_duplicate_text_pairs),
+            "max_cross_source_text_similarity": round(
+                float(similarity_diagnostics["max_similarity"]),
+                6,
+            ),
             "missing_source_pairs": missing_source_pairs,
             "missing_group_pairs": missing_group_pairs,
             "failed_pair_sources": failed_pair_sources,
@@ -169,6 +197,7 @@ def run_source_diversity_audit(
         },
         "shared_groups": shared_groups,
         "cross_source_duplicate_text_pairs": duplicate_text_pairs,
+        "cross_source_near_duplicate_text_pairs": near_duplicate_text_pairs,
     }
 
 
@@ -211,6 +240,10 @@ def render_source_diversity_markdown(report: Mapping[str, Any]) -> str:
         f"- Shared fault groups: {int(summary.get('shared_groups', 0))}",
         f"- Cross-source duplicate text pairs: "
         f"{int(summary.get('cross_source_duplicate_text_pairs', 0))}",
+        f"- Cross-source near-duplicate text pairs: "
+        f"{int(summary.get('cross_source_near_duplicate_text_pairs', 0))}",
+        f"- Max cross-source text similarity: "
+        f"{float(summary.get('max_cross_source_text_similarity', 0.0)):.3f}",
         f"- Missing source pairs: {int(summary.get('missing_source_pairs', 0))}",
         f"- Missing group pairs: {int(summary.get('missing_group_pairs', 0))}",
         "",
@@ -272,6 +305,27 @@ def render_source_diversity_markdown(report: Mapping[str, Any]) -> str:
             )
         if len(duplicates) > 12:
             lines.append(f"| ... | {len(duplicates) - 12} more |")
+    near_duplicates = _sequence(report.get("cross_source_near_duplicate_text_pairs"))
+    if near_duplicates:
+        lines.extend(
+            [
+                "",
+                "## Cross-Source Near-Duplicate Text Pairs",
+                "",
+                "| Similarity | Sources | Pair ids |",
+                "| ---: | --- | --- |",
+            ]
+        )
+        for raw_duplicate in near_duplicates[:12]:
+            duplicate = _mapping(raw_duplicate)
+            lines.append(
+                "| "
+                f"{float(duplicate.get('similarity', 0.0)):.3f} | "
+                f"{', '.join(str(item) for item in _sequence(duplicate.get('sources')))} | "
+                f"{', '.join(str(item) for item in _sequence(duplicate.get('pair_ids')))} |"
+            )
+        if len(near_duplicates) > 12:
+            lines.append(f"| ... | ... | {len(near_duplicates) - 12} more |")
     return "\n".join(lines) + "\n"
 
 
@@ -352,6 +406,67 @@ def _cross_source_duplicate_text_pairs(
     return sorted(duplicates, key=_duplicate_sort_key)
 
 
+def _cross_source_similarity_diagnostics(
+    pairs: Sequence[PairwiseExample],
+    *,
+    source_metadata_key: str,
+    similarity_threshold: float,
+) -> dict[str, Any]:
+    indexed = [
+        (
+            pair,
+            str(pair.metadata.get(source_metadata_key, "")).strip(),
+            _pair_base_id(pair),
+            _char_ngrams(_pair_text_fingerprint(pair), n=5),
+        )
+        for pair in pairs
+    ]
+    near_duplicates: list[dict[str, object]] = []
+    max_similarity = 0.0
+    for left_index, (left_pair, left_source, left_base, left_grams) in enumerate(
+        indexed
+    ):
+        if not left_source:
+            continue
+        for right_pair, right_source, right_base, right_grams in indexed[
+            left_index + 1 :
+        ]:
+            if not right_source or left_source == right_source:
+                continue
+            if left_base and right_base and left_base != right_base:
+                continue
+            similarity = _jaccard(left_grams, right_grams)
+            max_similarity = max(max_similarity, similarity)
+            if similarity < similarity_threshold:
+                continue
+            near_duplicates.append(
+                {
+                    "sources": sorted({left_source, right_source}),
+                    "pair_ids": sorted([left_pair.pair_id, right_pair.pair_id]),
+                    "similarity": round(similarity, 6),
+                }
+            )
+    return {
+        "max_similarity": max_similarity,
+        "near_duplicates": sorted(
+            near_duplicates,
+            key=lambda item: (
+                -_similarity_value(item),
+                _duplicate_sort_key(item),
+            ),
+        ),
+    }
+
+
+def _similarity_value(item: Mapping[str, object]) -> float:
+    raw = item.get("similarity", 0.0)
+    return float(raw) if isinstance(raw, int | float | str) else 0.0
+
+
+def _pair_base_id(pair: PairwiseExample) -> str:
+    return str(pair.metadata.get("base_contrast_id") or pair.scenario_id).strip()
+
+
 def _pair_text_fingerprint(pair: PairwiseExample) -> str:
     return "\n".join(
         [
@@ -367,6 +482,20 @@ def _duplicate_sort_key(duplicate: Mapping[str, object]) -> str:
 
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text.casefold()).strip()
+
+
+def _char_ngrams(text: str, *, n: int) -> set[str]:
+    normalized = re.sub(r"[^a-z0-9]+", " ", text.casefold())
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    if len(normalized) < n:
+        return {normalized} if normalized else set()
+    return {normalized[index : index + n] for index in range(len(normalized) - n + 1)}
+
+
+def _jaccard(left: set[str], right: set[str]) -> float:
+    if not left and not right:
+        return 1.0
+    return len(left & right) / len(left | right)
 
 
 def _metadata_values(

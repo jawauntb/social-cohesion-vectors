@@ -24,6 +24,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         min_groups_per_source=args.min_groups_per_source,
         min_shared_groups=args.min_shared_groups,
         max_cross_source_duplicate_pairs=args.max_cross_source_duplicate_pairs,
+        max_cross_source_near_duplicate_pairs=(
+            args.max_cross_source_near_duplicate_pairs
+        ),
+        near_duplicate_similarity_threshold=args.near_duplicate_similarity_threshold,
     )
     save_source_diversity_audit(
         report,
@@ -38,7 +42,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"pairs={summary['pairs']} "
         f"sources={summary['sources']} "
         f"shared_groups={summary['shared_groups']} "
-        f"cross_source_duplicates={summary['cross_source_duplicate_text_pairs']}"
+        f"cross_source_duplicates={summary['cross_source_duplicate_text_pairs']} "
+        f"cross_source_near_duplicates="
+        f"{summary['cross_source_near_duplicate_text_pairs']}"
     )
     print(f"wrote {args.markdown_output}")
     return 0
@@ -59,6 +65,10 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--min-groups-per-source", type=int, default=2)
     parser.add_argument("--min-shared-groups", type=int, default=2)
     parser.add_argument("--max-cross-source-duplicate-pairs", type=int, default=0)
+    parser.add_argument("--max-cross-source-near-duplicate-pairs", type=int, default=0)
+    parser.add_argument(
+        "--near-duplicate-similarity-threshold", type=float, default=0.82
+    )
     parser.add_argument(
         "--json-output",
         type=Path,
