@@ -44,7 +44,7 @@ social cohesion vectors before touching expensive human or neural experiments.
   contrasts with anger, sadness, fear, disgust, happy, and neutral frames, then
   runs ridge residualization against coarse affect/style proxies.
 - Prepare API-authored fault-class generation from the same prompt-record
-  contract once a valid provider key is available.
+  contract once a valid Anthropic, Groq, or OpenAI provider key is available.
 
 ## Current Status Snapshot
 
@@ -111,11 +111,11 @@ autonomy-safety scorer hardening, the rubric now prefers the prosocial side on
 5/5, including the trust-game verification contrast and the ultimatum
 exit-rights contrast. The lexical leakage report confirms the deterministic
 fault-class dataset is fully cue-solvable: 90/90 cue-solved pairs with a +3.067
-mean cue margin. Anthropic
-and OpenAI API smokes were attempted for API-authored variants, but both copied
-local keys returned 401 invalid-key errors, so the wrapper is ready and the run
-is blocked on fresh provider keys rather than code. The small Modal follow-up
-ran the full 10-prompt social-game set through
+mean cue margin. Anthropic, OpenAI, and Groq API smokes were attempted for
+API-authored variants, but the copied local keys returned provider auth or
+forbidden errors, so the wrapper is ready and the run is blocked on fresh
+provider keys rather than code. The small Modal follow-up ran the full
+10-prompt social-game set through
 `Qwen/Qwen2.5-0.5B-Instruct`, writing a 10 x 896
 activation matrix and a 5-pair vector report with 1.000 leave-one-pair-out
 accuracy. The trait-axis set also ran on Modal: 32 x 896 activations, 8 axes,
@@ -136,6 +136,17 @@ leave-one-pair-out accuracy with +32.458 mean margin, and 1.000
 held-out-primary-fault accuracy across 20 folds with +31.530 mean margin. This
 is still deterministic text, but it is the strongest current signal that
 activation-space separation can survive after the obvious cue words are removed.
+
+The source-diverse deterministic bundle now combines `cue_balanced` and
+`lexical_hardened` styles across all three generated settings: 180 pairwise
+examples / 360 activation prompts. It passes the local non-activation gates:
+0/180 simple cue-solved pairs, 8/8 future-option slack coverage, 180/180
+slack-prefers-genuine pairs, 2 sources, 20 shared fault groups, and 0 duplicate
+or near-duplicate cross-source pairs. The caveat is broader lexical transfer:
+`lexical_only` still reaches 0.883 held-out-fault and held-out-source accuracy,
+so activation results on this deterministic bundle should remain
+lexical-caveated until wording-diverse/API-authored examples lower that
+baseline.
 
 The reviewer-style geometry audit changes the claim we should make about those
 directions. The 20 primary-fault directions are not near-orthogonal: their mean
@@ -396,7 +407,8 @@ cp .env.example .env  # already copied locally from isc_mod in this workspace
 ```
 
 The local `.env` is intentionally gitignored. It can carry the Modal, HF,
-OpenAI, Anthropic, Gemini, and W&B keys reused from the audience-vector project.
+OpenAI, Anthropic, Groq, Gemini, and W&B keys reused from the audience-vector
+project.
 
 ## First Pipeline
 

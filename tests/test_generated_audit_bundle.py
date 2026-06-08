@@ -81,6 +81,11 @@ def test_generated_benchmark_audit_bundle_accepts_two_lexically_safe_sources(
     assert manifest["summary"]["ready_steps"] == 5
     assert manifest["summary"]["not_ready_steps"] == 0
     assert manifest["summary"]["skipped_steps"] == 1
+    assert manifest["summary"]["warning_count"] == 2
+    assert {warning["warning_id"] for warning in manifest["warnings"]} == {
+        "fault_class_lexical_baseline_high",
+        "source_lexical_baseline_high",
+    }
     assert _step(manifest, "lexical_leakage")["ready"] is True
     assert _step(manifest, "component_margin_audit")["ready"] is True
     assert _step(manifest, "slack_preservation_audit")["ready"] is True
