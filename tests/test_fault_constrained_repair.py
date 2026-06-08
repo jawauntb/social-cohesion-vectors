@@ -1,0 +1,121 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+from pathlib import Path
+from types import ModuleType
+
+from social_cohesion_vectors.datasets import read_jsonl
+from social_cohesion_vectors.experiments.fault_constrained_repair import (
+    CONSTRAINED_REPAIR_COMPOSER_VERSION,
+    compose_constrained_repair_output_records,
+)
+from social_cohesion_vectors.experiments.fault_generation import (
+    API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
+    DEFAULT_VARIANTS,
+    build_fault_prompt_records,
+    filter_prompt_records_for_repair_targets,
+    repair_targets_from_specs,
+)
+
+
+def test_compose_constrained_repair_output_records_writes_complete_length_safe_pairs() -> None:
+    records = _hard_repair_records()
+
+    result = compose_constrained_repair_output_records(records)
+
+    assert len(result.output_records) == 6
+    assert result.report["summary"]["complete_pairs"] == 3
+    assert result.report["summary"]["length_compliant_outputs"] == 6
+    assert {row["constrained_repair_composer_version"] for row in result.output_records} == {
+        CONSTRAINED_REPAIR_COMPOSER_VERSION
+    }
+    assert {
+        row["base_contrast_id"]
+        for row in result.output_records
+        if row["label"] == "pseudo_cohesion"
+    } == {
+        "autonomy_after_conflict",
+        "belonging_norms",
+        "fair_allocation",
+    }
+    assert all(55 <= int(row["text_word_count"]) <= 75 for row in result.output_records)
+    assert all(row["repair_focus_options"] for row in result.output_records)
+
+
+def test_compose_constrained_fault_repair_candidates_cli_writes_reports(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    script = _load_script()
+    raw_outputs = tmp_path / "constrained" / "raw_outputs.jsonl"
+    json_report = tmp_path / "constrained" / "composition.json"
+    markdown_report = tmp_path / "constrained" / "composition.md"
+
+    exit_code = script.main(
+        [
+            "--variants",
+            DEFAULT_VARIANTS[0].name,
+            "--availability-priority",
+            "--prompt-contract-version",
+            API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
+            "--repair-target",
+            "autonomy_after_conflict=dissent",
+            "--repair-target",
+            "belonging_norms=refusal,dissent",
+            "--repair-target",
+            "fair_allocation=refusal,appeal,repair",
+            "--raw-outputs",
+            str(raw_outputs),
+            "--composition-json-report",
+            str(json_report),
+            "--composition-markdown-report",
+            str(markdown_report),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "outputs=6/6" in captured.out
+    rows = read_jsonl(raw_outputs)
+    report = json.loads(json_report.read_text(encoding="utf-8"))
+    markdown = markdown_report.read_text(encoding="utf-8")
+
+    assert len(rows) == 6
+    assert report["summary"]["complete_pairs"] == 3
+    assert "Constrained Repair Candidate Composition" in markdown
+
+
+def _hard_repair_records():
+    repair_targets = repair_targets_from_specs(
+        [
+            "autonomy_after_conflict=dissent",
+            "belonging_norms=refusal,dissent",
+            "fair_allocation=refusal,appeal,repair",
+        ]
+    )
+    return filter_prompt_records_for_repair_targets(
+        build_fault_prompt_records(
+            variants=DEFAULT_VARIANTS[:1],
+            prompt_contract_version=API_AVAILABILITY_REPAIR_STRICT_CONTRACT_VERSION,
+            repair_focus_options_by_contrast=repair_targets,
+        ),
+        repair_targets,
+    )
+
+
+def _load_script() -> ModuleType:
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "compose_constrained_fault_repair_candidates.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "compose_constrained_fault_repair_candidates",
+        path,
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
