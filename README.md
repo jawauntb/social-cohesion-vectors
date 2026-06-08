@@ -38,6 +38,8 @@ social cohesion vectors before touching expensive human or neural experiments.
   cancellation cannot masquerade as orthogonality.
 - Run residual subspace audits after projecting out the global direction, then
   check whether fault-specific residual directions still separate.
+- Audit cross-model activation compatibility with CKA, mutual kNN overlap, and
+  linear direction transfer across paired model spaces.
 - Export a boundary-prior benchmark that contrasts flexible contextual relation
   against rigid us/them reification and coercive "we are one" boundary collapse.
 - Export a NOVA-inspired affect-control benchmark that crosses boundary-prior
@@ -167,6 +169,23 @@ the responsible claim is one very strong shared genuine-vs-pseudo manifold plus
 fault-specific residual structure, not independent fault axes. This remains
 synthetic text and open-model activation evidence, not human, behavioral, or
 neural validation.
+
+The same length-balanced bundle now survives a non-Qwen architecture check.
+`HuggingFaceTB/SmolLM2-1.7B-Instruct` reaches 1.000 leave-one-pair-out accuracy
+at layers -1 and -2 across the 360 prompts / 180 pairs, with mean LOO margins
+of +4.878 and +100.788 respectively. Its held-out-primary-fault transfer is also
+1.000 across 20 folds on both layers. Geometry remains highly shared rather
+than axis-like: SmolLM2 layer -1 has +0.960 mean signed/absolute off-diagonal
+cosine across the 20 primary-fault directions, and layer -2 has +0.951, with no
+anti-aligned pairs. After removing the global direction, all 20 fault groups
+retain positive residual signal, with residual group mean accuracy of 0.988 and
+0.997. A new cross-model alignment audit makes the Platonic Representation idea
+methodologically useful without overclaiming it: Qwen-to-SmolLM2 linear maps
+show CKA 0.792-0.853, mutual kNN overlap 0.652-0.675, and 1.000
+pair-held-out mapped-direction accuracy on a deterministic 40/180 fold sample
+in both directions. This supports cross-model representational compatibility
+for the synthetic contrast, not behavioral steering or a claim that an ideal
+cohesion representation has been found.
 
 The reviewer-style geometry audit changes the claim we should make about those
 directions. The 20 primary-fault directions are not near-orthogonal: their mean
