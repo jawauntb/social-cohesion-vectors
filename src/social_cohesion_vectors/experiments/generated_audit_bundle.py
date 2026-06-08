@@ -11,6 +11,10 @@ from social_cohesion_vectors.experiments.activation_metadata_transfer import (
     run_activation_metadata_transfer_from_files,
     save_activation_metadata_transfer_report,
 )
+from social_cohesion_vectors.experiments.availability_audit import (
+    run_availability_audit_from_file,
+    save_availability_audit,
+)
 from social_cohesion_vectors.experiments.component_audit import (
     run_component_margin_audit_from_files,
     save_component_margin_audit,
@@ -166,6 +170,37 @@ def run_generated_benchmark_audit_bundle(
             ),
             json_path=slack_json,
             markdown_path=slack_markdown,
+        )
+    )
+
+    availability_report = run_availability_audit_from_file(
+        pairs,
+        group_metadata_key=group_metadata_key,
+    )
+    availability_json = output_path / "generated_benchmark_availability_audit.json"
+    availability_markdown = output_path / "generated_benchmark_availability_audit.md"
+    save_availability_audit(
+        availability_report,
+        json_path=availability_json,
+        markdown_path=availability_markdown,
+    )
+    steps.append(
+        _step(
+            step_id="availability_audit",
+            report=availability_report,
+            ready=bool(
+                _mapping(availability_report.get("summary")).get(
+                    "ready_for_activation"
+                )
+            ),
+            readiness_status=str(
+                _mapping(availability_report.get("summary")).get(
+                    "activation_readiness",
+                    "not_ready",
+                )
+            ),
+            json_path=availability_json,
+            markdown_path=availability_markdown,
         )
     )
 

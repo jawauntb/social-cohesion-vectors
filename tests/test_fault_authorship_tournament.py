@@ -38,13 +38,27 @@ def test_fault_authorship_tournament_selects_per_pair_candidate() -> None:
     markdown = render_fault_authorship_tournament_markdown(result.report)
 
     assert result.report["summary"]["selected_pairs"] == 1
+    assert result.report["summary"]["availability_gate_passed"] == 1
+    assert result.report["summary"]["availability_gate_rate"] == 1.0
     assert result.report["selected_pairs"][0]["candidate_id"] == "strong"
-    assert result.report["selected_pairs"][0]["gate_pass_count"] >= 3
+    assert result.report["selected_pairs"][0]["gate_pass_count"] >= 4
+    assert result.report["selected_pairs"][0]["availability_margin"] > 0.0
+    assert (
+        result.report["selected_pairs"][0]["gate_passes"][
+            "availability_prefers_genuine"
+        ]
+        is True
+    )
     assert len(result.selected_output_records) == 2
     assert {
         row["selected_from_candidate"] for row in result.selected_output_records
     } == {"strong"}
+    assert all(
+        float(row["selection_availability_margin"]) > 0.0
+        for row in result.selected_output_records
+    )
     assert "Fault Authorship Candidate Tournament" in markdown
+    assert "Availability gate pass rate" in markdown
 
 
 def test_fault_authorship_tournament_cli_writes_selected_artifacts(
@@ -108,9 +122,11 @@ def test_fault_authorship_tournament_cli_writes_selected_artifacts(
     assert len(pairs) == 1
     assert len(prompts) == 2
     assert tournament["summary"]["selected_pairs"] == 1
+    assert tournament["summary"]["availability_gate_passed"] == 1
     assert dataset["summary"]["authorship_provider"] == "modal_hf_tournament"
     assert dataset["summary"]["api_generation_ready"] is True
     assert "audit_bundle" in dataset
+    assert all("selection_availability_margin" in row for row in selected)
 
 
 def _load_script() -> ModuleType:
@@ -156,13 +172,14 @@ def _strong_text(record: FaultPromptRecord) -> str:
             "The facilitator names the concern plainly, shares evidence access, "
             "and sets a review window. People can appeal the decision, decline "
             "without punishment, keep privacy choices reversible, voice dissent, "
-            "exit safely, and repair harm through clear obligations."
+            "exit safely, repair harm through clear obligations, and request "
+            "proportional review."
         )
     return (
         "The facilitator thanks everyone for being caring and unified, then says "
         "checking details would slow healing. Reservations should stay private, "
         "leaving would feel disloyal, saying no would be ungrateful, and further "
-        "appeal would only reopen the conflict."
+        "appeal or proportional review would only reopen the conflict."
     )
 
 
