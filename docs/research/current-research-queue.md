@@ -15,12 +15,24 @@ findings and decisions get summarized here or in dated notes under
 
 ## Current State
 
-The current bottleneck is not GPU scale or activation extraction. It is
-joint repair of practical availability, lexical balance, and length for the last
-few hard generated-text contrasts.
+The current bottleneck is no longer practical availability, source diversity,
+or activation extraction. The newest source-diverse generated benchmark reaches
+`bundle_ready` with activation metadata transfer accepted, but it still carries
+high lexical-baseline warnings. The active bottleneck is now reducing broader
+wording-level lexical separability while preserving the accepted text and
+activation gates.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-source-diverse-activation-ready-run.md`: a second
+  independent constrained wording family and raw-output source-family bundle
+  closed source diversity and source-held-out transfer. The two-source bundle
+  passed lexical cue leakage, component, slack, availability, source diversity,
+  fault/source transfer, activation metadata coverage, and activation metadata
+  transfer at `Qwen/Qwen2.5-0.5B-Instruct` layer `-2`. The full audit status is
+  `bundle_ready`, with two explicit warnings: `lexical_only` still reaches
+  `0.950` mean held-out fault-class accuracy and `0.950` mean held-out source
+  accuracy.
 - `docs/research/2026-06-08-literature-foundation-audit.md`: the
   literature map leaves the active bottleneck unchanged, but sharpens why it
   matters. Availability is now treated as a procedural-justice and
@@ -51,57 +63,40 @@ Recent accepted findings:
   stayed at `4/10` and all gates stayed at `2/10`. The remaining blockers are
   `autonomy_after_conflict`, `belonging_norms`, and `fair_allocation`.
 
-Activation extraction remains blocked because lexical, slack, availability,
-source-diversity, and transfer gates do not pass together.
+Activation extraction is no longer blocked for the generated-text benchmark.
+However, activation results remain lexical-caveated until stronger wording
+controls lower the lexical-only held-out baselines.
 
 ## Active Objective
 
-Revise the repair loop so it jointly optimizes practical availability, lexical
-balance, and length on the remaining hard contrasts.
+Reduce lexical separability while preserving the new source-diverse
+activation-ready generated benchmark.
 
-The availability audit, availability-aware tournament, `availability_targeted_v1`,
-`availability_targeted_v2`, `availability_repair_v1`, and live Modal repair
-sweep now exist. Broad generation is no longer the best next move. Simple
-repair sampling improved availability but did not improve core/all gates.
-The literature audit adds one constraint to the same objective: availability
-should be interpreted as procedural justice under pressure. A candidate should
-not pass merely because it mentions an abstract future option; it should make
-voice, review, evidence access, appeal, and exit usable without loyalty tests,
-tone tests, unanimity requirements, retaliation risk, private-only channels, or
-waiting-until-after-alignment rules.
+The next operation should add a third wording-adversarial source family or
+strengthen the lexical-baseline verifier. The new family should avoid reusing
+the shared phrasing that now makes `lexical_only` strong across fault classes
+and sources, especially repeated timing, visibility, public-record, immediate
+revision, and balanced/proportional phrasing. It must still preserve:
 
-- `autonomy_after_conflict`: `dissent`;
-- `belonging_norms`: `refusal`, `dissent`;
-- `fair_allocation`: `refusal`, `appeal`, `repair`;
-
-The next operation should either add `availability_repair_v2` with stricter
-one-paragraph length and lexical-balance constraints, or revise the tournament
-selection tuple so availability margin is not dominated by length among
-availability-failing candidates. The repair loop should still preserve the
-availability dimensions exposed by the audit:
-
-- public enough to be accountable;
-- timely enough to matter;
-- non-retaliatory;
-- evidence-accessible when evidence is relevant;
-- usable without loyalty tests, tone tests, unanimity requirements, private-only
-  channels, or waiting-until-after-alignment rules.
-- public enough for accountability and appeal;
-- proportionate enough that repair is not forced confession, coerced apology, or
-  institutional compliance theater.
+- practical availability for all tested future-option paths;
+- score and slack separation;
+- source diversity without exact or near duplicates;
+- activation metadata transfer readiness at a held-out metadata level;
+- explicit generated-text and lexical-caveat claim boundaries.
 
 ## Definition Of Done
 
-The active objective is complete when the repo can generate and select a
-repaired first-20 shard with:
+The active objective is complete when the repo can produce a source-diverse
+generated benchmark with:
 
-- availability pass rate above the current `7/10` selected baseline;
-- core-gate pass rate above the current `4/10` selected baseline;
-- all-gate pass rate above the current `2/10` selected baseline;
-- selected score and slack gates remain at `10/10`;
-- lexical gate recovers above the current `7/10` repaired baseline;
+- generated audit status still `bundle_ready`;
+- score, slack, component, availability, source diversity, and activation
+  metadata transfer gates still passing;
+- source and fault-class `lexical_only` warnings cleared or materially reduced
+  below the warning threshold;
 - no loss of all-eight-path coverage;
-- a dated research note interpreting accepted and rejected repair candidates.
+- a dated research note interpreting accepted, rejected, and caveated
+  activation runs.
 
 ## Likely Files
 
@@ -119,21 +114,16 @@ Implementation should probably follow existing audit patterns:
 
 ## Next Sequence
 
-1. Decide whether the next regime move is prompt-side (`availability_repair_v2`)
-   or selection-side (availability margin priority among failed-availability
-   rows).
-2. Apply the smallest change and cover it with tests.
-3. Regenerate only `autonomy_after_conflict`, `belonging_norms`, and
-   `fair_allocation`.
-4. Rerun candidate selection against the five broad chunks plus accepted repair
-   chunks.
-5. Compare selected winners and gate counts against the current `7/10`
-   availability, `4/10` core, `2/10` all-gate, and `7/10` lexical repaired
-   baseline.
-6. Add a dated run note with accepted/rejected repair candidates and residual
-   failure modes.
-7. Only after lexical, slack, source-diversity, component, and availability
-   gates pass together, send a generated shard into activation extraction.
+1. Add a third wording-adversarial source family or a stricter lexical-baseline
+   gate.
+2. Filter candidates through score, slack, lexical, availability, length, and
+   formatting gates.
+3. Rebuild the source-family bundle and rerun all generated benchmark audits.
+4. Rerun activation metadata transfer on the accepted layer-sweep candidates.
+5. Compare lexical-only fault/source held-out baselines against the current
+   `0.950`/`0.950` warning baseline.
+6. Add a dated run note with accepted, rejected, and caveated activation
+   results.
 
 ## Decision Gates
 
@@ -148,11 +138,10 @@ Move to activation extraction only when all are true:
 
 Move to broader Modal generation only when:
 
-- the verifier catches known first-20 failures;
-- the selection policy improves the core-gate pass rate over the previous
-  tournament;
-- missing future-option paths such as `evidence_access` and `privacy_choice` are
-  covered.
+- lexical-baseline warnings are the active target;
+- the candidate source family is designed to lower wording separability, not to
+  chase availability again;
+- the current `bundle_ready` artifact is preserved as a baseline.
 
 Move to human validation only when:
 

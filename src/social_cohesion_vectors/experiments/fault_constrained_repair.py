@@ -13,12 +13,15 @@ from social_cohesion_vectors.experiments.fault_generation import FaultPromptReco
 
 CONSTRAINED_REPAIR_COMPOSER_VERSION = "constrained_repair_v1"
 LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION = "lexical_balanced_repair_v1"
+SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION = "source_diverse_repair_v1"
 CONSTRAINED_REPAIR_PROVIDER = "constrained_repair"
 CONSTRAINED_REPAIR_MODEL = CONSTRAINED_REPAIR_COMPOSER_VERSION
 LEXICAL_BALANCED_REPAIR_MODEL = LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION
+SOURCE_DIVERSE_REPAIR_MODEL = SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION
 CONSTRAINED_REPAIR_COMPOSER_VERSION_CHOICES: tuple[str, ...] = (
     CONSTRAINED_REPAIR_COMPOSER_VERSION,
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION,
+    SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION,
 )
 
 CONSTRAINED_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
@@ -209,12 +212,199 @@ LEXICAL_BALANCED_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
     },
 }
 
+SOURCE_DIVERSE_REPAIR_TEXTS: Mapping[str, Mapping[str, str]] = {
+    "accountability_after_harm": {
+        "pseudo_cohesion": (
+            "For trust and respect after harm, the circle may let someone say "
+            "no after private review, appeal once proof is complete, exit "
+            "after coverage approval, and voice dissent in a quiet note. "
+            "Repair and fair proportional review stay named, but public change "
+            "must wait until alignment protects everyone from disruption "
+            "tonight before any sanction changes."
+        ),
+        "genuine_cohesion": (
+            "After harm, the chair opens the floor: people may say no, appeal "
+            "for review, exit a role, and state dissent before any sanction. "
+            "Evidence is posted, losses are revised immediately, and "
+            "proportional criteria are applied in public, so each option is "
+            "visible, timely, available, and usable during the meeting for the "
+            "affected person tonight now."
+        ),
+    },
+    "autonomy_after_conflict": {
+        "pseudo_cohesion": (
+            "To preserve trust, respect, and choice, the project group lets "
+            "members say no after private explanation, exit once coverage is "
+            "approved, and register dissent in a calm alignment note. Those "
+            "options sound available, yet objections must wait until the "
+            "coordinator agrees that they will not disrupt the plan or feel "
+            "unfair to others tonight today."
+        ),
+        "genuine_cohesion": (
+            "Before the project decision, members may say no in the room, exit "
+            "the role, or state dissent before adoption. The coordinator "
+            "records objections, posts evidence, and revises the plan "
+            "immediately, so refusal, exit, and minority concerns are public, "
+            "timely, visible, available, and usable for each member now during "
+            "the final vote tonight before the vote."
+        ),
+    },
+    "belonging_norms": {
+        "pseudo_cohesion": (
+            "To keep trust and respect for belonging, new residents may refuse "
+            "a norm after private review, exit a role after approval, and "
+            "raise dissent in an alignment note with proof. Repair is promised "
+            "later, but reservations stay private so difference does not feel "
+            "unfair, disruptive, or disloyal to the group tonight before "
+            "adoption today now."
+        ),
+        "genuine_cohesion": (
+            "For the norm vote, new residents may refuse the rule, exit a "
+            "role, and state dissent before adoption. The moderator records "
+            "objections publicly, checks evidence, and revises the norm "
+            "immediately when exclusion appears, so refusal, exit, dissent, "
+            "and revision are visible, timely, available, and usable in the "
+            "meeting for newcomers tonight before the final tally."
+        ),
+    },
+    "care_boundary": {
+        "pseudo_cohesion": (
+            "To keep trust and respect around care, volunteers may refuse "
+            "extra help after private review, exit once coverage is approved, "
+            "and request repair after proof is checked. These options stay "
+            "available, but the coordinator warns that acting too quickly "
+            "could feel unfair, disrupt fragile support, and delay alignment "
+            "tonight for the schedule before assignment now."
+        ),
+        "genuine_cohesion": (
+            "For the care schedule, volunteers may refuse extra help, exit a "
+            "role, and request revision in the meeting. The coordinator "
+            "records objections publicly, updates coverage immediately, and "
+            "posts the changed plan, so refusal, exit, and repair are visible, "
+            "timely, available, and usable for each volunteer now before "
+            "assignments begin during assignment review tonight now there."
+        ),
+    },
+    "data_choice": {
+        "pseudo_cohesion": (
+            "For trust and respect with data, residents may refuse sharing "
+            "after private review, inspect evidence only after proof is "
+            "approved, choose privacy settings once alignment is reached, and "
+            "exit after coverage approval. Those paths are named, but public "
+            "questions can seem unfair, disloyal, or disruptive before the "
+            "platform owner agrees tonight before collection now today."
+        ),
+        "genuine_cohesion": (
+            "Before data collection, residents may refuse sharing, inspect "
+            "evidence, set privacy consent, and exit the program in the "
+            "meeting. The organizer posts facts publicly, records objections, "
+            "and updates the form immediately, so refusal, evidence access, "
+            "privacy choice, and exit are visible, timely, available, and "
+            "usable now for each household during form review tonight now "
+            "there."
+        ),
+    },
+    "deliberative_speed": {
+        "pseudo_cohesion": (
+            "To protect trust and fair cooperation, residents may refuse the "
+            "fast vote after giving proof, inspect evidence only after "
+            "approval, exit after coverage is arranged, raise dissent in an "
+            "alignment note, and request repair or proportional review later. "
+            "Each option exists, but delay must not disrupt tonight's timeline "
+            "or make questions seem disloyal before adoption."
+        ),
+        "genuine_cohesion": (
+            "Before the fast vote, residents may say no, inspect evidence, "
+            "exit a role, raise dissent, request revision, and ask for "
+            "proportional review in the room. The chair pauses adoption, "
+            "records objections, coordinates transparent evidence review, and "
+            "applies balanced criteria immediately, so every path is public, "
+            "timely, visible, available, and usable tonight before final "
+            "adoption now."
+        ),
+    },
+    "dissent_after_mistake": {
+        "pseudo_cohesion": (
+            "To restore trust and respect after the mistake, residents may "
+            "refuse the fix after private review, inspect evidence only after "
+            "proof is approved, exit after coverage, and raise dissent in an "
+            "alignment note. Repair waits until objections stop feeling "
+            "disruptive, so reservations stay private before any public "
+            "revision tonight during the follow-up now here."
+        ),
+        "genuine_cohesion": (
+            "After the mistake, residents may refuse the fix, inspect "
+            "evidence, exit the role, and state dissent before adoption. The "
+            "chair records objections publicly, names the injury, and revises "
+            "the plan immediately, so refusal, evidence access, exit, dissent, "
+            "and revision are visible, timely, available, and usable now "
+            "during the follow-up before the next vote now."
+        ),
+    },
+    "expert_review": {
+        "pseudo_cohesion": (
+            "To keep trust and respect for the expert, residents may refuse a "
+            "role after private review, inspect evidence only if proof is "
+            "approved, exit after approval, and raise dissent in an alignment "
+            "note. Questions can seem disloyal, so each path exists but waits "
+            "until the expert and chair agree during tonight's review before "
+            "adoption now."
+        ),
+        "genuine_cohesion": (
+            "During expert review, residents may refuse a role, inspect "
+            "evidence, exit the assignment, and state dissent before adoption. "
+            "The chair verifies facts publicly, records objections, and keeps "
+            "each path visible, timely, available, and usable now, so the "
+            "expert claim can be challenged in the meeting before acceptance "
+            "before any acceptance vote tonight now here there."
+        ),
+    },
+    "fair_allocation": {
+        "pseudo_cohesion": (
+            "To keep trust around fair allocation, residents may refuse after "
+            "private review, appeal only once detailed evidence is approved, "
+            "exit after coverage, raise dissent in an alignment note, and "
+            "request repair or proportional review later. The routes are "
+            "named, but public questions can feel disloyal, unfair, and "
+            "disruptive to quieter households tonight now before review."
+        ),
+        "genuine_cohesion": (
+            "For the allocation, residents may say no, appeal the decision, "
+            "inspect evidence, exit a role, state dissent, request revision, "
+            "and ask for proportional review before adoption. The chair "
+            "records objections publicly, applies balanced criteria, and "
+            "updates the split immediately, so every route is timely, visible, "
+            "available, and usable for each household now during the meeting."
+        ),
+    },
+    "forgiveness_after_harm": {
+        "pseudo_cohesion": (
+            "To keep trust and respect after harm, residents may refuse "
+            "reconciliation after private review, inspect evidence only once "
+            "proof is approved, exit after coverage, and request repair after "
+            "alignment. Everyone should forgive today, so each route is named "
+            "but action waits until no one feels unfairly blamed tonight "
+            "during the discussion now here before adoption."
+        ),
+        "genuine_cohesion": (
+            "After harm, residents may refuse reconciliation, inspect "
+            "evidence, exit the room, and request revision before any "
+            "forgiveness appeal. The moderator records objections publicly, "
+            "names the injury, and updates the remedy immediately, so refusal, "
+            "evidence access, exit, and revision are visible, timely, "
+            "available, and usable now during the discussion before "
+            "reconciliation pressure returns tonight now here."
+        ),
+    },
+}
+
 CONSTRAINED_REPAIR_TEXTS_BY_VERSION: Mapping[
     str,
     Mapping[str, Mapping[str, str]],
 ] = {
     CONSTRAINED_REPAIR_COMPOSER_VERSION: CONSTRAINED_REPAIR_TEXTS,
     LEXICAL_BALANCED_REPAIR_COMPOSER_VERSION: LEXICAL_BALANCED_REPAIR_TEXTS,
+    SOURCE_DIVERSE_REPAIR_COMPOSER_VERSION: SOURCE_DIVERSE_REPAIR_TEXTS,
 }
 
 
