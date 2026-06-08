@@ -24,6 +24,10 @@ def run_activation_metadata_transfer_from_files(
     coverage_metadata_keys: Sequence[str] | None = None,
     required_coverage_metadata_keys: Sequence[str] | None = None,
     min_coverage_groups_per_key: int = 1,
+    min_transfer_metadata_groups: int = 2,
+    min_transfer_test_pairs_per_fold: int = 1,
+    min_transfer_test_accuracy: float = 1.0,
+    min_transfer_min_margin: float = 0.0,
 ) -> dict[str, Any]:
     """Load activations and pairs, then evaluate held-out metadata transfer."""
 
@@ -34,6 +38,10 @@ def run_activation_metadata_transfer_from_files(
         coverage_metadata_keys=coverage_metadata_keys,
         required_coverage_metadata_keys=required_coverage_metadata_keys,
         min_coverage_groups_per_key=min_coverage_groups_per_key,
+        min_transfer_metadata_groups=min_transfer_metadata_groups,
+        min_transfer_test_pairs_per_fold=min_transfer_test_pairs_per_fold,
+        min_transfer_test_accuracy=min_transfer_test_accuracy,
+        min_transfer_min_margin=min_transfer_min_margin,
         pairs_path=str(pairs_path),
     )
 
@@ -46,6 +54,10 @@ def run_activation_metadata_transfer(
     coverage_metadata_keys: Sequence[str] | None = None,
     required_coverage_metadata_keys: Sequence[str] | None = None,
     min_coverage_groups_per_key: int = 1,
+    min_transfer_metadata_groups: int = 2,
+    min_transfer_test_pairs_per_fold: int = 1,
+    min_transfer_test_accuracy: float = 1.0,
+    min_transfer_min_margin: float = 0.0,
     pairs_path: str | None = None,
 ) -> dict[str, Any]:
     """Train on all but one metadata value and evaluate activation margins."""
@@ -78,6 +90,17 @@ def run_activation_metadata_transfer(
         )
         if fold is not None:
             folds.append(fold)
+    metadata_values = {value for values in pair_values.values() for value in values}
+    transfer_readiness = _transfer_readiness(
+        pairs=pairs,
+        folds=folds,
+        metadata_key=metadata_key,
+        metadata_values=metadata_values,
+        min_metadata_groups=min_transfer_metadata_groups,
+        min_test_pairs_per_fold=min_transfer_test_pairs_per_fold,
+        min_test_accuracy=min_transfer_test_accuracy,
+        min_min_margin=min_transfer_min_margin,
+    )
     return {
         "experiment": "activation_metadata_transfer",
         "description": (
@@ -92,6 +115,10 @@ def run_activation_metadata_transfer(
             "prompts": int(payload.activations.shape[0]),
             "activation_dim": int(payload.activations.shape[1]),
             "groups": len(folds),
+            "min_transfer_metadata_groups": min_transfer_metadata_groups,
+            "min_transfer_test_pairs_per_fold": min_transfer_test_pairs_per_fold,
+            "min_transfer_test_accuracy": min_transfer_test_accuracy,
+            "min_transfer_min_margin": min_transfer_min_margin,
             "coverage_metadata_keys": coverage_keys,
             "required_coverage_metadata_keys": required_coverage_keys,
             "min_coverage_groups_per_key": min_coverage_groups_per_key,
@@ -101,8 +128,11 @@ def run_activation_metadata_transfer(
             **_summary(folds),
             "metadata_coverage_readiness": coverage_readiness["status"],
             "ready_for_metadata_coverage_claims": coverage_readiness["ready"],
+            "transfer_readiness": transfer_readiness["status"],
+            "ready_for_transfer_claims": transfer_readiness["ready"],
         },
         "readiness": coverage_readiness,
+        "transfer_readiness": transfer_readiness,
         "folds": folds,
     }
 
@@ -132,6 +162,7 @@ def render_activation_metadata_transfer_markdown(report: Mapping[str, Any]) -> s
     summary = _mapping(report.get("summary"))
     inputs = _mapping(report.get("inputs"))
     readiness = _mapping(report.get("readiness"))
+    transfer_readiness = _mapping(report.get("transfer_readiness"))
     lines = [
         "# Activation Metadata Transfer",
         "",
@@ -148,6 +179,10 @@ def render_activation_metadata_transfer_markdown(report: Mapping[str, Any]) -> s
         f"`{readiness.get('status', 'not_ready')}`",
         f"- Ready for metadata coverage claims: "
         f"{bool(readiness.get('ready', False))}",
+        f"- Transfer readiness: "
+        f"`{transfer_readiness.get('status', 'not_ready')}`",
+        f"- Ready for transfer claims: "
+        f"{bool(transfer_readiness.get('ready', False))}",
         "",
         "## Metadata Coverage Readiness",
         "",
@@ -190,6 +225,36 @@ def render_activation_metadata_transfer_markdown(report: Mapping[str, Any]) -> s
             f"{int(row_map.get('missing_pairs', 0))} | "
             f"{int(row_map.get('groups', 0))} | "
             f"{', '.join(f'`{value}`' for value in _sequence(row_map.get('values')))} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Transfer Readiness",
+            "",
+            "| Gate | Value | Threshold | Passed |",
+            "| --- | ---: | ---: | --- |",
+        ]
+    )
+    for gate in _sequence(transfer_readiness.get("gates")):
+        gate_map = _mapping(gate)
+        lines.append(
+            "| "
+            f"{gate_map.get('gate_id', '')} | "
+            f"{float(gate_map.get('value', 0.0)):.3f} | "
+            f"{float(gate_map.get('threshold', 0.0)):.3f} | "
+            f"{bool(gate_map.get('passed', False))} |"
+        )
+    failed_metadata_values = _sequence(
+        transfer_readiness.get("failed_metadata_values")
+    )
+    if failed_metadata_values:
+        lines.extend(
+            [
+                "",
+                "Not ready for transfer claims: held-out folds are incomplete "
+                f"or below threshold for "
+                f"{', '.join(str(value) for value in failed_metadata_values)}.",
+            ]
         )
     lines.extend(
         [
@@ -414,6 +479,153 @@ def _metadata_coverage_readiness(
         "failed_metadata_keys": failed_metadata_keys,
         "gates": gates,
     }
+
+
+def _transfer_readiness(
+    *,
+    pairs: Sequence[PairwiseExample],
+    folds: Sequence[Mapping[str, Any]],
+    metadata_key: str,
+    metadata_values: set[str],
+    min_metadata_groups: int,
+    min_test_pairs_per_fold: int,
+    min_test_accuracy: float,
+    min_min_margin: float,
+) -> dict[str, Any]:
+    held_out_values = {str(fold.get("held_out", "")) for fold in folds}
+    missing_fold_values = sorted(metadata_values - held_out_values)
+    thin_test_values = sorted(
+        value
+        for value in metadata_values
+        if _min_test_pairs_for_held_out(folds, value) < min_test_pairs_per_fold
+    )
+    low_accuracy_values = sorted(
+        value
+        for value in metadata_values
+        if _min_test_accuracy_for_held_out(folds, value) < min_test_accuracy
+    )
+    low_margin_values = sorted(
+        value
+        for value in metadata_values
+        if _min_margin_for_held_out(folds, value) < min_min_margin
+    )
+    failed_metadata_values = sorted(
+        set(missing_fold_values)
+        | set(thin_test_values)
+        | set(low_accuracy_values)
+        | set(low_margin_values)
+    )
+    gates = [
+        {
+            "gate_id": "non_empty_pairs",
+            "value": float(len(pairs)),
+            "threshold": 1.0,
+            "passed": len(pairs) > 0,
+        },
+        {
+            "gate_id": "metadata_group_count",
+            "value": float(len(metadata_values)),
+            "threshold": float(min_metadata_groups),
+            "passed": len(metadata_values) >= min_metadata_groups,
+        },
+        {
+            "gate_id": "metadata_values_have_folds",
+            "value": float(len(held_out_values & metadata_values)),
+            "threshold": float(len(metadata_values)),
+            "passed": metadata_values <= held_out_values,
+        },
+        {
+            "gate_id": "min_test_pairs_per_fold",
+            "value": float(
+                min(
+                    (
+                        _min_test_pairs_for_held_out(folds, value)
+                        for value in metadata_values
+                    ),
+                    default=0,
+                )
+            ),
+            "threshold": float(min_test_pairs_per_fold),
+            "passed": not thin_test_values,
+        },
+        {
+            "gate_id": "min_test_accuracy_per_fold",
+            "value": float(
+                min(
+                    (
+                        _min_test_accuracy_for_held_out(folds, value)
+                        for value in metadata_values
+                    ),
+                    default=0.0,
+                )
+            ),
+            "threshold": min_test_accuracy,
+            "passed": not low_accuracy_values,
+        },
+        {
+            "gate_id": "min_margin_per_fold",
+            "value": float(
+                min(
+                    (_min_margin_for_held_out(folds, value) for value in metadata_values),
+                    default=0.0,
+                )
+            ),
+            "threshold": min_min_margin,
+            "passed": not low_margin_values,
+        },
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "transfer_ready" if ready else "not_ready_for_transfer_claims",
+        "ready": ready,
+        "metadata_key": metadata_key,
+        "min_metadata_groups": min_metadata_groups,
+        "min_test_pairs_per_fold": min_test_pairs_per_fold,
+        "min_test_accuracy": min_test_accuracy,
+        "min_min_margin": min_min_margin,
+        "missing_fold_values": missing_fold_values,
+        "thin_test_values": thin_test_values,
+        "low_accuracy_values": low_accuracy_values,
+        "low_margin_values": low_margin_values,
+        "failed_metadata_values": failed_metadata_values,
+        "gates": gates,
+    }
+
+
+def _min_test_pairs_for_held_out(
+    folds: Sequence[Mapping[str, Any]],
+    held_out: str,
+) -> int:
+    counts = [
+        int(fold.get("test_pairs", 0))
+        for fold in folds
+        if str(fold.get("held_out", "")) == held_out
+    ]
+    return min(counts) if counts else 0
+
+
+def _min_test_accuracy_for_held_out(
+    folds: Sequence[Mapping[str, Any]],
+    held_out: str,
+) -> float:
+    values = [
+        float(fold.get("test_accuracy", 0.0))
+        for fold in folds
+        if str(fold.get("held_out", "")) == held_out
+    ]
+    return min(values) if values else 0.0
+
+
+def _min_margin_for_held_out(
+    folds: Sequence[Mapping[str, Any]],
+    held_out: str,
+) -> float:
+    values = [
+        float(fold.get("min_margin", 0.0))
+        for fold in folds
+        if str(fold.get("held_out", "")) == held_out
+    ]
+    return min(values) if values else 0.0
 
 
 def _summary(folds: Sequence[Mapping[str, Any]]) -> dict[str, Any]:

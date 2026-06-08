@@ -59,8 +59,12 @@ def test_activation_metadata_transfer_holds_out_pair_groups(tmp_path) -> None:
         "metadata_coverage_ready"
     )
     assert report["summary"]["ready_for_metadata_coverage_claims"] is True
+    assert report["summary"]["transfer_readiness"] == "transfer_ready"
+    assert report["summary"]["ready_for_transfer_claims"] is True
     assert _readiness(report)["ready"] is True
     assert _gate(report, "complete_pair_coverage")["passed"] is True
+    assert _transfer_readiness(report)["ready"] is True
+    assert _transfer_gate(report, "min_test_accuracy_per_fold")["passed"] is True
     assert _coverage_row(report, "source") == {
         "metadata_key": "source",
         "pairs_with_values": 3,
@@ -82,6 +86,8 @@ def test_activation_metadata_transfer_holds_out_pair_groups(tmp_path) -> None:
     assert "Metadata Coverage Readiness" in markdown
     assert "metadata_coverage_ready" in markdown
     assert "Metadata Coverage" in markdown
+    assert "Transfer Readiness" in markdown
+    assert "transfer_ready" in markdown
     assert "`generated_fault_class_anthropic`" in markdown
 
 
@@ -129,6 +135,29 @@ def test_activation_metadata_transfer_blocks_incomplete_metadata_coverage(
     assert "generated_style, provider" in markdown
 
 
+def test_activation_metadata_transfer_blocks_thin_transfer_folds(tmp_path) -> None:
+    activation_path = tmp_path / "activations.npz"
+    _write_activation_payload(activation_path)
+    pairs = _complete_pairs()
+
+    report = run_activation_metadata_transfer(
+        activation_npz=activation_path,
+        pairs=pairs,
+        metadata_key="primary_fault_class",
+        min_transfer_test_pairs_per_fold=2,
+    )
+    markdown = render_activation_metadata_transfer_markdown(report)
+
+    transfer_readiness = _transfer_readiness(report)
+    assert transfer_readiness["status"] == "not_ready_for_transfer_claims"
+    assert transfer_readiness["ready"] is False
+    assert transfer_readiness["thin_test_values"] == ["a"]
+    assert transfer_readiness["failed_metadata_values"] == ["a"]
+    assert _transfer_gate(report, "min_test_pairs_per_fold")["passed"] is False
+    assert "not_ready_for_transfer_claims" in markdown
+    assert "a." in markdown
+
+
 def _write_activation_payload(activation_path) -> None:
     np.savez(
         activation_path,
@@ -151,12 +180,53 @@ def _write_activation_payload(activation_path) -> None:
     )
 
 
+def _complete_pairs() -> list[PairwiseExample]:
+    return [
+        _pair(
+            "p1",
+            "a",
+            fault_classes="a,shared_fault",
+            source="generated_fault_class_offline",
+            provider="offline",
+            generated_style="cue_balanced",
+            cohort="seed",
+        ),
+        _pair(
+            "p2",
+            "b",
+            fault_classes="b,shared_fault",
+            source="generated_fault_class_anthropic",
+            provider="anthropic",
+            generated_style="api_authored",
+            cohort="api",
+        ),
+        _pair(
+            "p3",
+            "b",
+            fault_classes="b",
+            source="generated_fault_class_anthropic",
+            provider="anthropic",
+            generated_style="api_authored",
+            cohort="api",
+        ),
+    ]
+
+
 def _readiness(report: Mapping[str, Any]) -> Mapping[str, Any]:
     return cast(Mapping[str, Any], report["readiness"])
 
 
+def _transfer_readiness(report: Mapping[str, Any]) -> Mapping[str, Any]:
+    return cast(Mapping[str, Any], report["transfer_readiness"])
+
+
 def _gate(report: Mapping[str, Any], gate_id: str) -> Mapping[str, Any]:
     gates = cast(list[Mapping[str, Any]], _readiness(report)["gates"])
+    return next(gate for gate in gates if gate["gate_id"] == gate_id)
+
+
+def _transfer_gate(report: Mapping[str, Any], gate_id: str) -> Mapping[str, Any]:
+    gates = cast(list[Mapping[str, Any]], _transfer_readiness(report)["gates"])
     return next(gate for gate in gates if gate["gate_id"] == gate_id)
 
 
