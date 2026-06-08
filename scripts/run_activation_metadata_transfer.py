@@ -22,6 +22,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         coverage_metadata_keys=args.coverage_metadata_key,
         required_coverage_metadata_keys=args.required_coverage_metadata_key,
         min_coverage_groups_per_key=args.min_coverage_groups_per_key,
+        min_transfer_metadata_groups=args.min_transfer_metadata_groups,
+        min_transfer_test_pairs_per_fold=args.min_transfer_test_pairs_per_fold,
+        min_transfer_test_accuracy=args.min_transfer_test_accuracy,
+        min_transfer_min_margin=args.min_transfer_min_margin,
     )
     save_activation_metadata_transfer_report(
         report,
@@ -41,6 +45,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "metadata coverage readiness: "
         f"status={readiness['status']} "
         f"ready={readiness['ready']}"
+    )
+    transfer_readiness = report["transfer_readiness"]
+    print(
+        "transfer readiness: "
+        f"status={transfer_readiness['status']} "
+        f"ready={transfer_readiness['ready']}"
     )
     print(f"wrote {args.markdown_output}")
     return 0
@@ -79,6 +89,30 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         type=int,
         default=1,
         help="Minimum observed value groups required for each required coverage key.",
+    )
+    parser.add_argument(
+        "--min-transfer-metadata-groups",
+        type=int,
+        default=2,
+        help="Minimum held-out metadata groups required for transfer claims.",
+    )
+    parser.add_argument(
+        "--min-transfer-test-pairs-per-fold",
+        type=int,
+        default=1,
+        help="Minimum evaluated pair count required in every held-out fold.",
+    )
+    parser.add_argument(
+        "--min-transfer-test-accuracy",
+        type=float,
+        default=1.0,
+        help="Minimum held-out test accuracy required in every fold.",
+    )
+    parser.add_argument(
+        "--min-transfer-min-margin",
+        type=float,
+        default=0.0,
+        help="Minimum positive-minus-negative projection margin required in every fold.",
     )
     parser.add_argument(
         "--json-output",
