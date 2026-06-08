@@ -231,10 +231,21 @@ def _generate_output_records(
 ) -> list[dict[str, object]]:
     """Generate text while retaining one raw audit row per requested prompt."""
 
-    return [
-        _generate_output_record(record, provider=provider, model=model)
-        for record in records
-    ]
+    output_records: list[dict[str, object]] = []
+    for index, record in enumerate(records):
+        output = _generate_output_record(record, provider=provider, model=model)
+        output_records.append(output)
+        if _is_fatal_request_error(output):
+            output_records.extend(
+                _skipped_after_fatal_error_records(
+                    records[index + 1 :],
+                    provider=provider,
+                    model=model,
+                    fatal_output=output,
+                )
+            )
+            break
+    return output_records
 
 
 def _generate_output_record(
@@ -388,6 +399,48 @@ def _openai_output_text(body: Mapping[str, object]) -> str:
 
 def _sanitize_error_detail(detail: str) -> str:
     return re.sub(r"sk-[A-Za-z0-9_*.-]+", "sk-***", detail)
+
+
+def _is_fatal_request_error(output: Mapping[str, object]) -> bool:
+    if str(output.get("status", "")) != "request_error":
+        return False
+    detail = str(output.get("error_detail", "")).casefold()
+    fatal_markers = (
+        " 401",
+        '"status": 401',
+        "authentication_error",
+        "invalid_api_key",
+        "invalid api key",
+        "invalid x-api-key",
+    )
+    return any(marker in detail for marker in fatal_markers)
+
+
+def _skipped_after_fatal_error_records(
+    records: Sequence[FaultPromptRecord],
+    *,
+    provider: str,
+    model: str,
+    fatal_output: Mapping[str, object],
+) -> list[dict[str, object]]:
+    fatal_prompt_id = str(fatal_output.get("prompt_id", "unknown"))
+    fatal_error_detail = str(fatal_output.get("error_detail", ""))
+    return [
+        _raw_output_record(
+            record,
+            text="",
+            provider=provider,
+            model=model,
+            status="request_skipped_after_fatal_error",
+            valid=False,
+            error_type="skipped_after_fatal_request_error",
+            error_detail=(
+                f"Skipped after fatal provider error on {fatal_prompt_id}: "
+                f"{fatal_error_detail}"
+            ),
+        )
+        for record in records
+    ]
 
 
 def _validate_generated_output(text: str) -> tuple[str, bool, str]:
