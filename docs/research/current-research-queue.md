@@ -19,8 +19,8 @@ The current bottleneck is no longer practical availability, source diversity,
 source-held-out lexical leakage, fault-class lexical leakage, activation
 extraction, same-family model replication for the generated-text benchmark, the
 first small non-generated control benchmark, a first expansion of that control,
-basic out-of-family separability, or source-family bridge robustness. The
-newest four-source generated benchmark
+basic out-of-family separability, source-family bridge robustness, or pair-count
+bridge robustness. The newest four-source generated benchmark
 reaches `bundle_ready` with zero audit warnings and activation metadata
 transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The expanded
 hand-authored procedural-justice control reaches `control_bundle_ready` on
@@ -30,14 +30,26 @@ accepted for both benchmarks, a pooled SmolLM2 generated+control direction
 separates both benchmarks, and SmolLM2 bridge training passes held-out
 source-family transfer in both domains. A same-domain source-family bridge
 ablation now passes with asymmetric requirements: generated/source holdouts need
-one bridge source family, while control/target holdouts need two. The active
-bottleneck is now pair-level bridge robustness: source-only directions remain
-domain-specific, but source-family bridge directions work, so the next question
-is how little path-stratified cross-domain bridge data is needed before
-held-out-domain transfer remains stable.
+one bridge source family, while control/target holdouts need two. A
+path-stratified pair bridge ablation now finds a six-pair bridge threshold: the
+control/target side is exact at six bridge pairs, while the generated/source
+side is sampled-stable at six. The active bottleneck is now bridge-set
+diagnosis: source-only directions remain domain-specific, bridge directions
+work, and the next question is which six-pair bridge sets are robustly
+sufficient and why.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-pair-bridge-ablation-audit.md`: the pair-level
+  path-stratified bridge audit uses `slack_options_tested` to sample bridge
+  subsets by procedural future-option coverage. On SmolLM2 layer `-2`, the
+  generated/source side has a sampled-stable six-pair threshold with minimum
+  margin `+3.412`; the control/target side has an exact six-pair threshold
+  after evaluating all `16,384` control-side bridge subsets, with minimum
+  margin `+0.652`. All control-side bridge subsets with five or fewer pairs
+  still fail at least one held-out source-family fold. The residual is no
+  longer pair count, but which six-pair bridge sets are robust and
+  path-complete.
 - `docs/research/2026-06-08-minimal-bridge-ablation-audit.md`: the
   minimal-bridge source-family ablation estimates how much same-domain bridge
   diversity SmolLM2 layer `-2` needs when training on the full opposite
@@ -171,19 +183,18 @@ Activation extraction, lexical controls, same-family model replication, the
 first non-generated control, its first source expansion, the first Qwen7B
 generated/control direction-transfer check, and basic out-of-family separability
 are no longer blocked. However, activation results remain text-benchmark claims
-until pair-level bridge sufficiency or minimal-pair generated/control direction
-transfer also survives the out-of-family setting, and human-facing gates are
-separately validated.
+until bridge-set sufficiency and generated/control direction transfer also
+survive the out-of-family setting, and human-facing gates are separately
+validated.
 
 ## Active Objective
 
-Measure minimal pair-level bridge robustness.
+Diagnose robust six-pair bridge sets.
 
-The next operation should find how many individual generated/control bridge
-pairs SmolLM2 needs to preserve held-out source-family transfer, with bridge
-pairs stratified by procedural path so timely voice, evidence access,
-accountability, non-retaliatory exit, and proportionate repair cannot vanish
-from the training subset. It must still preserve:
+The next operation should identify which six-pair generated/control bridge
+sets preserve held-out source-family transfer, compare passing six-pair sets
+with failing five-pair sets, and determine whether robustness depends on
+specific procedural future-option coverage. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -192,7 +203,7 @@ from the training subset. It must still preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with SmolLM2 pair-level minimal-bridge transfer as the active gate;
+  exist, with SmolLM2 six-pair bridge-set sufficiency as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -206,7 +217,7 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- an out-of-family minimal pair-level generated/control bridge-transfer pass;
+- an out-of-family six-pair generated/control bridge-set sufficiency pass;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -231,6 +242,7 @@ Implementation should probably follow existing audit patterns:
 - `src/social_cohesion_vectors/experiments/heldout_domain_direction_audit.py`
 - `scripts/run_heldout_domain_direction_audit.py`
 - `scripts/run_minimal_bridge_direction_audit.py`
+- `scripts/run_pair_bridge_direction_audit.py`
 - `tests/test_heldout_domain_direction_audit.py`
 
 ## Next Sequence
@@ -250,16 +262,19 @@ Implementation should probably follow existing audit patterns:
 7. Use the source-family minimal bridge ablation as the current bridge-count
    baseline: generated/source holdouts need one bridge source family, while
    control/target holdouts need two.
-8. Add pair-count bridge ablation: vary how many individual bridge pairs from
-   the held-out domain are included, stratify by procedural path, and preserve
-   the failed source-only and one-bridge control folds as regression cases.
-9. Target the current residuals: generated `privacy_bypass::data_choice`,
+8. Use the pair bridge ablation as the current pair-count baseline:
+   control/target has an exact six-pair threshold, and generated/source has a
+   sampled-stable six-pair threshold.
+9. Add bridge-set diagnosis: extract passing six-pair subsets, compare them
+   with failing five-pair subsets, and report procedural future-option coverage
+   differences.
+10. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
    fail under the generated direction.
-10. Rerun SmolLM2 generated/control direction transfer before adding more model
+11. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-11. Keep human validation parked until generated, non-generated, cross-setting,
+12. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
