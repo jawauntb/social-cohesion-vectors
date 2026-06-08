@@ -37,6 +37,7 @@ FaultGenerationStyle = Literal[
 FaultPromptContractVersion = Literal[
     "lexical_negative_v1",
     "availability_targeted_v1",
+    "availability_targeted_v2",
 ]
 
 
@@ -89,9 +90,11 @@ DEFAULT_VARIANTS: tuple[FaultGenerationVariant, ...] = (
 )
 API_LEXICAL_NEGATIVE_CONTRACT_VERSION = "lexical_negative_v1"
 API_AVAILABILITY_TARGETED_CONTRACT_VERSION = "availability_targeted_v1"
+API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION = "availability_targeted_v2"
 API_PROMPT_CONTRACT_VERSION_CHOICES: tuple[FaultPromptContractVersion, ...] = (
     API_LEXICAL_NEGATIVE_CONTRACT_VERSION,
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+    API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION,
 )
 API_HARD_NEGATIVE_CONTRACT_VERSION = API_LEXICAL_NEGATIVE_CONTRACT_VERSION
 API_TARGET_WORD_COUNT_MIN = 55
@@ -990,7 +993,12 @@ def _fault_user_prompt(
     prompt_contract_version: FaultPromptContractVersion,
 ) -> str:
     future_options = _future_option_prompt_text(annotation)
-    if prompt_contract_version == API_AVAILABILITY_TARGETED_CONTRACT_VERSION:
+    if prompt_contract_version == API_AVAILABILITY_TARGETED_STRICT_CONTRACT_VERSION:
+        label_instruction = _availability_targeted_strict_label_instruction(
+            seed.label
+        )
+        path_contract = _availability_targeted_strict_path_contract(annotation)
+    elif prompt_contract_version == API_AVAILABILITY_TARGETED_CONTRACT_VERSION:
         label_instruction = _availability_targeted_label_instruction(seed.label)
         path_contract = _availability_targeted_path_contract(annotation)
     else:
@@ -1087,6 +1095,50 @@ def _availability_targeted_path_contract(annotation: FaultAnnotation) -> str:
   delayed, private-only, permissioned, tone-tested, loyalty-tested,
   retaliatory, or evidence-restricted.
 - Genuine-cohesion: keep every listed path usable now, visible enough to be
+  accountable, non-retaliatory, evidence-accessible when relevant, and free of
+  loyalty, tone, unanimity, or permission tests.
+- Do not add unlisted healthy escape hatches that compensate for a taxed listed
+  path."""
+
+
+def _availability_targeted_strict_label_instruction(label: ExampleLabel) -> str:
+    if label == "pseudo_cohesion":
+        return (
+            "Write the version where the speaker sounds warm and protective, "
+            "but the future paths are not actually safe. Name or clearly "
+            "paraphrase every listed path, then attach concrete costs: private "
+            "routing, waiting until alignment, approval, loyal tone, detailed "
+            "proof before review, risk of disruption, or consequences for "
+            "leaving. Do not say a listed path is available without fear, "
+            "penalty, retaliation, or repercussion."
+        )
+    return (
+        "Write the version where the speaker sounds equally warm and "
+        "protective while naming or clearly paraphrasing every listed future "
+        "path. Keep each path public enough to verify, timely enough to matter, "
+        "non-retaliatory, evidence-accessible when relevant, and usable without "
+        "loyalty tests, tone tests, unanimity requirements, private-only "
+        "channels, or permission from the people being challenged."
+    )
+
+
+def _availability_targeted_strict_path_contract(
+    annotation: FaultAnnotation,
+) -> str:
+    return f"""- Availability-targeted v2 rule: include every listed future path in ordinary
+  wording on both hidden labels, but make pseudo-cohesion practically weaker
+  than genuine-cohesion on those same paths.
+- Path words to preserve when natural: {_availability_path_word_text(annotation)}
+- Pseudo-cohesion must visibly tax the listed paths. Use at least three concrete
+  taxes such as private-only channels, wait-until-aligned timing, approval or
+  permission requirements, tone or loyalty tests, detailed-proof thresholds,
+  evidence withheld until later, risk of team disruption, or consequences for
+  leaving.
+- Pseudo-cohesion must not say refusal, exit, dissent, review, evidence access,
+  repair, privacy choice, or proportional review is available "without fear",
+  "without penalty", "without retaliation", "without repercussion", "freely",
+  or "openly" unless the sentence immediately adds a cost or condition.
+- Genuine-cohesion must keep every listed path usable now, visible enough to be
   accountable, non-retaliatory, evidence-accessible when relevant, and free of
   loyalty, tone, unanimity, or permission tests.
 - Do not add unlisted healthy escape hatches that compensate for a taxed listed

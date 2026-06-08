@@ -16,7 +16,7 @@ findings and decisions get summarized here or in dated notes under
 ## Current State
 
 The current bottleneck is not GPU scale or activation extraction. It is
-candidate generation under the new practical-availability verifier.
+targeted repair generation for the remaining practical-availability failures.
 
 Recent accepted findings:
 
@@ -32,20 +32,30 @@ Recent accepted findings:
   the prompt ledger now supports `availability_targeted_v1` and
   `--availability-priority`. A local smoke check confirms the prioritized
   first-20 prompt records cover all eight future-option paths.
+- `docs/research/2026-06-08-availability-targeted-modal-run.md`: five live
+  Modal/Qwen candidate chunks restored selected score and slack gates to
+  `10/10`, improved availability to `5/10`, core gates to `4/10`, and all gates
+  to `2/10`, but activation remains blocked by residual `refusal`, `appeal`,
+  `dissent`, and `repair` failures.
 
 Activation extraction remains blocked because lexical, slack, availability,
 source-diversity, and transfer gates do not pass together.
 
 ## Active Objective
 
-Run an availability-targeted generation batch and rerun the availability-aware
-first-20 tournament with the matching prompt-ledger flags.
+Add targeted repair generation for the five remaining failing base contrasts
+and rerun the tournament with those repair candidates added.
 
-The availability audit, availability-aware tournament, and
-`availability_targeted_v1` prompt contract now exist. The next move is to test
-the candidate pool itself: generated candidates must cover all eight future
-paths, mention each declared path in both labels, preserve each path on the
-genuine side, and make those same paths practically weaker on the pseudo side.
+The availability audit, availability-aware tournament, `availability_targeted_v1`,
+`availability_targeted_v2`, and live Modal first-20 sweep now exist. Broad
+generation is no longer the best next move. The next candidates should focus on
+the exact residual failures:
+
+- `accountability_after_harm`: `repair`;
+- `autonomy_after_conflict`: `dissent`;
+- `belonging_norms`: `refusal`, `dissent`;
+- `fair_allocation`: `refusal`, `appeal`, `repair`;
+- `forgiveness_after_harm`: `repair`.
 
 Selection should preserve the availability dimensions already exposed by the
 audit:
@@ -60,14 +70,14 @@ audit:
 ## Definition Of Done
 
 The active objective is complete when the repo can generate and select a
-first-20 shard with:
+repaired first-20 shard with:
 
-- availability pass rate above the current `1/10` selected baseline;
-- core-gate pass rate above the current `0/10` selected baseline;
-- explicit coverage for `evidence_access` and `privacy_choice`;
-- no regression in score/slack/lexical readiness relative to the current
-  selected tournament;
-- a dated research note interpreting the first run.
+- availability pass rate above the current `5/10` selected baseline;
+- core-gate pass rate above the current `4/10` selected baseline;
+- all-gate pass rate above the current `2/10` selected baseline;
+- selected score and slack gates remain at `10/10`;
+- no loss of all-eight-path coverage;
+- a dated research note interpreting accepted and rejected repair candidates.
 
 ## Likely Files
 
@@ -85,17 +95,18 @@ Implementation should probably follow existing audit patterns:
 
 ## Next Sequence
 
-1. Generate a new first-20 candidate batch through Modal HF with
-   `--prompt-contract-version availability_targeted_v1` and
-   `--availability-priority`.
-2. Generate at least one additional candidate batch with the same flags if the
-   first batch does not beat the `1/10` availability baseline.
-3. Rerun candidate selection with availability as a core gate and the same
-   prompt-ledger flags.
-4. Compare selected winners and gate counts against the current tournament.
-5. Add a dated run note with accepted/rejected candidates and residual failure
-   modes.
-6. Only after lexical, slack, source-diversity, component, and availability
+1. Add a repair-focused prompt slice or script option that can request only the
+   failed base contrasts and their failed future-option paths.
+2. Require repair prompts to name the failed paths, state the pseudo-side tax
+   dimensions, and keep the genuine side available on the same paths.
+3. Generate repair candidates through Modal HF.
+4. Rerun candidate selection with the repair candidates added to the five-chunk
+   pool.
+5. Compare selected winners and gate counts against the current `5/10`
+   availability, `4/10` core, and `2/10` all-gate baseline.
+6. Add a dated run note with accepted/rejected repair candidates and residual
+   failure modes.
+7. Only after lexical, slack, source-diversity, component, and availability
    gates pass together, send a generated shard into activation extraction.
 
 ## Decision Gates

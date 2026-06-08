@@ -32,6 +32,13 @@ Added a selectable prompt contract:
   path words while making those same paths weaker through delay, private-only
   routing, permission, tone/loyalty tests, retaliation risk, or evidence
   restriction.
+- `availability_targeted_v2`: added after the first live v1 batches showed Qwen
+  sometimes wrote the pseudo side as actually healthy. V2 keeps the same all-path
+  coverage requirement but explicitly requires at least three concrete
+  pseudo-side taxes and forbids pseudo text from saying a listed path is
+  available "without fear", "without penalty", "without retaliation", "without
+  repercussion", "freely", or "openly" unless the sentence immediately adds a
+  cost or condition.
 
 Added limited-shard ordering:
 
@@ -81,7 +88,10 @@ Result:
 
 ## Next Live Run
 
-Generate the next first-20 Modal candidate batch with:
+The first live run has now been completed and is summarized in
+`docs/research/2026-06-08-availability-targeted-modal-run.md`.
+
+The command shape for a v2 first-20 Modal candidate batch is:
 
 ```bash
 .venv/bin/python scripts/run_fault_class_modal_generation.py \
@@ -89,34 +99,34 @@ Generate the next first-20 Modal candidate batch with:
   --variants neighborhood_forum \
   --limit 20 \
   --availability-priority \
-  --prompt-contract-version availability_targeted_v1 \
-  --raw-outputs /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/raw_outputs.jsonl \
-  --examples-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/examples.jsonl \
-  --scored-runs-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/scored_runs.jsonl \
-  --pairs-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/pairs.jsonl \
-  --prompts-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/activation_prompts.jsonl \
-  --json-report-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/dataset.json \
-  --markdown-report-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/dataset.md \
-  --audit-output-dir /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_000/audit_bundle
+  --prompt-contract-version availability_targeted_v2 \
+  --raw-outputs /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/raw_outputs.jsonl \
+  --examples-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/examples.jsonl \
+  --scored-runs-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/scored_runs.jsonl \
+  --pairs-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/pairs.jsonl \
+  --prompts-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/activation_prompts.jsonl \
+  --json-report-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/dataset.json \
+  --markdown-report-output /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/dataset.md \
+  --audit-output-dir /tmp/social_cohesion_modal_hf_qwen7_availability_targeted_20260608/chunk_XXX_v2/audit_bundle
 ```
 
 Any tournament using that batch must use the same prompt-ledger flags:
 
 ```bash
 --availability-priority \
---prompt-contract-version availability_targeted_v1
+--prompt-contract-version availability_targeted_v2
 ```
 
 ## Gate
 
-The next generated shard improves the research state only if it beats the
-current selected baseline:
+After the first v1/v2 live run, the next generated shard improves the research
+state only if it beats the current selected baseline:
 
-- availability pass rate above `1/10`;
-- core gate pass rate above `0/10`;
-- `evidence_access` and `privacy_choice` covered;
-- no regression in score/slack/lexical readiness relative to the current
-  selected tournament.
+- availability pass rate above `5/10`;
+- core gate pass rate above `4/10`;
+- all-gate pass rate above `2/10`;
+- selected score and slack gates remain at `10/10`;
+- all eight future-option paths remain covered.
 
 ## Claim Boundary
 

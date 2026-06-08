@@ -13,6 +13,7 @@ from social_cohesion_vectors.experiments.fault_authorship_tournament import (
 )
 from social_cohesion_vectors.experiments.fault_generation import (
     API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+    API_HARD_NEGATIVE_CONTRACT_VERSION,
     DEFAULT_VARIANTS,
     FaultPromptRecord,
     build_fault_prompt_records,
@@ -66,6 +67,38 @@ def test_fault_authorship_tournament_selects_per_pair_candidate() -> None:
     )
     assert "Fault Authorship Candidate Tournament" in markdown
     assert "Availability gate pass rate" in markdown
+
+
+def test_fault_authorship_tournament_preserves_winning_raw_contract_metadata() -> None:
+    records = prioritize_prompt_records_for_future_options(
+        build_fault_prompt_records(
+            variants=DEFAULT_VARIANTS[:1],
+            prompt_contract_version=API_AVAILABILITY_TARGETED_CONTRACT_VERSION,
+        )
+    )[:2]
+    legacy_rows = _strong_candidate_rows(records)
+    for row in legacy_rows:
+        row["prompt_contract_version"] = API_HARD_NEGATIVE_CONTRACT_VERSION
+        row["availability_targeted_contract"] = ""
+
+    result = run_fault_authorship_tournament(
+        records=records,
+        candidates=[
+            CandidateOutputSet(
+                candidate_id="legacy",
+                output_records=legacy_rows,
+            )
+        ],
+        provider="modal_hf",
+        model="test/model",
+    )
+
+    assert {row["prompt_contract_version"] for row in result.selected_output_records} == {
+        API_HARD_NEGATIVE_CONTRACT_VERSION
+    }
+    assert {row["availability_targeted_contract"] for row in result.selected_output_records} == {
+        ""
+    }
 
 
 def test_fault_authorship_tournament_cli_writes_selected_artifacts(
@@ -177,6 +210,13 @@ def _weak_candidate_rows(
 def _candidate_row(record: FaultPromptRecord, *, text: str) -> dict[str, object]:
     return {
         "prompt_id": record.prompt_id,
+        "prompt_contract_version": record.metadata["prompt_contract_version"],
+        "future_options_tested": record.metadata["future_options_tested"],
+        "future_option_contract": record.metadata["future_option_contract"],
+        "lexical_negative_contract": record.metadata["lexical_negative_contract"],
+        "availability_targeted_contract": record.metadata[
+            "availability_targeted_contract"
+        ],
         "provider": "modal_hf",
         "model": "test/model",
         "status": "ok",

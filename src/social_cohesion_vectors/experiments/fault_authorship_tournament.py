@@ -491,28 +491,38 @@ def _selected_output_records(
                     "variant": record.variant,
                     "label": label,
                     "primary_fault_class": record.primary_fault_class,
-                    "prompt_contract_version": str(
-                        record.metadata.get("prompt_contract_version", "")
+                    "prompt_contract_version": _raw_or_record_metadata(
+                        raw_output,
+                        record,
+                        "prompt_contract_version",
                     ),
-                    "target_word_count_min": record.metadata.get(
+                    "target_word_count_min": raw_output.get(
                         "target_word_count_min",
-                        "",
+                        record.metadata.get("target_word_count_min", ""),
                     ),
-                    "target_word_count_max": record.metadata.get(
+                    "target_word_count_max": raw_output.get(
                         "target_word_count_max",
-                        "",
+                        record.metadata.get("target_word_count_max", ""),
                     ),
-                    "future_options_tested": str(
-                        record.metadata.get("future_options_tested", "")
+                    "future_options_tested": _raw_or_record_metadata(
+                        raw_output,
+                        record,
+                        "future_options_tested",
                     ),
-                    "future_option_contract": str(
-                        record.metadata.get("future_option_contract", "")
+                    "future_option_contract": _raw_or_record_metadata(
+                        raw_output,
+                        record,
+                        "future_option_contract",
                     ),
-                    "lexical_negative_contract": str(
-                        record.metadata.get("lexical_negative_contract", "")
+                    "lexical_negative_contract": _raw_or_record_metadata(
+                        raw_output,
+                        record,
+                        "lexical_negative_contract",
                     ),
-                    "availability_targeted_contract": str(
-                        record.metadata.get("availability_targeted_contract", "")
+                    "availability_targeted_contract": _raw_or_record_metadata(
+                        raw_output,
+                        record,
+                        "availability_targeted_contract",
                     ),
                     "provider": str(raw_output.get("provider", "")),
                     "model": str(raw_output.get("model", "")),
@@ -535,6 +545,16 @@ def _selected_output_records(
                 }
             )
     return output_records
+
+
+def _raw_or_record_metadata(
+    raw_output: Mapping[str, Any],
+    record: FaultPromptRecord,
+    key: str,
+) -> str:
+    if key in raw_output and raw_output[key] is not None:
+        return str(raw_output[key])
+    return str(record.metadata.get(key, ""))
 
 
 def _candidate_summary(
