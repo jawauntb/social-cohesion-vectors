@@ -1,5 +1,9 @@
 # What This Project Is Doing
 
+For the current active bottleneck and next actions, use
+`docs/research/current-research-queue.md`. This overview is the broader project
+map; the queue doc is the operational control surface.
+
 This project is trying to find out whether "social cohesion" can be studied as
 a measurable, interpretable family of directions in language models and content
 generation systems.
