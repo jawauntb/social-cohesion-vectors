@@ -65,10 +65,27 @@ source-style intervention now shows the pocket is even narrower: SmolLM2,
 Qwen2.5-0.5B, and TinyLlama-1.1B invert the recovered generated reference while
 separating all five clean hand-authored style variants, including a
 generated-like paragraph; Qwen2.5-7B separates both the generated reference and
-the clean variants.
+the clean variants. A first deterministic perturbation ladder now repairs the
+fresh-source slice in all four model spaces when used as local augmentation,
+with thin but positive Qwen0.5B and TinyLlama margins. Under the original
+source+target direction, removing the generated reference's first positive
+sentence flips SmolLM2 positive, while Qwen0.5B and TinyLlama move closest to
+zero under explicit pseudo-condition or combined edits but do not flip.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-accountability-perturbation-ladder.md`: added a
+  deterministic perturbation exporter for the external generated
+  `accountability_after_harm` reference. All seven perturbations preserve
+  scoped practical availability (`42/42`, minimum margin `+0.150`), while
+  lexical diagnostics remain intentionally caveated because the source artifact
+  is the known leaky generated residual. Original source+target margins show
+  SmolLM2 flips only when the first positive-side sentence is removed
+  (`-9.353` -> `+3.727`), Qwen0.5B and TinyLlama remain negative but move
+  closest to zero under combined/condition edits, and Qwen7B stays positive for
+  every perturbation. Full perturbation-ladder augmentation repairs all four
+  model spaces: SmolLM2 fresh LOO minimum `+22.746`, Qwen0.5B `+0.988`,
+  Qwen7B `+14.288`, and TinyLlama `+0.071`.
 - `docs/research/2026-06-09-tinyllama-style-replication.md`: replicated the
   accountability source-style intervention on
   `TinyLlama/TinyLlama-1.1B-Chat-v1.0` layer `-2`. TinyLlama matches the
@@ -348,13 +365,13 @@ human-facing gates are separately validated.
 
 ## Active Objective
 
-Identify the generated-reference perturbation that causes the small-model pocket.
+Tighten the generated-reference perturbation mechanism.
 
-The next operation should build a minimal perturbation ladder over the recovered
-generated `accountability_after_harm` reference. The ladder should remove or
-isolate lexical warmth, opening address, length, consensus language, negative
-"healthy shortcut" wording, and generated paragraph texture one factor at a
-time while preserving the same procedural paths and pseudo-side taxes.
+The next operation should split the informative first-positive-sentence effect
+into address-only, community-strength framing, and length-matched edits. It
+should also add a second generated residual from a different fault class to test
+whether the mechanism is accountability-specific or a more general
+generated-provenance effect.
 
 It must still preserve:
 
@@ -379,9 +396,9 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- a minimal-perturbation result explaining why the recovered generated
-  accountability reference, and not clean matched accountability variants,
-  lands off-manifold in small-model spaces;
+- a stricter perturbation result explaining whether the first-sentence effect,
+  length, positive warmth, or pseudo-condition language is the active cause of
+  the small-model generated-reference pocket;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -470,9 +487,12 @@ Implementation should probably follow existing audit patterns:
    SmolLM2, Qwen0.5B, and TinyLlama fail only the generated reference, while
    Qwen7B passes both generated and clean variants.
 20. Prefer a minimal perturbation ladder over another broad generation sweep.
-21. Rerun SmolLM2 generated/control direction transfer before adding more model
+21. Use the first perturbation ladder as the current local-repair baseline:
+   full ladder augmentation repairs all four model spaces, but the original
+   direction only flips SmolLM2 under first-positive-sentence removal.
+22. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-22. Keep human validation parked until generated, non-generated, cross-setting,
+23. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
