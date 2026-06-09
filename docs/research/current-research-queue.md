@@ -50,12 +50,24 @@ directions. Recovered-manifest same-model diagnostics show Qwen7B constructed
 bridges pass fresh repair-v2 prompts with a thin minimum margin `+0.178`, while
 SmolLM2 constructed bridges fail the same fresh generated slice with minimum
 margin `-11.273`. Fresh augmentation and leave-one-fresh-pair-out repair the
-slice in Qwen7B but not in SmolLM2. The active bottleneck is now the hardest
-SmolLM2 residual: fresh `accountability_after_harm` remains inverted even when
-source/control/fresh-control margins remain strongly positive.
+slice in Qwen7B but not in SmolLM2. Pair-level geometry shows the hardest
+SmolLM2 residual is fresh `accountability_after_harm`: its fresh delta is nearly
+orthogonal to same-base source accountability deltas, positive under
+fresh-only, but still inverted under original and full fresh-augmented
+directions.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-accountability-pair-geometry-audit.md`: added a
+  pair-level geometry audit for the hard fresh `accountability_after_harm`
+  residual. SmolLM2 marks the focus pair negative under original
+  source+target (`-9.761`), full fresh-augmented (`-4.528`), and
+  leave-focus-out (`-11.959`) directions, but positive under fresh-only
+  (`+29.843`). Qwen7B is positive under all four directions. Same-base source
+  accountability variants stay strongly positive in SmolLM2, but the fresh
+  focus delta is nearly orthogonal to them (mean cosine `+0.009`), so the
+  residual is a local fresh-subcase geometry mismatch rather than broad
+  accountability failure.
 - `docs/research/2026-06-09-fresh-augmented-direction-audit.md`: added a
   fresh-augmented direction audit with leave-one-fresh-pair-out folds. Qwen7B
   passes full fresh augmentation and fresh LOO. SmolLM2 preserves original
