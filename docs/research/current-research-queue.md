@@ -61,13 +61,25 @@ models, and every mini-control pair is `not_hard_residual` under pair geometry.
 The active residual is therefore not broad accountability/procedural-justice
 failure; it is a narrower generated-style or generated-provenance activation
 pocket around the hard fresh `accountability_after_harm` pair. A
-source-style intervention now shows the pocket is even narrower: SmolLM2 and
-Qwen2.5-0.5B invert the recovered generated reference while separating all five
-clean hand-authored style variants, including a generated-like paragraph;
-Qwen2.5-7B separates both the generated reference and the clean variants.
+source-style intervention now shows the pocket is even narrower: SmolLM2,
+Qwen2.5-0.5B, and TinyLlama-1.1B invert the recovered generated reference while
+separating all five clean hand-authored style variants, including a
+generated-like paragraph; Qwen2.5-7B separates both the generated reference and
+the clean variants.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-tinyllama-style-replication.md`: replicated the
+  accountability source-style intervention on
+  `TinyLlama/TinyLlama-1.1B-Chat-v1.0` layer `-2`. TinyLlama matches the
+  small-model pattern: hand-style leave-one-out stays positive with minimum
+  margin `+1.293`, but the full fresh-source slice fails on the generated
+  reference with minimum margin `-0.632`. Pair geometry marks only the
+  generated reference as `hard_pair_geometry_residual`
+  (`-0.680/-0.433/+1.674/-0.632` for original/full/fresh-only/leave-focus-out);
+  all five clean style variants are `not_hard_residual`. The cross-model
+  pattern is now Qwen7B positive on both generated and clean variants, while
+  SmolLM2, Qwen0.5B, and TinyLlama fail only the recovered generated reference.
 - `docs/research/2026-06-09-accountability-style-intervention-audit.md`:
   added a source-style intervention exporter and live three-model diagnostic
   around the hard generated `accountability_after_harm` residual. The
@@ -336,14 +348,13 @@ human-facing gates are separately validated.
 
 ## Active Objective
 
-Consolidate the generated-reference-only accountability residual.
+Identify the generated-reference perturbation that causes the small-model pocket.
 
-The next operation should either replicate the source-style intervention on a
-third architecture outside the Qwen/Smol pair, or build a minimal perturbation
-ladder over the recovered generated reference. The perturbation ladder should
-remove or isolate lexical warmth, opening address, length, consensus language,
-and generated paragraph texture one factor at a time while preserving the same
-procedural paths and pseudo-side taxes.
+The next operation should build a minimal perturbation ladder over the recovered
+generated `accountability_after_harm` reference. The ladder should remove or
+isolate lexical warmth, opening address, length, consensus language, negative
+"healthy shortcut" wording, and generated paragraph texture one factor at a
+time while preserving the same procedural paths and pseudo-side taxes.
 
 It must still preserve:
 
@@ -368,9 +379,9 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- a cross-architecture replication or minimal-perturbation result explaining
-  why the recovered generated accountability reference, and not clean matched
-  accountability variants, lands off-manifold in small-model spaces;
+- a minimal-perturbation result explaining why the recovered generated
+  accountability reference, and not clean matched accountability variants,
+  lands off-manifold in small-model spaces;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -455,11 +466,13 @@ Implementation should probably follow existing audit patterns:
 18. Use the source-style intervention as the current provenance baseline:
    SmolLM2 and Qwen0.5B fail only the generated reference, while Qwen7B passes
    both the generated reference and all clean variants.
-19. Prefer either a non-Qwen/non-Smol architecture replication or a minimal
-   perturbation ladder over another broad generation sweep.
-20. Rerun SmolLM2 generated/control direction transfer before adding more model
+19. Use the TinyLlama replication as the current cross-architecture baseline:
+   SmolLM2, Qwen0.5B, and TinyLlama fail only the generated reference, while
+   Qwen7B passes both generated and clean variants.
+20. Prefer a minimal perturbation ladder over another broad generation sweep.
+21. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-21. Keep human validation parked until generated, non-generated, cross-setting,
+22. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
