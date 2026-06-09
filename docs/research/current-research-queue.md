@@ -1,6 +1,6 @@
 # Current Research Queue
 
-Last updated: 2026-06-08
+Last updated: 2026-06-09
 
 This is the short control surface for staying focused. It should answer three
 questions at any point:
@@ -46,13 +46,27 @@ benchmarks and align positively with the full joint direction. Cross-model
 constructed-bridge transport now passes bidirectionally between Qwen7B and
 SmolLM2 with held-out pair groups excluded from each fold's alignment map.
 Fresh hand-authored procedural-justice control prompts also transport in both
-directions. The active bottleneck is now fresh-generated bridge transport
-asymmetry: Qwen7B-to-SmolLM2 mapped bridge directions fail on fresh generated
-repair-v2 prompts, while SmolLM2-to-Qwen7B separates the same fresh generated
-prompts with a thin positive margin.
+directions. The active bottleneck is now the SmolLM2 fresh-generated residual:
+recovered-manifest same-model diagnostics show Qwen7B constructed bridges pass
+fresh repair-v2 prompts with a thin minimum margin `+0.178`, while SmolLM2
+constructed bridges fail the same fresh generated slice with minimum margin
+`-11.273`. Fresh hand-authored procedural controls still pass in both spaces,
+so the residual is concentrated in generated repair-v2 prompt geometry rather
+than cross-model alignment or procedural-control transfer.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-activation-manifest-recovery-diagnostic.md`:
+  recovered pair manifests from activation NPZ payloads to unblock the
+  fresh-generated bridge diagnostic after `/tmp` generation artifacts had been
+  cleaned. Recovered coverage is 40 generated source pairs, 16 procedural-v2
+  control pairs, 10 fresh generated repair-v2 pairs, and 8 procedural-v1 fresh
+  control pairs. The same-model diagnostic explains the prior transport
+  asymmetry: Qwen7B constructed bridges pass fresh generated prompts at
+  `1.000/+0.178`, while SmolLM2 constructed bridges fail at `0.700/-11.273`;
+  fresh hand-authored controls pass in both spaces. Failures concentrate on
+  `accountability_after_harm`, `belonging_norms`, and
+  `dissent_after_mistake`.
 - `docs/research/2026-06-09-fresh-generated-bridge-diagnostic.md`: added the
   fresh-generated bridge diagnostic scaffold. The new audit compares
   source-only, fresh-source-only, source+fresh-source, and constructed bridge
