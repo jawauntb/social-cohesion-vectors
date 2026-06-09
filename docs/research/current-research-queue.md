@@ -54,10 +54,28 @@ slice in Qwen7B but not in SmolLM2. Pair-level geometry shows the hardest
 SmolLM2 residual is fresh `accountability_after_harm`: its fresh delta is nearly
 orthogonal to same-base source accountability deltas, positive under
 fresh-only, but still inverted under original and full fresh-augmented
-directions.
+directions. A strict hand-authored accountability mini-control now clears
+scoped text gates and passes SmolLM2/Qwen7B activation gates: the original
+source+target direction already separates all four mini-control pairs in both
+models, and every mini-control pair is `not_hard_residual` under pair geometry.
+The active residual is therefore not broad accountability/procedural-justice
+failure; it is a narrower generated-style or generated-provenance activation
+pocket around the hard fresh `accountability_after_harm` pair.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-accountability-mini-control-audit.md`: added a
+  strict non-generated accountability mini-control with four hand-authored
+  source formats. It clears scoped pre-activation gates: availability `28/28`,
+  minimum availability margin `+0.560`, lexical cue-solved pairs `0/4`, and
+  term/length best single-feature accuracy `0.500`. Modal activations on
+  SmolLM2 and Qwen7B layer `-2` show the mini-control is not a hard residual:
+  the original source+target direction already separates it at
+  `1.000/+46.155/0` in SmolLM2 and `1.000/+23.796/0` in Qwen7B. Fresh
+  augmentation and leave-one-mini-control-pair-out also pass with large
+  positive margins in both models. This narrows the prior SmolLM2
+  `accountability_after_harm` failure to a generated-text geometry pocket
+  rather than broad procedural-accountability semantics.
 - `docs/research/2026-06-09-accountability-pair-geometry-audit.md`: added a
   pair-level geometry audit for the hard fresh `accountability_after_harm`
   residual. SmolLM2 marks the focus pair negative under original
@@ -302,18 +320,16 @@ human-facing gates are separately validated.
 
 ## Active Objective
 
-Diagnose and repair fresh-generated bridge transport asymmetry.
+Run a source-style intervention for the hard generated accountability residual.
 
-The next operation should regenerate or preserve the exact generated/control
-pair manifests, then run the new fresh-generated bridge diagnostic inside
-Qwen7B and SmolLM2. It should compare source-only, fresh-source-only, joint
-source+fresh-source, and constructed-bridge directions while keeping the fresh
-control-v1 slice as the negative control that should remain transport-ready.
-The diagnostic should focus on the fresh generated failures:
-
-- `accountability_after_harm`;
-- `belonging_norms`;
-- `dissent_after_mistake`.
+The next operation should preserve the hard generated
+`accountability_after_harm` residual as the source artifact, then create a
+small source-style intervention set that keeps the same procedural paths and
+pseudo-side taxes while varying only source format/provenance. The intervention
+should include hand-authored case-note, meeting-minute, policy-review,
+incident-log, and generated-like paragraph variants. It should then extract
+SmolLM2 and Qwen7B activations and test whether the inversion follows semantic
+content, source style, or generated-like phrasing.
 
 It must still preserve:
 
@@ -324,7 +340,7 @@ It must still preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with fresh-generated bridge transport as the active gate;
+  exist, with generated-style residual transport as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -338,9 +354,9 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- a fresh-generated constructed bridge direction-transfer pass, or a narrower
-  documented boundary explaining why the fresh generated repair-v2 slice is
-  not eligible as transport evidence;
+- a source-style intervention that explains whether the hard generated
+  accountability residual follows procedural content, source format, or
+  generated-like phrasing;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -418,9 +434,13 @@ Implementation should probably follow existing audit patterns:
    and `fair_allocation`; and the control `privacy_exit`,
    `appeal_and_evidence`, and `harm_repair` rows that fail under the generated
    direction.
-17. Rerun SmolLM2 generated/control direction transfer before adding more model
+17. Use the strict accountability mini-control as the current negative control:
+   accountability/procedural-justice content itself passes in SmolLM2 and
+   Qwen7B, so the hard generated residual should be investigated through a
+   source-style/provenance intervention.
+18. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-18. Keep human validation parked until generated, non-generated, cross-setting,
+19. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
