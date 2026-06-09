@@ -473,6 +473,159 @@ def run_bridge_set_sufficiency_audit_from_files(
     }
 
 
+def run_bridge_direction_comparison_from_files(
+    *,
+    source_activation_npz: str | Path,
+    source_pairs_path: str | Path,
+    target_activation_npz: str | Path,
+    target_pairs_path: str | Path,
+    source_name: str = "source",
+    target_name: str = "target",
+    source_group_key: str = "source",
+    target_group_key: str = "source",
+    bridge_stratum_key: str = "slack_options_tested",
+    composition_keys: Sequence[str] = ("source", "primary_fault_class"),
+    bridge_pair_count: int = 6,
+    min_pairwise_accuracy: float = 1.0,
+    min_margin: float = 0.0,
+    min_direction_cosine: float = 0.0,
+) -> dict[str, Any]:
+    """Compare constructed bridge directions with source-only and joint directions."""
+
+    source = _load_domain_dataset(
+        name=source_name,
+        activation_npz=source_activation_npz,
+        pairs_path=source_pairs_path,
+        group_key=source_group_key,
+    )
+    target = _load_domain_dataset(
+        name=target_name,
+        activation_npz=target_activation_npz,
+        pairs_path=target_pairs_path,
+        group_key=target_group_key,
+    )
+    _validate_shared_dim(source, target)
+
+    source_direction = _direction_from_training_parts(
+        _training_part(source, _unique_pair_ids(source)),
+    )
+    target_direction = _direction_from_training_parts(
+        _training_part(target, _unique_pair_ids(target)),
+    )
+    joint_direction = _direction_from_training_parts(
+        _training_part(source, _unique_pair_ids(source)),
+        _training_part(target, _unique_pair_ids(target)),
+    )
+    target_bridge_direction_folds = _bridge_direction_comparison_folds(
+        train_primary=source,
+        train_secondary=target,
+        held_out_dataset=target,
+        source_dataset=source,
+        target_dataset=target,
+        joint_direction=joint_direction,
+        bridge_stratum_key=bridge_stratum_key,
+        composition_keys=composition_keys,
+        bridge_pair_count=bridge_pair_count,
+    )
+    source_bridge_direction_folds = _bridge_direction_comparison_folds(
+        train_primary=target,
+        train_secondary=source,
+        held_out_dataset=source,
+        source_dataset=source,
+        target_dataset=target,
+        joint_direction=joint_direction,
+        bridge_stratum_key=bridge_stratum_key,
+        composition_keys=composition_keys,
+        bridge_pair_count=bridge_pair_count,
+    )
+    readiness = _bridge_direction_comparison_readiness(
+        source_bridge_direction_folds=source_bridge_direction_folds,
+        target_bridge_direction_folds=target_bridge_direction_folds,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+        min_direction_cosine=min_direction_cosine,
+    )
+    source_only_on_source = _evaluate_pairwise_projection(
+        source,
+        direction=source_direction,
+        pair_ids=_unique_pair_ids(source),
+    )
+    source_only_on_target = _evaluate_pairwise_projection(
+        target,
+        direction=source_direction,
+        pair_ids=_unique_pair_ids(target),
+    )
+    target_only_on_source = _evaluate_pairwise_projection(
+        source,
+        direction=target_direction,
+        pair_ids=_unique_pair_ids(source),
+    )
+    target_only_on_target = _evaluate_pairwise_projection(
+        target,
+        direction=target_direction,
+        pair_ids=_unique_pair_ids(target),
+    )
+    joint_on_source = _evaluate_pairwise_projection(
+        source,
+        direction=joint_direction,
+        pair_ids=_unique_pair_ids(source),
+    )
+    joint_on_target = _evaluate_pairwise_projection(
+        target,
+        direction=joint_direction,
+        pair_ids=_unique_pair_ids(target),
+    )
+    return {
+        "experiment": "bridge_direction_comparison",
+        "description": (
+            "Compares source-only, target-only, full joint, and intentionally "
+            "constructed bridge-set directions in one activation space."
+        ),
+        "inputs": {
+            "source_name": source_name,
+            "target_name": target_name,
+            "source_activation_npz": str(source_activation_npz),
+            "source_pairs_path": str(source_pairs_path),
+            "target_activation_npz": str(target_activation_npz),
+            "target_pairs_path": str(target_pairs_path),
+            "source_group_key": source_group_key,
+            "target_group_key": target_group_key,
+            "bridge_stratum_key": bridge_stratum_key,
+            "composition_keys": list(composition_keys),
+            "bridge_pair_count": int(bridge_pair_count),
+            "activation_dim": int(source.activations.shape[1]),
+            "source_pairs": len(_unique_pair_ids(source)),
+            "target_pairs": len(_unique_pair_ids(target)),
+            "min_pairwise_accuracy": float(min_pairwise_accuracy),
+            "min_margin": float(min_margin),
+            "min_direction_cosine": float(min_direction_cosine),
+        },
+        "summary": _bridge_direction_comparison_summary(
+            source_bridge_direction_folds=source_bridge_direction_folds,
+            target_bridge_direction_folds=target_bridge_direction_folds,
+            readiness=readiness,
+            source_only_on_target=source_only_on_target,
+            target_only_on_source=target_only_on_source,
+            joint_on_source=joint_on_source,
+            joint_on_target=joint_on_target,
+        ),
+        "readiness": readiness,
+        "source_only_on_source": source_only_on_source,
+        "source_only_on_target": source_only_on_target,
+        "target_only_on_source": target_only_on_source,
+        "target_only_on_target": target_only_on_target,
+        "joint_on_source": joint_on_source,
+        "joint_on_target": joint_on_target,
+        "source_bridge_direction_folds": source_bridge_direction_folds,
+        "target_bridge_direction_folds": target_bridge_direction_folds,
+        "interpretation_guardrail": (
+            "Constructed bridge direction comparison supports a text-benchmark "
+            "activation diagnostic. It does not establish a human, neural, "
+            "clinical, deployment, or causal steering claim."
+        ),
+    }
+
+
 def save_heldout_domain_direction_audit_report(
     report: Mapping[str, Any],
     *,
@@ -545,6 +698,25 @@ def save_bridge_set_sufficiency_audit_report(
     json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     markdown_output.write_text(
         render_bridge_set_sufficiency_audit_markdown(report),
+        encoding="utf-8",
+    )
+
+
+def save_bridge_direction_comparison_report(
+    report: Mapping[str, Any],
+    *,
+    json_path: str | Path,
+    markdown_path: str | Path,
+) -> None:
+    """Write JSON and Markdown bridge direction comparison reports."""
+
+    json_output = Path(json_path)
+    markdown_output = Path(markdown_path)
+    json_output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output.parent.mkdir(parents=True, exist_ok=True)
+    json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    markdown_output.write_text(
+        render_bridge_direction_comparison_markdown(report),
         encoding="utf-8",
     )
 
@@ -791,6 +963,85 @@ def render_bridge_set_sufficiency_audit_markdown(
             "## Failed Bridge Sets",
             "",
             *_failed_bridge_set_table(report),
+            "",
+            "## Interpretation Guardrail",
+            "",
+            str(report.get("interpretation_guardrail", "")),
+            "",
+        ]
+    )
+
+
+def render_bridge_direction_comparison_markdown(report: Mapping[str, Any]) -> str:
+    """Render a constructed bridge direction comparison report."""
+
+    inputs = _mapping(report.get("inputs"))
+    summary = _mapping(report.get("summary"))
+    return "\n".join(
+        [
+            "# Bridge Direction Comparison",
+            "",
+            str(report.get("description", "")),
+            "",
+            "## Inputs",
+            "",
+            f"- Source benchmark: `{inputs.get('source_name', '')}`",
+            f"- Target benchmark: `{inputs.get('target_name', '')}`",
+            f"- Bridge pair count: {int(inputs.get('bridge_pair_count', 0))}",
+            f"- Bridge stratum key: `{inputs.get('bridge_stratum_key', '')}`",
+            f"- Composition keys: "
+            f"`{', '.join(str(key) for key in _sequence(inputs.get('composition_keys')))}`",
+            f"- Activation dim: {int(inputs.get('activation_dim', 0))}",
+            "",
+            "## Summary",
+            "",
+            f"- Readiness: `{summary.get('readiness', 'not_ready')}`",
+            f"- Ready for constructed bridge direction claims: "
+            f"{bool(summary.get('ready_for_constructed_bridge_direction_claims', False))}",
+            f"- Constructed min joint cosine: "
+            f"{float(summary.get('constructed_min_joint_cosine', 0.0)):+.3f}",
+            f"- Constructed source min accuracy/margin: "
+            f"{float(summary.get('constructed_source_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('constructed_source_min_margin', 0.0)):+.3f}",
+            f"- Constructed target min accuracy/margin: "
+            f"{float(summary.get('constructed_target_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('constructed_target_min_margin', 0.0)):+.3f}",
+            f"- Source-only on target accuracy/min margin: "
+            f"{float(summary.get('source_only_on_target_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('source_only_on_target_min_margin', 0.0)):+.3f}",
+            f"- Target-only on source accuracy/min margin: "
+            f"{float(summary.get('target_only_on_source_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('target_only_on_source_min_margin', 0.0)):+.3f}",
+            f"- Joint source/target min margins: "
+            f"{float(summary.get('joint_on_source_min_margin', 0.0)):+.3f}/"
+            f"{float(summary.get('joint_on_target_min_margin', 0.0)):+.3f}",
+            "",
+            "## Baseline Directions",
+            "",
+            "| Direction | Evaluation set | Accuracy | Min margin | Failed pairs |",
+            "| --- | --- | ---: | ---: | ---: |",
+            _compact_eval_row("source-only", "source", report.get("source_only_on_source")),
+            _compact_eval_row("source-only", "target", report.get("source_only_on_target")),
+            _compact_eval_row("target-only", "source", report.get("target_only_on_source")),
+            _compact_eval_row("target-only", "target", report.get("target_only_on_target")),
+            _compact_eval_row("joint", "source", report.get("joint_on_source")),
+            _compact_eval_row("joint", "target", report.get("joint_on_target")),
+            "",
+            "## Target Bridge Directions",
+            "",
+            *_bridge_direction_fold_table(
+                report.get("target_bridge_direction_folds")
+            ),
+            "",
+            "## Source Bridge Directions",
+            "",
+            *_bridge_direction_fold_table(
+                report.get("source_bridge_direction_folds")
+            ),
+            "",
+            "## Failed Constructed Directions",
+            "",
+            *_failed_bridge_direction_table(report),
             "",
             "## Interpretation Guardrail",
             "",
@@ -1119,12 +1370,114 @@ def _bridge_set_sufficiency_folds(
     return folds
 
 
+def _bridge_direction_comparison_folds(
+    *,
+    train_primary: _DomainDataset,
+    train_secondary: _DomainDataset,
+    held_out_dataset: _DomainDataset,
+    source_dataset: _DomainDataset,
+    target_dataset: _DomainDataset,
+    joint_direction: np.ndarray,
+    bridge_stratum_key: str,
+    composition_keys: Sequence[str],
+    bridge_pair_count: int,
+) -> list[dict[str, Any]]:
+    folds: list[dict[str, Any]] = []
+    for held_out_group in _groups(held_out_dataset):
+        held_out_pairs = {
+            pair_id
+            for pair_id, group in held_out_dataset.pair_groups.items()
+            if group == held_out_group
+        }
+        bridge_candidates = sorted(
+            pair_id
+            for pair_id, group in train_secondary.pair_groups.items()
+            if group != held_out_group
+        )
+        if bridge_pair_count > len(bridge_candidates):
+            msg = (
+                f"Cannot choose {bridge_pair_count} bridge pairs for "
+                f"{held_out_group}; only {len(bridge_candidates)} candidates exist."
+            )
+            raise ValueError(msg)
+        bridge_pairs = _construct_bridge_pair_set(
+            train_secondary,
+            candidate_pairs=bridge_candidates,
+            pair_count=bridge_pair_count,
+            stratum_key=bridge_stratum_key,
+            composition_keys=composition_keys,
+        )
+        bridge_pair_set = set(bridge_pairs)
+        direction = _direction_from_training_parts(
+            _training_part(train_primary, _unique_pair_ids(train_primary)),
+            _training_part(train_secondary, bridge_pair_set),
+        )
+        bridge_path_values = _bridge_path_values(
+            train_secondary,
+            bridge_pair_set,
+            stratum_key=bridge_stratum_key,
+        )
+        candidate_path_values = _bridge_path_values(
+            train_secondary,
+            set(bridge_candidates),
+            stratum_key=bridge_stratum_key,
+        )
+        missing_path_values = sorted(set(candidate_path_values) - set(bridge_path_values))
+        folds.append(
+            {
+                "held_out_dataset": held_out_dataset.name,
+                "held_out_group": held_out_group,
+                "train_primary_dataset": train_primary.name,
+                "train_secondary_dataset": train_secondary.name,
+                "bridge_pair_count": len(bridge_pairs),
+                "bridge_pairs": list(bridge_pairs),
+                "bridge_path_values": bridge_path_values,
+                "candidate_path_values": candidate_path_values,
+                "missing_path_values": missing_path_values,
+                "path_complete": not missing_path_values,
+                "coverage_values": _coverage_values(
+                    train_secondary,
+                    bridge_pair_set,
+                    composition_keys=composition_keys,
+                ),
+                "joint_direction_cosine": round(
+                    _direction_cosine(direction, joint_direction),
+                    6,
+                ),
+                "held_out_evaluation": _evaluate_pairwise_projection(
+                    held_out_dataset,
+                    direction=direction,
+                    pair_ids=held_out_pairs,
+                ),
+                "on_source": _evaluate_pairwise_projection(
+                    source_dataset,
+                    direction=direction,
+                    pair_ids=_unique_pair_ids(source_dataset),
+                ),
+                "on_target": _evaluate_pairwise_projection(
+                    target_dataset,
+                    direction=direction,
+                    pair_ids=_unique_pair_ids(target_dataset),
+                ),
+            }
+        )
+    return folds
+
+
 def _training_part(
     dataset: _DomainDataset,
     pair_ids: set[str],
 ) -> tuple[np.ndarray, np.ndarray]:
     mask = _prompt_mask(dataset, pair_ids)
     return dataset.activations[mask], dataset.labels[mask]
+
+
+def _direction_from_training_parts(
+    *parts: tuple[np.ndarray, np.ndarray],
+) -> np.ndarray:
+    train_activations = np.concatenate([part[0] for part in parts], axis=0)
+    train_labels = np.concatenate([part[1] for part in parts], axis=0)
+    return train_direction_from_arrays(train_activations, labels=train_labels).direction
 
 
 def _evaluate_pairwise_projection(
@@ -1466,6 +1819,122 @@ def _bridge_set_summary(
     }
 
 
+def _bridge_direction_comparison_readiness(
+    *,
+    source_bridge_direction_folds: Sequence[Mapping[str, Any]],
+    target_bridge_direction_folds: Sequence[Mapping[str, Any]],
+    min_pairwise_accuracy: float,
+    min_margin: float,
+    min_direction_cosine: float,
+) -> dict[str, Any]:
+    all_folds = [*source_bridge_direction_folds, *target_bridge_direction_folds]
+    source_evaluations = [_mapping(fold.get("on_source")) for fold in all_folds]
+    target_evaluations = [_mapping(fold.get("on_target")) for fold in all_folds]
+    gates = [
+        _gate("folds_present", float(len(all_folds)), 1.0),
+        _gate(
+            "constructed_source_min_accuracy",
+            min(_fold_values(source_evaluations, "pairwise_accuracy"), default=0.0),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            "constructed_source_min_margin",
+            min(_fold_values(source_evaluations, "min_margin"), default=0.0),
+            min_margin,
+        ),
+        _gate(
+            "constructed_target_min_accuracy",
+            min(_fold_values(target_evaluations, "pairwise_accuracy"), default=0.0),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            "constructed_target_min_margin",
+            min(_fold_values(target_evaluations, "min_margin"), default=0.0),
+            min_margin,
+        ),
+        _gate(
+            "constructed_min_joint_cosine",
+            min(_fold_values(all_folds, "joint_direction_cosine"), default=0.0),
+            min_direction_cosine,
+        ),
+        _gate(
+            "path_complete_folds",
+            float(sum(bool(fold.get("path_complete", False)) for fold in all_folds)),
+            float(len(all_folds)),
+        ),
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "constructed_bridge_direction_ready" if ready else "not_ready",
+        "ready": ready,
+        "gates": gates,
+    }
+
+
+def _bridge_direction_comparison_summary(
+    *,
+    source_bridge_direction_folds: Sequence[Mapping[str, Any]],
+    target_bridge_direction_folds: Sequence[Mapping[str, Any]],
+    readiness: Mapping[str, Any],
+    source_only_on_target: Mapping[str, Any],
+    target_only_on_source: Mapping[str, Any],
+    joint_on_source: Mapping[str, Any],
+    joint_on_target: Mapping[str, Any],
+) -> dict[str, Any]:
+    all_folds = [*source_bridge_direction_folds, *target_bridge_direction_folds]
+    source_evaluations = [_mapping(fold.get("on_source")) for fold in all_folds]
+    target_evaluations = [_mapping(fold.get("on_target")) for fold in all_folds]
+    return {
+        "readiness": str(readiness.get("status", "not_ready")),
+        "ready_for_constructed_bridge_direction_claims": bool(
+            readiness.get("ready", False)
+        ),
+        "constructed_direction_count": len(all_folds),
+        "constructed_min_joint_cosine": min(
+            _fold_values(all_folds, "joint_direction_cosine"),
+            default=0.0,
+        ),
+        "constructed_source_min_accuracy": min(
+            _fold_values(source_evaluations, "pairwise_accuracy"),
+            default=0.0,
+        ),
+        "constructed_source_min_margin": min(
+            _fold_values(source_evaluations, "min_margin"),
+            default=0.0,
+        ),
+        "constructed_target_min_accuracy": min(
+            _fold_values(target_evaluations, "pairwise_accuracy"),
+            default=0.0,
+        ),
+        "constructed_target_min_margin": min(
+            _fold_values(target_evaluations, "min_margin"),
+            default=0.0,
+        ),
+        "source_only_on_target_accuracy": float(
+            source_only_on_target.get("pairwise_accuracy", 0.0)
+        ),
+        "source_only_on_target_min_margin": float(
+            source_only_on_target.get("min_margin", 0.0)
+        ),
+        "source_only_on_target_failed_pairs": int(
+            source_only_on_target.get("failed_pair_count", 0)
+        ),
+        "target_only_on_source_accuracy": float(
+            target_only_on_source.get("pairwise_accuracy", 0.0)
+        ),
+        "target_only_on_source_min_margin": float(
+            target_only_on_source.get("min_margin", 0.0)
+        ),
+        "target_only_on_source_failed_pairs": int(
+            target_only_on_source.get("failed_pair_count", 0)
+        ),
+        "joint_on_source_accuracy": float(joint_on_source.get("pairwise_accuracy", 0.0)),
+        "joint_on_source_min_margin": float(joint_on_source.get("min_margin", 0.0)),
+        "joint_on_target_accuracy": float(joint_on_target.get("pairwise_accuracy", 0.0)),
+        "joint_on_target_min_margin": float(joint_on_target.get("min_margin", 0.0)),
+    }
+
+
 def _exists_ready(rows: Sequence[Mapping[str, Any]]) -> float:
     return 1.0 if any(bool(row.get("ready", False)) for row in rows) else 0.0
 
@@ -1540,6 +2009,14 @@ def _fold_values(folds: Sequence[Mapping[str, Any]], key: str) -> list[float]:
 
 def _fold_int_values(folds: Sequence[Mapping[str, Any]], key: str) -> list[int]:
     return [int(fold.get(key, 0)) for fold in folds]
+
+
+def _direction_cosine(left: np.ndarray, right: np.ndarray) -> float:
+    left_norm = float(np.linalg.norm(left))
+    right_norm = float(np.linalg.norm(right))
+    if left_norm <= _EPSILON or right_norm <= _EPSILON:
+        return 0.0
+    return float(np.dot(left, right) / (left_norm * right_norm))
 
 
 def _pair_bridge_subsets(
@@ -2037,6 +2514,111 @@ def _failed_bridge_set_table(report: Mapping[str, Any]) -> list[str]:
     if len(lines) == 2:
         return ["No failed bridge sets."]
     return lines
+
+
+def _compact_eval_row(
+    direction_name: str,
+    evaluation_set: str,
+    raw_evaluation: object,
+) -> str:
+    evaluation = _mapping(raw_evaluation)
+    return (
+        "| "
+        f"`{direction_name}` | "
+        f"`{evaluation_set}` | "
+        f"{float(evaluation.get('pairwise_accuracy', 0.0)):.3f} | "
+        f"{float(evaluation.get('min_margin', 0.0)):+.3f} | "
+        f"{int(evaluation.get('failed_pair_count', 0))} |"
+    )
+
+
+def _bridge_direction_fold_table(raw_folds: object) -> list[str]:
+    folds = [_mapping(fold) for fold in _sequence(raw_folds)]
+    lines = [
+        "| Held-out group | Joint cosine | Source accuracy | Source min margin | Target accuracy | Target min margin | Path complete |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for fold in folds:
+        source_eval = _mapping(fold.get("on_source"))
+        target_eval = _mapping(fold.get("on_target"))
+        lines.append(
+            "| "
+            f"`{fold.get('held_out_group', '')}` | "
+            f"{float(fold.get('joint_direction_cosine', 0.0)):+.3f} | "
+            f"{float(source_eval.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(source_eval.get('min_margin', 0.0)):+.3f} | "
+            f"{float(target_eval.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(target_eval.get('min_margin', 0.0)):+.3f} | "
+            f"{bool(fold.get('path_complete', False))} |"
+        )
+    return lines
+
+
+def _failed_bridge_direction_table(report: Mapping[str, Any]) -> list[str]:
+    inputs = _mapping(report.get("inputs"))
+    min_pairwise_accuracy = float(inputs.get("min_pairwise_accuracy", 1.0))
+    min_margin = float(inputs.get("min_margin", 0.0))
+    min_direction_cosine = float(inputs.get("min_direction_cosine", 0.0))
+    lines = [
+        "| Direction fold | Reason | Source accuracy/min margin | Target accuracy/min margin | Joint cosine |",
+        "| --- | --- | ---: | ---: | ---: |",
+    ]
+    for fold in [
+        *(
+            _mapping(item)
+            for item in _sequence(report.get("target_bridge_direction_folds"))
+        ),
+        *(
+            _mapping(item)
+            for item in _sequence(report.get("source_bridge_direction_folds"))
+        ),
+    ]:
+        source_eval = _mapping(fold.get("on_source"))
+        target_eval = _mapping(fold.get("on_target"))
+        reasons: list[str] = []
+        if _evaluation_failed(
+            source_eval,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+        ):
+            reasons.append("source_eval")
+        if _evaluation_failed(
+            target_eval,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+        ):
+            reasons.append("target_eval")
+        if float(fold.get("joint_direction_cosine", 0.0)) < min_direction_cosine:
+            reasons.append("joint_cosine")
+        if not bool(fold.get("path_complete", False)):
+            reasons.append("path_complete")
+        if not reasons:
+            continue
+        lines.append(
+            "| "
+            f"`{fold.get('held_out_group', '')}` | "
+            f"`{', '.join(reasons)}` | "
+            f"{float(source_eval.get('pairwise_accuracy', 0.0)):.3f}/"
+            f"{float(source_eval.get('min_margin', 0.0)):+.3f} | "
+            f"{float(target_eval.get('pairwise_accuracy', 0.0)):.3f}/"
+            f"{float(target_eval.get('min_margin', 0.0)):+.3f} | "
+            f"{float(fold.get('joint_direction_cosine', 0.0)):+.3f} |"
+        )
+    if len(lines) == 2:
+        return ["No failed constructed directions."]
+    return lines
+
+
+def _evaluation_failed(
+    evaluation: Mapping[str, Any],
+    *,
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> bool:
+    return (
+        float(evaluation.get("pairwise_accuracy", 0.0)) < min_pairwise_accuracy
+        or float(evaluation.get("min_margin", 0.0)) < min_margin
+    )
 
 
 def _coverage_summary(raw_coverage_values: object) -> str:
