@@ -46,16 +46,25 @@ benchmarks and align positively with the full joint direction. Cross-model
 constructed-bridge transport now passes bidirectionally between Qwen7B and
 SmolLM2 with held-out pair groups excluded from each fold's alignment map.
 Fresh hand-authored procedural-justice control prompts also transport in both
-directions. The active bottleneck is now the SmolLM2 fresh-generated residual:
-recovered-manifest same-model diagnostics show Qwen7B constructed bridges pass
-fresh repair-v2 prompts with a thin minimum margin `+0.178`, while SmolLM2
-constructed bridges fail the same fresh generated slice with minimum margin
-`-11.273`. Fresh hand-authored procedural controls still pass in both spaces,
-so the residual is concentrated in generated repair-v2 prompt geometry rather
-than cross-model alignment or procedural-control transfer.
+directions. Recovered-manifest same-model diagnostics show Qwen7B constructed
+bridges pass fresh repair-v2 prompts with a thin minimum margin `+0.178`, while
+SmolLM2 constructed bridges fail the same fresh generated slice with minimum
+margin `-11.273`. Fresh augmentation and leave-one-fresh-pair-out repair the
+slice in Qwen7B but not in SmolLM2. The active bottleneck is now the hardest
+SmolLM2 residual: fresh `accountability_after_harm` remains inverted even when
+source/control/fresh-control margins remain strongly positive.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-fresh-augmented-direction-audit.md`: added a
+  fresh-augmented direction audit with leave-one-fresh-pair-out folds. Qwen7B
+  passes full fresh augmentation and fresh LOO. SmolLM2 preserves original
+  generated source, procedural target, and fresh hand-authored target margins,
+  but still fails fresh generated prompts: all-fresh augmentation reaches only
+  `0.900/-4.528`, and fresh LOO has minimum margin `-11.959`. Removing the
+  known content-bad `belonging_norms` augmentation row or augmenting only the
+  two clean residual pairs does not fix held-out `accountability_after_harm`.
+  The active hard residual is now fresh `accountability_after_harm` in SmolLM2.
 - `docs/research/2026-06-09-fresh-generated-residual-diagnostic.md`: added a
   residual diagnostic over the fresh repair-v2 failures. SmolLM2 has three
   failing fresh pairs: `accountability_after_harm`, `belonging_norms`, and
