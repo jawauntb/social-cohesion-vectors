@@ -53,6 +53,16 @@ prompts with a thin positive margin.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-fresh-generated-bridge-diagnostic.md`: added the
+  fresh-generated bridge diagnostic scaffold. The new audit compares
+  source-only, fresh-source-only, source+fresh-source, and constructed bridge
+  directions inside one activation space, then evaluates each direction on
+  original source, original target, fresh source, and fresh target prompt
+  slices with failed-pair tables. No accepted live Qwen7B/SmolLM2 diagnostic
+  was run in this branch because the exact generated pair manifests from the
+  previous `/tmp` runs had been cleaned before the 2026-06-09 follow-up; the
+  activation NPZ files alone do not preserve the real `slack_options_tested`
+  bridge metadata.
 - `docs/research/2026-06-08-fresh-prompt-bridge-transport.md`: the
   cross-model bridge transport audit now supports fresh source and fresh target
   prompt slices withheld from alignment-map training rows. Same-prompt source,
@@ -251,11 +261,12 @@ human-facing gates are separately validated.
 
 Diagnose and repair fresh-generated bridge transport asymmetry.
 
-The next operation should compare source-only, fresh-source-only, joint
-source+fresh-source, and constructed-bridge directions inside Qwen7B and
-SmolLM2, while keeping the fresh control-v1 slice as the negative control that
-should remain transport-ready. The diagnostic should focus on the fresh
-generated failures:
+The next operation should regenerate or preserve the exact generated/control
+pair manifests, then run the new fresh-generated bridge diagnostic inside
+Qwen7B and SmolLM2. It should compare source-only, fresh-source-only, joint
+source+fresh-source, and constructed-bridge directions while keeping the fresh
+control-v1 slice as the negative control that should remain transport-ready.
+The diagnostic should focus on the fresh generated failures:
 
 - `accountability_after_harm`;
 - `belonging_norms`;
@@ -352,18 +363,21 @@ Implementation should probably follow existing audit patterns:
 13. Use the fresh-prompt bridge transport report as the current withheld
    fresh-generated baseline: fresh control transport passes, but
    Qwen7B -> SmolLM2 fresh generated transport fails at `0.700` accuracy.
-14. Diagnose the fresh-generated asymmetry with source-only,
+14. Use the fresh-generated bridge diagnostic scaffold to compare source-only,
    fresh-source-only, joint source+fresh-source, and constructed-bridge
    directions before adding more model families.
-15. Target the current residuals: fresh generated `accountability_after_harm`,
+15. Regenerate or preserve the exact pair manifests from the generated/control
+   bundles before the live diagnostic; activation NPZ files alone are not
+   enough because they do not carry the real `slack_options_tested` metadata.
+16. Target the current residuals: fresh generated `accountability_after_harm`,
    `belonging_norms`, and `dissent_after_mistake`; generated
    `privacy_bypass::data_choice`; generated cross-fault `deliberative_speed`
    and `fair_allocation`; and the control `privacy_exit`,
    `appeal_and_evidence`, and `harm_repair` rows that fail under the generated
    direction.
-16. Rerun SmolLM2 generated/control direction transfer before adding more model
+17. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-17. Keep human validation parked until generated, non-generated, cross-setting,
+18. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates

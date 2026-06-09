@@ -12,12 +12,14 @@ from social_cohesion_vectors.experiments.heldout_domain_direction_audit import (
     render_bridge_direction_comparison_markdown,
     render_bridge_set_sufficiency_audit_markdown,
     render_cross_model_bridge_transport_markdown,
+    render_fresh_generated_bridge_diagnostic_markdown,
     render_heldout_domain_direction_audit_markdown,
     render_minimal_bridge_direction_audit_markdown,
     render_pair_bridge_direction_audit_markdown,
     run_bridge_direction_comparison_from_files,
     run_bridge_set_sufficiency_audit_from_files,
     run_cross_model_bridge_transport_from_files,
+    run_fresh_generated_bridge_diagnostic_from_files,
     run_heldout_domain_direction_audit_from_files,
     run_minimal_bridge_direction_audit_from_files,
     run_pair_bridge_direction_audit_from_files,
@@ -356,6 +358,91 @@ def test_bridge_direction_comparison_cli_writes_report(
     assert markdown_output.exists()
 
 
+def test_fresh_generated_bridge_diagnostic_scores_constructed_directions(
+    tmp_path: Path,
+) -> None:
+    paths = _write_fresh_bridge_diagnostic_fixture(tmp_path)
+
+    report = run_fresh_generated_bridge_diagnostic_from_files(
+        source_activation_npz=paths["source_activation"],
+        source_pairs_path=paths["source_pairs"],
+        target_activation_npz=paths["target_activation"],
+        target_pairs_path=paths["target_pairs"],
+        fresh_source_activation_npz=paths["fresh_source_activation"],
+        fresh_source_pairs_path=paths["fresh_source_pairs"],
+        fresh_target_activation_npz=paths["fresh_target_activation"],
+        fresh_target_pairs_path=paths["fresh_target_pairs"],
+        source_name="generated",
+        target_name="control",
+        fresh_source_name="fresh_generated",
+        fresh_target_name="fresh_control",
+        bridge_pair_count=1,
+    )
+    markdown = render_fresh_generated_bridge_diagnostic_markdown(report)
+
+    assert report["summary"]["ready_for_fresh_generated_bridge_claims"] is True
+    assert report["summary"]["constructed_direction_count"] == 4
+    assert report["summary"]["constructed_fresh_source_min_margin"] > 0.0
+    assert report["summary"]["constructed_fresh_target_min_margin"] > 0.0
+    assert report["summary"]["source_fresh_joint_fresh_target_min_margin"] == 0.0
+    assert report["summary"]["failed_pair_evaluation_count"] > 0
+    assert "Fresh Generated Bridge Diagnostic" in markdown
+    assert "`source_fresh_joint`" in markdown
+
+
+def test_fresh_generated_bridge_diagnostic_cli_writes_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    script = _load_script("run_fresh_generated_bridge_diagnostic.py")
+    paths = _write_fresh_bridge_diagnostic_fixture(tmp_path)
+    json_output = tmp_path / "fresh_bridge.json"
+    markdown_output = tmp_path / "fresh_bridge.md"
+
+    exit_code = script.main(
+        [
+            "--source-activation-npz",
+            str(paths["source_activation"]),
+            "--source-pairs",
+            str(paths["source_pairs"]),
+            "--target-activation-npz",
+            str(paths["target_activation"]),
+            "--target-pairs",
+            str(paths["target_pairs"]),
+            "--fresh-source-activation-npz",
+            str(paths["fresh_source_activation"]),
+            "--fresh-source-pairs",
+            str(paths["fresh_source_pairs"]),
+            "--fresh-target-activation-npz",
+            str(paths["fresh_target_activation"]),
+            "--fresh-target-pairs",
+            str(paths["fresh_target_pairs"]),
+            "--source-name",
+            "generated",
+            "--target-name",
+            "control",
+            "--fresh-source-name",
+            "fresh_generated",
+            "--fresh-target-name",
+            "fresh_control",
+            "--bridge-pair-count",
+            "1",
+            "--json-output",
+            str(json_output),
+            "--markdown-output",
+            str(markdown_output),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "fresh generated bridge diagnostic" in captured.out
+    loaded = json.loads(json_output.read_text(encoding="utf-8"))
+    assert loaded["summary"]["ready_for_fresh_generated_bridge_claims"] is True
+    assert loaded["inputs"]["fresh_source_name"] == "fresh_generated"
+    assert markdown_output.exists()
+
+
 def test_cross_model_bridge_transport_maps_constructed_directions(
     tmp_path: Path,
 ) -> None:
@@ -530,6 +617,33 @@ def _write_fixture(tmp_path: Path) -> dict[str, Path]:
         "target_pairs": target_pairs,
         "source_activation": source_activation,
         "target_activation": target_activation,
+    }
+
+
+def _write_fresh_bridge_diagnostic_fixture(tmp_path: Path) -> dict[str, Path]:
+    paths = _write_fixture(tmp_path)
+    fresh_source_pairs = tmp_path / "fresh_source_pairs.jsonl"
+    fresh_target_pairs = tmp_path / "fresh_target_pairs.jsonl"
+    fresh_source_activation = tmp_path / "fresh_source_activation.npz"
+    fresh_target_activation = tmp_path / "fresh_target_activation.npz"
+    write_jsonl([_pair("fs1", "source_c")], fresh_source_pairs)
+    write_jsonl([_pair("ft1", "target_c")], fresh_target_pairs)
+    _write_activation(
+        fresh_source_activation,
+        activations=np.asarray([[1.5, 0.0], [0.0, 0.0]], dtype=np.float64),
+        pair_ids=np.asarray(["fs1", "fs1"], dtype=str),
+    )
+    _write_activation(
+        fresh_target_activation,
+        activations=np.asarray([[0.0, 1.5], [0.0, 0.0]], dtype=np.float64),
+        pair_ids=np.asarray(["ft1", "ft1"], dtype=str),
+    )
+    return {
+        **paths,
+        "fresh_source_pairs": fresh_source_pairs,
+        "fresh_target_pairs": fresh_target_pairs,
+        "fresh_source_activation": fresh_source_activation,
+        "fresh_target_activation": fresh_target_activation,
     }
 
 

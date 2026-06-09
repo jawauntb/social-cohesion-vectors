@@ -17,6 +17,12 @@ from social_cohesion_vectors.datasets import load_pairwise_examples_jsonl
 from social_cohesion_vectors.experiments.transfer import load_activation_payload
 
 _EPSILON = 1e-12
+_FRESH_BRIDGE_EVALUATION_KEYS = (
+    "on_source",
+    "on_target",
+    "on_fresh_source",
+    "on_fresh_target",
+)
 
 
 @dataclass(frozen=True)
@@ -635,6 +641,202 @@ def run_bridge_direction_comparison_from_files(
     }
 
 
+def run_fresh_generated_bridge_diagnostic_from_files(
+    *,
+    source_activation_npz: str | Path,
+    source_pairs_path: str | Path,
+    target_activation_npz: str | Path,
+    target_pairs_path: str | Path,
+    fresh_source_activation_npz: str | Path,
+    fresh_source_pairs_path: str | Path,
+    fresh_target_activation_npz: str | Path,
+    fresh_target_pairs_path: str | Path,
+    source_name: str = "source",
+    target_name: str = "target",
+    fresh_source_name: str = "fresh_source",
+    fresh_target_name: str = "fresh_target",
+    source_group_key: str = "source",
+    target_group_key: str = "source",
+    bridge_stratum_key: str = "slack_options_tested",
+    composition_keys: Sequence[str] = ("source", "primary_fault_class"),
+    bridge_pair_count: int = 6,
+    min_pairwise_accuracy: float = 1.0,
+    min_margin: float = 0.0,
+) -> dict[str, Any]:
+    """Diagnose how fresh generated prompts relate to bridge directions."""
+
+    source = _load_domain_dataset(
+        name=source_name,
+        activation_npz=source_activation_npz,
+        pairs_path=source_pairs_path,
+        group_key=source_group_key,
+    )
+    target = _load_domain_dataset(
+        name=target_name,
+        activation_npz=target_activation_npz,
+        pairs_path=target_pairs_path,
+        group_key=target_group_key,
+    )
+    fresh_source = _load_domain_dataset(
+        name=fresh_source_name,
+        activation_npz=fresh_source_activation_npz,
+        pairs_path=fresh_source_pairs_path,
+        group_key=source_group_key,
+    )
+    fresh_target = _load_domain_dataset(
+        name=fresh_target_name,
+        activation_npz=fresh_target_activation_npz,
+        pairs_path=fresh_target_pairs_path,
+        group_key=target_group_key,
+    )
+    _validate_shared_dim(source, target)
+    _validate_shared_dim(source, fresh_source)
+    _validate_shared_dim(target, fresh_target)
+
+    source_direction = _direction_from_training_parts(
+        _training_part(source, _unique_pair_ids(source)),
+    )
+    fresh_source_direction = _direction_from_training_parts(
+        _training_part(fresh_source, _unique_pair_ids(fresh_source)),
+    )
+    source_fresh_joint_direction = _direction_from_training_parts(
+        _training_part(source, _unique_pair_ids(source)),
+        _training_part(fresh_source, _unique_pair_ids(fresh_source)),
+    )
+    original_joint_direction = _direction_from_training_parts(
+        _training_part(source, _unique_pair_ids(source)),
+        _training_part(target, _unique_pair_ids(target)),
+    )
+    reference_directions = {
+        "source_only": source_direction,
+        "fresh_source_only": fresh_source_direction,
+        "source_fresh_joint": source_fresh_joint_direction,
+        "original_source_target_joint": original_joint_direction,
+    }
+    target_bridge_folds = _bridge_direction_vector_folds(
+        train_primary=source,
+        train_secondary=target,
+        held_out_dataset=target,
+        source_dataset=source,
+        target_dataset=target,
+        joint_direction=original_joint_direction,
+        bridge_stratum_key=bridge_stratum_key,
+        composition_keys=composition_keys,
+        bridge_pair_count=bridge_pair_count,
+        fold_kind="target_bridge",
+    )
+    source_bridge_folds = _bridge_direction_vector_folds(
+        train_primary=target,
+        train_secondary=source,
+        held_out_dataset=source,
+        source_dataset=source,
+        target_dataset=target,
+        joint_direction=original_joint_direction,
+        bridge_stratum_key=bridge_stratum_key,
+        composition_keys=composition_keys,
+        bridge_pair_count=bridge_pair_count,
+        fold_kind="source_bridge",
+    )
+    diagnostic_rows = [
+        _fresh_bridge_direction_row(
+            direction_id="source_only",
+            direction_family="baseline",
+            direction=source_direction,
+            source=source,
+            target=target,
+            fresh_source=fresh_source,
+            fresh_target=fresh_target,
+            reference_directions=reference_directions,
+        ),
+        _fresh_bridge_direction_row(
+            direction_id="fresh_source_only",
+            direction_family="baseline",
+            direction=fresh_source_direction,
+            source=source,
+            target=target,
+            fresh_source=fresh_source,
+            fresh_target=fresh_target,
+            reference_directions=reference_directions,
+        ),
+        _fresh_bridge_direction_row(
+            direction_id="source_fresh_joint",
+            direction_family="baseline",
+            direction=source_fresh_joint_direction,
+            source=source,
+            target=target,
+            fresh_source=fresh_source,
+            fresh_target=fresh_target,
+            reference_directions=reference_directions,
+        ),
+        *[
+            _fresh_bridge_direction_row(
+                direction_id=fold.fold_id,
+                direction_family="constructed_bridge",
+                direction=fold.direction,
+                source=source,
+                target=target,
+                fresh_source=fresh_source,
+                fresh_target=fresh_target,
+                reference_directions=reference_directions,
+                bridge_fold=fold.report,
+            )
+            for fold in [*target_bridge_folds, *source_bridge_folds]
+        ],
+    ]
+    readiness = _fresh_generated_bridge_readiness(
+        diagnostic_rows,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+    )
+    return {
+        "experiment": "fresh_generated_bridge_diagnostic",
+        "description": (
+            "Compares source-only, fresh-source-only, source+fresh-source, and "
+            "constructed bridge directions inside one activation space, then "
+            "evaluates each direction on original and fresh generated/control "
+            "prompt slices."
+        ),
+        "inputs": {
+            "source_name": source_name,
+            "target_name": target_name,
+            "fresh_source_name": fresh_source_name,
+            "fresh_target_name": fresh_target_name,
+            "source_activation_npz": str(source_activation_npz),
+            "source_pairs_path": str(source_pairs_path),
+            "target_activation_npz": str(target_activation_npz),
+            "target_pairs_path": str(target_pairs_path),
+            "fresh_source_activation_npz": str(fresh_source_activation_npz),
+            "fresh_source_pairs_path": str(fresh_source_pairs_path),
+            "fresh_target_activation_npz": str(fresh_target_activation_npz),
+            "fresh_target_pairs_path": str(fresh_target_pairs_path),
+            "source_group_key": source_group_key,
+            "target_group_key": target_group_key,
+            "bridge_stratum_key": bridge_stratum_key,
+            "composition_keys": list(composition_keys),
+            "bridge_pair_count": int(bridge_pair_count),
+            "activation_dim": int(source.activations.shape[1]),
+            "source_pairs": len(_unique_pair_ids(source)),
+            "target_pairs": len(_unique_pair_ids(target)),
+            "fresh_source_pairs": len(_unique_pair_ids(fresh_source)),
+            "fresh_target_pairs": len(_unique_pair_ids(fresh_target)),
+            "min_pairwise_accuracy": float(min_pairwise_accuracy),
+            "min_margin": float(min_margin),
+        },
+        "summary": _fresh_generated_bridge_summary(
+            diagnostic_rows,
+            readiness=readiness,
+        ),
+        "readiness": readiness,
+        "direction_evaluations": diagnostic_rows,
+        "interpretation_guardrail": (
+            "Fresh generated bridge diagnostics support only a text-benchmark "
+            "activation diagnostic over generated and hand-authored prompts. "
+            "They do not establish human behavioral, neural, clinical, "
+            "deployment, or real-world social-effect claims."
+        ),
+    }
+
+
 def run_cross_model_bridge_transport_from_files(
     *,
     model_a_source_activation_npz: str | Path,
@@ -1026,6 +1228,25 @@ def save_bridge_direction_comparison_report(
     )
 
 
+def save_fresh_generated_bridge_diagnostic_report(
+    report: Mapping[str, Any],
+    *,
+    json_path: str | Path,
+    markdown_path: str | Path,
+) -> None:
+    """Write JSON and Markdown fresh generated bridge diagnostic reports."""
+
+    json_output = Path(json_path)
+    markdown_output = Path(markdown_path)
+    json_output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output.parent.mkdir(parents=True, exist_ok=True)
+    json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    markdown_output.write_text(
+        render_fresh_generated_bridge_diagnostic_markdown(report),
+        encoding="utf-8",
+    )
+
+
 def save_cross_model_bridge_transport_report(
     report: Mapping[str, Any],
     *,
@@ -1366,6 +1587,69 @@ def render_bridge_direction_comparison_markdown(report: Mapping[str, Any]) -> st
             "## Failed Constructed Directions",
             "",
             *_failed_bridge_direction_table(report),
+            "",
+            "## Interpretation Guardrail",
+            "",
+            str(report.get("interpretation_guardrail", "")),
+            "",
+        ]
+    )
+
+
+def render_fresh_generated_bridge_diagnostic_markdown(
+    report: Mapping[str, Any],
+) -> str:
+    """Render a fresh generated bridge diagnostic report."""
+
+    inputs = _mapping(report.get("inputs"))
+    summary = _mapping(report.get("summary"))
+    return "\n".join(
+        [
+            "# Fresh Generated Bridge Diagnostic",
+            "",
+            str(report.get("description", "")),
+            "",
+            "## Inputs",
+            "",
+            f"- Source benchmark: `{inputs.get('source_name', '')}`",
+            f"- Target benchmark: `{inputs.get('target_name', '')}`",
+            f"- Fresh source benchmark: `{inputs.get('fresh_source_name', '')}`",
+            f"- Fresh target benchmark: `{inputs.get('fresh_target_name', '')}`",
+            f"- Bridge pair count: {int(inputs.get('bridge_pair_count', 0))}",
+            f"- Bridge stratum key: `{inputs.get('bridge_stratum_key', '')}`",
+            f"- Composition keys: "
+            f"`{', '.join(str(key) for key in _sequence(inputs.get('composition_keys')))}`",
+            f"- Activation dim: {int(inputs.get('activation_dim', 0))}",
+            "",
+            "## Summary",
+            "",
+            f"- Readiness: `{summary.get('readiness', 'not_ready')}`",
+            f"- Ready for fresh generated bridge claims: "
+            f"{bool(summary.get('ready_for_fresh_generated_bridge_claims', False))}",
+            f"- Constructed direction count: "
+            f"{int(summary.get('constructed_direction_count', 0))}",
+            f"- Constructed fresh source min accuracy/margin: "
+            f"{float(summary.get('constructed_fresh_source_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('constructed_fresh_source_min_margin', 0.0)):+.3f}",
+            f"- Constructed fresh target min accuracy/margin: "
+            f"{float(summary.get('constructed_fresh_target_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('constructed_fresh_target_min_margin', 0.0)):+.3f}",
+            f"- Source-only fresh source min margin: "
+            f"{float(summary.get('source_only_fresh_source_min_margin', 0.0)):+.3f}",
+            f"- Fresh-source-only source min margin: "
+            f"{float(summary.get('fresh_source_only_source_min_margin', 0.0)):+.3f}",
+            f"- Source+fresh-source fresh target min margin: "
+            f"{float(summary.get('source_fresh_joint_fresh_target_min_margin', 0.0)):+.3f}",
+            f"- Failed pair evaluations: "
+            f"{int(summary.get('failed_pair_evaluation_count', 0))}",
+            "",
+            "## Direction Evaluations",
+            "",
+            *_fresh_bridge_direction_table(report.get("direction_evaluations")),
+            "",
+            "## Failed Pairs",
+            "",
+            *_failed_fresh_bridge_pair_table(report),
             "",
             "## Interpretation Guardrail",
             "",
@@ -1965,6 +2249,66 @@ def _bridge_direction_vector_folds(
             )
         )
     return folds
+
+
+def _fresh_bridge_direction_row(
+    *,
+    direction_id: str,
+    direction_family: str,
+    direction: np.ndarray,
+    source: _DomainDataset,
+    target: _DomainDataset,
+    fresh_source: _DomainDataset,
+    fresh_target: _DomainDataset,
+    reference_directions: Mapping[str, np.ndarray],
+    bridge_fold: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    row = {
+        "direction_id": direction_id,
+        "direction_family": direction_family,
+        "on_source": _evaluate_pairwise_projection(
+            source,
+            direction=direction,
+            pair_ids=_unique_pair_ids(source),
+        ),
+        "on_target": _evaluate_pairwise_projection(
+            target,
+            direction=direction,
+            pair_ids=_unique_pair_ids(target),
+        ),
+        "on_fresh_source": _evaluate_pairwise_projection(
+            fresh_source,
+            direction=direction,
+            pair_ids=_unique_pair_ids(fresh_source),
+        ),
+        "on_fresh_target": _evaluate_pairwise_projection(
+            fresh_target,
+            direction=direction,
+            pair_ids=_unique_pair_ids(fresh_target),
+        ),
+        "cosine_to_source_only": round(
+            _direction_cosine(direction, reference_directions["source_only"]),
+            6,
+        ),
+        "cosine_to_fresh_source_only": round(
+            _direction_cosine(direction, reference_directions["fresh_source_only"]),
+            6,
+        ),
+        "cosine_to_source_fresh_joint": round(
+            _direction_cosine(direction, reference_directions["source_fresh_joint"]),
+            6,
+        ),
+        "cosine_to_original_source_target_joint": round(
+            _direction_cosine(
+                direction,
+                reference_directions["original_source_target_joint"],
+            ),
+            6,
+        ),
+    }
+    if bridge_fold is not None:
+        row["bridge_fold"] = dict(bridge_fold)
+    return row
 
 
 def _combined_aligned_activation_matrices(
@@ -2664,6 +3008,132 @@ def _bridge_direction_comparison_summary(
     }
 
 
+def _fresh_generated_bridge_readiness(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    min_pairwise_accuracy: float,
+    min_margin: float,
+) -> dict[str, Any]:
+    constructed_rows = _direction_rows_by_family(rows, "constructed_bridge")
+    fresh_source_evaluations = [
+        _mapping(row.get("on_fresh_source")) for row in constructed_rows
+    ]
+    fresh_target_evaluations = [
+        _mapping(row.get("on_fresh_target")) for row in constructed_rows
+    ]
+    gates = [
+        _gate("source_only_direction_present", _direction_present(rows, "source_only"), 1.0),
+        _gate(
+            "fresh_source_only_direction_present",
+            _direction_present(rows, "fresh_source_only"),
+            1.0,
+        ),
+        _gate(
+            "source_fresh_joint_direction_present",
+            _direction_present(rows, "source_fresh_joint"),
+            1.0,
+        ),
+        _gate("constructed_direction_count", float(len(constructed_rows)), 1.0),
+        _gate(
+            "constructed_fresh_source_min_accuracy",
+            min(_fold_values(fresh_source_evaluations, "pairwise_accuracy"), default=0.0),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            "constructed_fresh_source_min_margin",
+            min(_fold_values(fresh_source_evaluations, "min_margin"), default=0.0),
+            min_margin,
+        ),
+        _gate(
+            "constructed_fresh_target_min_accuracy",
+            min(_fold_values(fresh_target_evaluations, "pairwise_accuracy"), default=0.0),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            "constructed_fresh_target_min_margin",
+            min(_fold_values(fresh_target_evaluations, "min_margin"), default=0.0),
+            min_margin,
+        ),
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "fresh_generated_bridge_ready" if ready else "not_ready",
+        "ready": ready,
+        "gates": gates,
+    }
+
+
+def _fresh_generated_bridge_summary(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    readiness: Mapping[str, Any],
+) -> dict[str, Any]:
+    constructed_rows = _direction_rows_by_family(rows, "constructed_bridge")
+    return {
+        "readiness": str(readiness.get("status", "not_ready")),
+        "ready_for_fresh_generated_bridge_claims": bool(
+            readiness.get("ready", False)
+        ),
+        "direction_count": len(rows),
+        "constructed_direction_count": len(constructed_rows),
+        "constructed_fresh_source_min_accuracy": _min_eval_metric(
+            constructed_rows,
+            "on_fresh_source",
+            "pairwise_accuracy",
+        ),
+        "constructed_fresh_source_min_margin": _min_eval_metric(
+            constructed_rows,
+            "on_fresh_source",
+            "min_margin",
+        ),
+        "constructed_fresh_source_failed_pairs": _sum_eval_metric(
+            constructed_rows,
+            "on_fresh_source",
+            "failed_pair_count",
+        ),
+        "constructed_fresh_target_min_accuracy": _min_eval_metric(
+            constructed_rows,
+            "on_fresh_target",
+            "pairwise_accuracy",
+        ),
+        "constructed_fresh_target_min_margin": _min_eval_metric(
+            constructed_rows,
+            "on_fresh_target",
+            "min_margin",
+        ),
+        "constructed_fresh_target_failed_pairs": _sum_eval_metric(
+            constructed_rows,
+            "on_fresh_target",
+            "failed_pair_count",
+        ),
+        "source_only_fresh_source_min_margin": _direction_eval_metric(
+            rows,
+            "source_only",
+            "on_fresh_source",
+            "min_margin",
+        ),
+        "fresh_source_only_source_min_margin": _direction_eval_metric(
+            rows,
+            "fresh_source_only",
+            "on_source",
+            "min_margin",
+        ),
+        "source_fresh_joint_fresh_source_min_margin": _direction_eval_metric(
+            rows,
+            "source_fresh_joint",
+            "on_fresh_source",
+            "min_margin",
+        ),
+        "source_fresh_joint_fresh_target_min_margin": _direction_eval_metric(
+            rows,
+            "source_fresh_joint",
+            "on_fresh_target",
+            "min_margin",
+        ),
+        "failed_pair_evaluation_count": _fresh_bridge_failed_pair_count(rows),
+    }
+
+
 def _cross_model_bridge_transport_readiness(
     *,
     model_a_to_b: Sequence[Mapping[str, Any]],
@@ -3031,6 +3501,58 @@ def _fold_values(folds: Sequence[Mapping[str, Any]], key: str) -> list[float]:
 
 def _fold_int_values(folds: Sequence[Mapping[str, Any]], key: str) -> list[int]:
     return [int(fold.get(key, 0)) for fold in folds]
+
+
+def _direction_rows_by_family(
+    rows: Sequence[Mapping[str, Any]],
+    family: str,
+) -> list[Mapping[str, Any]]:
+    return [row for row in rows if str(row.get("direction_family", "")) == family]
+
+
+def _direction_present(rows: Sequence[Mapping[str, Any]], direction_id: str) -> float:
+    return (
+        1.0
+        if any(str(row.get("direction_id", "")) == direction_id for row in rows)
+        else 0.0
+    )
+
+
+def _min_eval_metric(
+    rows: Sequence[Mapping[str, Any]],
+    evaluation_key: str,
+    metric_key: str,
+) -> float:
+    evaluations = [_mapping(row.get(evaluation_key)) for row in rows]
+    return min(_fold_values(evaluations, metric_key), default=0.0)
+
+
+def _sum_eval_metric(
+    rows: Sequence[Mapping[str, Any]],
+    evaluation_key: str,
+    metric_key: str,
+) -> int:
+    return sum(int(_mapping(row.get(evaluation_key)).get(metric_key, 0)) for row in rows)
+
+
+def _direction_eval_metric(
+    rows: Sequence[Mapping[str, Any]],
+    direction_id: str,
+    evaluation_key: str,
+    metric_key: str,
+) -> float:
+    for row in rows:
+        if str(row.get("direction_id", "")) == direction_id:
+            return float(_mapping(row.get(evaluation_key)).get(metric_key, 0.0))
+    return 0.0
+
+
+def _fresh_bridge_failed_pair_count(rows: Sequence[Mapping[str, Any]]) -> int:
+    return sum(
+        _sum_eval_metric([row], evaluation_key, "failed_pair_count")
+        for row in rows
+        for evaluation_key in _FRESH_BRIDGE_EVALUATION_KEYS
+    )
 
 
 def _direction_cosine(left: np.ndarray, right: np.ndarray) -> float:
@@ -3707,6 +4229,38 @@ def _bridge_direction_fold_table(raw_folds: object) -> list[str]:
     return lines
 
 
+def _fresh_bridge_direction_table(raw_rows: object) -> list[str]:
+    rows = [_mapping(row) for row in _sequence(raw_rows)]
+    lines = [
+        "| Direction | Family | Source | Target | Fresh source | Fresh target | Cos source | Cos fresh | Cos source+fresh | Cos original joint |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            "| "
+            f"`{row.get('direction_id', '')}` | "
+            f"`{row.get('direction_family', '')}` | "
+            f"{_compact_eval_metric(row.get('on_source'))} | "
+            f"{_compact_eval_metric(row.get('on_target'))} | "
+            f"{_compact_eval_metric(row.get('on_fresh_source'))} | "
+            f"{_compact_eval_metric(row.get('on_fresh_target'))} | "
+            f"{float(row.get('cosine_to_source_only', 0.0)):+.3f} | "
+            f"{float(row.get('cosine_to_fresh_source_only', 0.0)):+.3f} | "
+            f"{float(row.get('cosine_to_source_fresh_joint', 0.0)):+.3f} | "
+            f"{float(row.get('cosine_to_original_source_target_joint', 0.0)):+.3f} |"
+        )
+    return lines
+
+
+def _compact_eval_metric(raw_evaluation: object) -> str:
+    evaluation = _mapping(raw_evaluation)
+    return (
+        f"{float(evaluation.get('pairwise_accuracy', 0.0)):.3f}/"
+        f"{float(evaluation.get('min_margin', 0.0)):+.3f}/"
+        f"{int(evaluation.get('failed_pair_count', 0))}"
+    )
+
+
 def _failed_bridge_direction_table(report: Mapping[str, Any]) -> list[str]:
     inputs = _mapping(report.get("inputs"))
     min_pairwise_accuracy = float(inputs.get("min_pairwise_accuracy", 1.0))
@@ -3882,6 +4436,31 @@ def _failed_transport_bridge_direction_table(report: Mapping[str, Any]) -> list[
             )
     if len(lines) == 2:
         return ["No failed transported directions."]
+    return lines
+
+
+def _failed_fresh_bridge_pair_table(report: Mapping[str, Any]) -> list[str]:
+    lines = [
+        "| Direction | Family | Evaluation | Pair | Margin |",
+        "| --- | --- | --- | --- | ---: |",
+    ]
+    for row in (
+        _mapping(item) for item in _sequence(report.get("direction_evaluations"))
+    ):
+        for key in _FRESH_BRIDGE_EVALUATION_KEYS:
+            evaluation = _mapping(row.get(key))
+            for raw_pair in _sequence(evaluation.get("failed_pairs")):
+                pair = _mapping(raw_pair)
+                lines.append(
+                    "| "
+                    f"`{row.get('direction_id', '')}` | "
+                    f"`{row.get('direction_family', '')}` | "
+                    f"`{key.removeprefix('on_')}` | "
+                    f"`{pair.get('pair_id', '')}` | "
+                    f"{float(pair.get('margin', 0.0)):+.3f} |"
+                )
+    if len(lines) == 2:
+        return ["No failed pairs."]
     return lines
 
 
