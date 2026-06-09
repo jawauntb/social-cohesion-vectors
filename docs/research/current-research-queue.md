@@ -65,15 +65,36 @@ source-style intervention now shows the pocket is even narrower: SmolLM2,
 Qwen2.5-0.5B, and TinyLlama-1.1B invert the recovered generated reference while
 separating all five clean hand-authored style variants, including a
 generated-like paragraph; Qwen2.5-7B separates both the generated reference and
-the clean variants. A first deterministic perturbation ladder now repairs the
-fresh-source slice in all four model spaces when used as local augmentation,
-with thin but positive Qwen0.5B and TinyLlama margins. Under the original
-source+target direction, removing the generated reference's first positive
-sentence flips SmolLM2 positive, while Qwen0.5B and TinyLlama move closest to
-zero under explicit pseudo-condition or combined edits but do not flip.
+the clean variants. A first deterministic perturbation ladder repairs the
+fresh-source slice in all four model spaces when used as local augmentation. A
+stricter v2 ladder now strengthens that result with twelve perturbations:
+scoped availability remains `72/72`, full augmentation and
+leave-one-perturbation-out pass in SmolLM2, Qwen2.5-0.5B, Qwen2.5-7B, and
+TinyLlama, and the smallest held-out small-model margin rises from the first
+ladder's TinyLlama `+0.071` to `+0.800`. Under the original source+target
+direction, neutral opening-frame replacement flips SmolLM2 and Qwen2.5-0.5B
+positive; TinyLlama remains negative under all strict single edits but moves
+closest to zero when pseudo-side shortcuts are neutralized. The active next
+gate is a second-residual strict perturbation ladder, preferably the clean
+`dissent_after_mistake` residual, to test whether the pocket is
+accountability-specific or generated-provenance-general.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-strict-accountability-perturbation-ladder.md`:
+  expanded the generated-reference perturbation exporter to
+  `accountability_reference_perturbation_v2` with twelve variants, including
+  opening-frame/address splits, neutral replacements, neutral padding, a length
+  control, and pseudo-side shortcut neutralization. Scoped availability stays
+  `72/72` with minimum margin `+0.090`; lexical diagnostics remain caveated
+  because this is the known leaky generated residual. Original direction
+  margins show neutral opening-frame replacement flips SmolLM2
+  (`-9.761` -> `+7.776`) and Qwen2.5-0.5B (`-0.947` -> `+0.443`), while
+  TinyLlama remains negative under all strict single edits and Qwen2.5-7B stays
+  positive throughout. Full strict-ladder augmentation and
+  leave-one-perturbation-out pass in all four model spaces: SmolLM2 fresh LOO
+  `+47.185`, Qwen2.5-0.5B `+1.376`, Qwen2.5-7B `+23.059`, and TinyLlama
+  `+0.800`.
 - `docs/research/2026-06-09-accountability-perturbation-ladder.md`: added a
   deterministic perturbation exporter for the external generated
   `accountability_after_harm` reference. All seven perturbations preserve

@@ -29,9 +29,14 @@ def test_accountability_reference_perturbations_are_schema_valid() -> None:
         "original_reference",
         "positive_address_removed",
         "positive_first_sentence_removed",
+        "positive_framing_removed_address_kept",
+        "positive_framing_neutral_replacement",
+        "positive_first_sentence_removed_neutral_padding",
+        "positive_framing_length_control",
         "positive_warmth_neutralized",
         "positive_refusal_explicit",
         "negative_conditions_explicit",
+        "negative_shortcuts_neutralized",
         "combined_refusal_conditions",
     } == {str(pair.metadata["perturbation_id"]) for pair in pairs}
 
@@ -46,11 +51,24 @@ def test_accountability_reference_perturbations_apply_expected_edits() -> None:
     assert pairs["original_reference"].positive_text == generated.positive_text
     assert not pairs["positive_address_removed"].positive_text.startswith("All neighbors")
     assert "Opening frame" not in pairs["positive_first_sentence_removed"].positive_text
+    assert pairs["positive_framing_removed_address_kept"].positive_text.startswith(
+        "All neighbors."
+    )
+    assert pairs["positive_framing_neutral_replacement"].positive_text.startswith(
+        "Procedure notice"
+    )
+    assert "review procedure" in pairs[
+        "positive_first_sentence_removed_neutral_padding"
+    ].positive_text
+    assert "current case" in pairs["positive_framing_length_control"].positive_text
     assert "fair" not in pairs["positive_warmth_neutralized"].positive_text.lower()
     assert "may refuse a rushed sanction" in pairs[
         "positive_refusal_explicit"
     ].positive_text
     assert "waits for proof" in pairs["negative_conditions_explicit"].negative_text
+    assert "trust and harmony" not in pairs[
+        "negative_shortcuts_neutralized"
+    ].negative_text
 
 
 def test_accountability_reference_perturbation_report_summarizes_variants() -> None:
