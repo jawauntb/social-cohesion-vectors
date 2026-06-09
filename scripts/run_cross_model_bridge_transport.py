@@ -24,10 +24,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         model_b_source_pairs_path=args.model_b_source_pairs,
         model_b_target_activation_npz=args.model_b_target_activation_npz,
         model_b_target_pairs_path=args.model_b_target_pairs,
+        model_a_fresh_source_activation_npz=args.model_a_fresh_source_activation_npz,
+        model_a_fresh_source_pairs_path=args.model_a_fresh_source_pairs,
+        model_a_fresh_target_activation_npz=args.model_a_fresh_target_activation_npz,
+        model_a_fresh_target_pairs_path=args.model_a_fresh_target_pairs,
+        model_b_fresh_source_activation_npz=args.model_b_fresh_source_activation_npz,
+        model_b_fresh_source_pairs_path=args.model_b_fresh_source_pairs,
+        model_b_fresh_target_activation_npz=args.model_b_fresh_target_activation_npz,
+        model_b_fresh_target_pairs_path=args.model_b_fresh_target_pairs,
         model_a_name=args.model_a_name,
         model_b_name=args.model_b_name,
         source_name=args.source_name,
         target_name=args.target_name,
+        fresh_source_name=args.fresh_source_name,
+        fresh_target_name=args.fresh_target_name,
         source_group_key=args.source_group_key,
         target_group_key=args.target_group_key,
         bridge_stratum_key=args.bridge_stratum_key,
@@ -73,10 +83,20 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--model-b-source-pairs", type=Path, required=True)
     parser.add_argument("--model-b-target-activation-npz", type=Path, required=True)
     parser.add_argument("--model-b-target-pairs", type=Path, required=True)
+    parser.add_argument("--model-a-fresh-source-activation-npz", type=Path)
+    parser.add_argument("--model-a-fresh-source-pairs", type=Path)
+    parser.add_argument("--model-a-fresh-target-activation-npz", type=Path)
+    parser.add_argument("--model-a-fresh-target-pairs", type=Path)
+    parser.add_argument("--model-b-fresh-source-activation-npz", type=Path)
+    parser.add_argument("--model-b-fresh-source-pairs", type=Path)
+    parser.add_argument("--model-b-fresh-target-activation-npz", type=Path)
+    parser.add_argument("--model-b-fresh-target-pairs", type=Path)
     parser.add_argument("--model-a-name", default="model_a")
     parser.add_argument("--model-b-name", default="model_b")
     parser.add_argument("--source-name", default="source")
     parser.add_argument("--target-name", default="target")
+    parser.add_argument("--fresh-source-name", default="fresh_source")
+    parser.add_argument("--fresh-target-name", default="fresh_target")
     parser.add_argument("--source-group-key", default="source")
     parser.add_argument("--target-group-key", default="source")
     parser.add_argument("--bridge-stratum-key", default="slack_options_tested")

@@ -370,6 +370,14 @@ def test_cross_model_bridge_transport_maps_constructed_directions(
         model_b_source_pairs_path=paths["source_pairs"],
         model_b_target_activation_npz=paths["model_b_target_activation"],
         model_b_target_pairs_path=paths["target_pairs"],
+        model_a_fresh_source_activation_npz=paths["model_a_fresh_source_activation"],
+        model_a_fresh_source_pairs_path=paths["fresh_source_pairs"],
+        model_a_fresh_target_activation_npz=paths["model_a_fresh_target_activation"],
+        model_a_fresh_target_pairs_path=paths["fresh_target_pairs"],
+        model_b_fresh_source_activation_npz=paths["model_b_fresh_source_activation"],
+        model_b_fresh_source_pairs_path=paths["fresh_source_pairs"],
+        model_b_fresh_target_activation_npz=paths["model_b_fresh_target_activation"],
+        model_b_fresh_target_pairs_path=paths["fresh_target_pairs"],
         model_a_name="a",
         model_b_name="b",
         bridge_pair_count=1,
@@ -387,7 +395,10 @@ def test_cross_model_bridge_transport_maps_constructed_directions(
     assert report["summary"]["model_b_to_a_target_min_margin"] > 0.0
     assert report["summary"]["model_a_to_b_leave_heldout_min_margin"] > 0.0
     assert report["summary"]["model_b_to_a_leave_heldout_min_margin"] > 0.0
+    assert report["summary"]["model_a_to_b_fresh_source_min_margin"] > 0.0
+    assert report["summary"]["model_b_to_a_fresh_target_min_margin"] > 0.0
     assert "Cross-Model Bridge Transport Audit" in markdown
+    assert "fresh source min accuracy/margin" in markdown
     assert "No failed transported directions." in markdown
 
 
@@ -418,6 +429,26 @@ def test_cross_model_bridge_transport_cli_writes_report(
             str(paths["model_b_target_activation"]),
             "--model-b-target-pairs",
             str(paths["target_pairs"]),
+            "--model-a-fresh-source-activation-npz",
+            str(paths["model_a_fresh_source_activation"]),
+            "--model-a-fresh-source-pairs",
+            str(paths["fresh_source_pairs"]),
+            "--model-a-fresh-target-activation-npz",
+            str(paths["model_a_fresh_target_activation"]),
+            "--model-a-fresh-target-pairs",
+            str(paths["fresh_target_pairs"]),
+            "--model-b-fresh-source-activation-npz",
+            str(paths["model_b_fresh_source_activation"]),
+            "--model-b-fresh-source-pairs",
+            str(paths["fresh_source_pairs"]),
+            "--model-b-fresh-target-activation-npz",
+            str(paths["model_b_fresh_target_activation"]),
+            "--model-b-fresh-target-pairs",
+            str(paths["fresh_target_pairs"]),
+            "--fresh-source-name",
+            "fresh_generated",
+            "--fresh-target-name",
+            "fresh_control",
             "--bridge-pair-count",
             "1",
             "--knn-k",
@@ -436,6 +467,8 @@ def test_cross_model_bridge_transport_cli_writes_report(
     assert "cross-model bridge transport" in captured.out
     loaded = json.loads(json_output.read_text(encoding="utf-8"))
     assert loaded["summary"]["ready_for_cross_model_bridge_transport_claims"] is True
+    assert loaded["inputs"]["fresh_source_name"] == "fresh_generated"
+    assert loaded["summary"]["model_a_to_b_fresh_target_min_margin"] > 0.0
     assert markdown_output.exists()
 
 
@@ -506,6 +539,12 @@ def _write_cross_model_fixture(tmp_path: Path) -> dict[str, Path]:
     model_a_target = paths["target_activation"]
     model_b_source = tmp_path / "model_b_source_activation.npz"
     model_b_target = tmp_path / "model_b_target_activation.npz"
+    fresh_source_pairs = tmp_path / "fresh_source_pairs.jsonl"
+    fresh_target_pairs = tmp_path / "fresh_target_pairs.jsonl"
+    model_a_fresh_source = tmp_path / "model_a_fresh_source_activation.npz"
+    model_a_fresh_target = tmp_path / "model_a_fresh_target_activation.npz"
+    model_b_fresh_source = tmp_path / "model_b_fresh_source_activation.npz"
+    model_b_fresh_target = tmp_path / "model_b_fresh_target_activation.npz"
     transform = np.asarray(
         [
             [1.0, 0.5],
@@ -515,14 +554,62 @@ def _write_cross_model_fixture(tmp_path: Path) -> dict[str, Path]:
     )
     _write_transformed_activation(model_a_source, model_b_source, transform=transform)
     _write_transformed_activation(model_a_target, model_b_target, transform=transform)
+    write_jsonl([_pair("fs1", "source_c")], fresh_source_pairs)
+    write_jsonl([_pair("ft1", "target_c")], fresh_target_pairs)
+    _write_activation(
+        model_a_fresh_source,
+        activations=np.asarray([[1.5, 0.0], [0.0, 0.0]], dtype=np.float64),
+        pair_ids=np.asarray(["fs1", "fs1"], dtype=str),
+    )
+    _write_activation(
+        model_a_fresh_target,
+        activations=np.asarray([[0.0, 1.5], [0.0, 0.0]], dtype=np.float64),
+        pair_ids=np.asarray(["ft1", "ft1"], dtype=str),
+    )
+    _write_transformed_activation(
+        model_a_fresh_source,
+        model_b_fresh_source,
+        transform=transform,
+    )
+    _write_transformed_activation(
+        model_a_fresh_target,
+        model_b_fresh_target,
+        transform=transform,
+    )
     return {
         "source_pairs": paths["source_pairs"],
         "target_pairs": paths["target_pairs"],
+        "fresh_source_pairs": fresh_source_pairs,
+        "fresh_target_pairs": fresh_target_pairs,
         "model_a_source_activation": model_a_source,
         "model_a_target_activation": model_a_target,
         "model_b_source_activation": model_b_source,
         "model_b_target_activation": model_b_target,
+        "model_a_fresh_source_activation": model_a_fresh_source,
+        "model_a_fresh_target_activation": model_a_fresh_target,
+        "model_b_fresh_source_activation": model_b_fresh_source,
+        "model_b_fresh_target_activation": model_b_fresh_target,
     }
+
+
+def _write_activation(
+    path: Path,
+    *,
+    activations: np.ndarray,
+    pair_ids: np.ndarray,
+) -> None:
+    labels = np.asarray(["positive", "negative"], dtype=str)
+    sample_ids = np.asarray(
+        [f"{pair_id}:{label}" for pair_id, label in zip(pair_ids, labels, strict=True)],
+        dtype=str,
+    )
+    np.savez(
+        path,
+        activations=activations,
+        pair_ids=pair_ids,
+        labels=labels,
+        sample_ids=sample_ids,
+    )
 
 
 def _write_transformed_activation(
