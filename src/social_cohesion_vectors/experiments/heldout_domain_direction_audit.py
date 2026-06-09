@@ -29,6 +29,15 @@ class _DomainDataset:
     pair_metadata: Mapping[str, Mapping[str, str]]
 
 
+@dataclass(frozen=True)
+class _BridgeDirectionVectorFold:
+    fold_id: str
+    fold_kind: str
+    held_out_group: str
+    direction: np.ndarray
+    report: dict[str, Any]
+
+
 def run_heldout_domain_direction_audit_from_files(
     *,
     source_activation_npz: str | Path,
@@ -626,6 +635,222 @@ def run_bridge_direction_comparison_from_files(
     }
 
 
+def run_cross_model_bridge_transport_from_files(
+    *,
+    model_a_source_activation_npz: str | Path,
+    model_a_source_pairs_path: str | Path,
+    model_a_target_activation_npz: str | Path,
+    model_a_target_pairs_path: str | Path,
+    model_b_source_activation_npz: str | Path,
+    model_b_source_pairs_path: str | Path,
+    model_b_target_activation_npz: str | Path,
+    model_b_target_pairs_path: str | Path,
+    model_a_name: str = "model_a",
+    model_b_name: str = "model_b",
+    source_name: str = "source",
+    target_name: str = "target",
+    source_group_key: str = "source",
+    target_group_key: str = "source",
+    bridge_stratum_key: str = "slack_options_tested",
+    composition_keys: Sequence[str] = ("source", "primary_fault_class"),
+    bridge_pair_count: int = 6,
+    knn_k: int = 10,
+    ridge_alpha: float = 1e-3,
+    min_pairwise_accuracy: float = 1.0,
+    min_margin: float = 0.0,
+    min_mapped_direction_cosine: float = 0.0,
+) -> dict[str, Any]:
+    """Map constructed bridge directions between two aligned model spaces."""
+
+    if bridge_pair_count < 1:
+        raise ValueError("bridge_pair_count must be at least 1.")
+
+    model_a_source = _load_domain_dataset(
+        name=f"{model_a_name}_{source_name}",
+        activation_npz=model_a_source_activation_npz,
+        pairs_path=model_a_source_pairs_path,
+        group_key=source_group_key,
+    )
+    model_a_target = _load_domain_dataset(
+        name=f"{model_a_name}_{target_name}",
+        activation_npz=model_a_target_activation_npz,
+        pairs_path=model_a_target_pairs_path,
+        group_key=target_group_key,
+    )
+    model_b_source = _load_domain_dataset(
+        name=f"{model_b_name}_{source_name}",
+        activation_npz=model_b_source_activation_npz,
+        pairs_path=model_b_source_pairs_path,
+        group_key=source_group_key,
+    )
+    model_b_target = _load_domain_dataset(
+        name=f"{model_b_name}_{target_name}",
+        activation_npz=model_b_target_activation_npz,
+        pairs_path=model_b_target_pairs_path,
+        group_key=target_group_key,
+    )
+    _validate_shared_dim(model_a_source, model_a_target)
+    _validate_shared_dim(model_b_source, model_b_target)
+    _validate_matching_pair_ids(model_a_source, model_b_source, label=source_name)
+    _validate_matching_pair_ids(model_a_target, model_b_target, label=target_name)
+
+    model_a_joint_direction = _direction_from_training_parts(
+        _training_part(model_a_source, _unique_pair_ids(model_a_source)),
+        _training_part(model_a_target, _unique_pair_ids(model_a_target)),
+    )
+    model_b_joint_direction = _direction_from_training_parts(
+        _training_part(model_b_source, _unique_pair_ids(model_b_source)),
+        _training_part(model_b_target, _unique_pair_ids(model_b_target)),
+    )
+    model_a_folds = [
+        *_bridge_direction_vector_folds(
+            train_primary=model_a_source,
+            train_secondary=model_a_target,
+            held_out_dataset=model_a_target,
+            source_dataset=model_a_source,
+            target_dataset=model_a_target,
+            joint_direction=model_a_joint_direction,
+            bridge_stratum_key=bridge_stratum_key,
+            composition_keys=composition_keys,
+            bridge_pair_count=bridge_pair_count,
+            fold_kind="target_bridge",
+        ),
+        *_bridge_direction_vector_folds(
+            train_primary=model_a_target,
+            train_secondary=model_a_source,
+            held_out_dataset=model_a_source,
+            source_dataset=model_a_source,
+            target_dataset=model_a_target,
+            joint_direction=model_a_joint_direction,
+            bridge_stratum_key=bridge_stratum_key,
+            composition_keys=composition_keys,
+            bridge_pair_count=bridge_pair_count,
+            fold_kind="source_bridge",
+        ),
+    ]
+    model_b_folds = [
+        *_bridge_direction_vector_folds(
+            train_primary=model_b_source,
+            train_secondary=model_b_target,
+            held_out_dataset=model_b_target,
+            source_dataset=model_b_source,
+            target_dataset=model_b_target,
+            joint_direction=model_b_joint_direction,
+            bridge_stratum_key=bridge_stratum_key,
+            composition_keys=composition_keys,
+            bridge_pair_count=bridge_pair_count,
+            fold_kind="target_bridge",
+        ),
+        *_bridge_direction_vector_folds(
+            train_primary=model_b_target,
+            train_secondary=model_b_source,
+            held_out_dataset=model_b_source,
+            source_dataset=model_b_source,
+            target_dataset=model_b_target,
+            joint_direction=model_b_joint_direction,
+            bridge_stratum_key=bridge_stratum_key,
+            composition_keys=composition_keys,
+            bridge_pair_count=bridge_pair_count,
+            fold_kind="source_bridge",
+        ),
+    ]
+    (
+        aligned_a,
+        aligned_b,
+        aligned_pair_ids,
+        alignment_inputs,
+    ) = _combined_aligned_activation_matrices(
+        model_a_source_activation_npz=model_a_source_activation_npz,
+        model_b_source_activation_npz=model_b_source_activation_npz,
+        model_a_target_activation_npz=model_a_target_activation_npz,
+        model_b_target_activation_npz=model_b_target_activation_npz,
+    )
+    alignment = _cross_model_alignment_metrics(aligned_a, aligned_b, knn_k=knn_k)
+    model_a_to_b = _transport_bridge_direction_folds(
+        source_model_name=model_a_name,
+        target_model_name=model_b_name,
+        source_folds=model_a_folds,
+        target_folds=model_b_folds,
+        aligned_source_activations=aligned_a,
+        aligned_target_activations=aligned_b,
+        aligned_pair_ids=aligned_pair_ids,
+        ridge_alpha=ridge_alpha,
+        target_source_dataset=model_b_source,
+        target_target_dataset=model_b_target,
+    )
+    model_b_to_a = _transport_bridge_direction_folds(
+        source_model_name=model_b_name,
+        target_model_name=model_a_name,
+        source_folds=model_b_folds,
+        target_folds=model_a_folds,
+        aligned_source_activations=aligned_b,
+        aligned_target_activations=aligned_a,
+        aligned_pair_ids=aligned_pair_ids,
+        ridge_alpha=ridge_alpha,
+        target_source_dataset=model_a_source,
+        target_target_dataset=model_a_target,
+    )
+    readiness = _cross_model_bridge_transport_readiness(
+        model_a_to_b=model_a_to_b,
+        model_b_to_a=model_b_to_a,
+        min_pairwise_accuracy=min_pairwise_accuracy,
+        min_margin=min_margin,
+        min_mapped_direction_cosine=min_mapped_direction_cosine,
+    )
+    return {
+        "experiment": "cross_model_bridge_transport_audit",
+        "description": (
+            "Constructs bridge directions in two aligned model activation spaces, "
+            "maps each direction into the other space, and evaluates whether the "
+            "mapped direction separates both full benchmarks there."
+        ),
+        "inputs": {
+            "model_a_name": model_a_name,
+            "model_b_name": model_b_name,
+            "source_name": source_name,
+            "target_name": target_name,
+            "model_a_source_activation_npz": str(model_a_source_activation_npz),
+            "model_a_source_pairs_path": str(model_a_source_pairs_path),
+            "model_a_target_activation_npz": str(model_a_target_activation_npz),
+            "model_a_target_pairs_path": str(model_a_target_pairs_path),
+            "model_b_source_activation_npz": str(model_b_source_activation_npz),
+            "model_b_source_pairs_path": str(model_b_source_pairs_path),
+            "model_b_target_activation_npz": str(model_b_target_activation_npz),
+            "model_b_target_pairs_path": str(model_b_target_pairs_path),
+            "source_group_key": source_group_key,
+            "target_group_key": target_group_key,
+            "bridge_stratum_key": bridge_stratum_key,
+            "composition_keys": list(composition_keys),
+            "bridge_pair_count": int(bridge_pair_count),
+            "model_a_dim": int(model_a_source.activations.shape[1]),
+            "model_b_dim": int(model_b_source.activations.shape[1]),
+            "knn_k": int(knn_k),
+            "ridge_alpha": float(ridge_alpha),
+            "min_pairwise_accuracy": float(min_pairwise_accuracy),
+            "min_margin": float(min_margin),
+            "min_mapped_direction_cosine": float(min_mapped_direction_cosine),
+            **alignment_inputs,
+        },
+        "summary": _cross_model_bridge_transport_summary(
+            readiness=readiness,
+            alignment=alignment,
+            model_a_to_b=model_a_to_b,
+            model_b_to_a=model_b_to_a,
+        ),
+        "readiness": readiness,
+        "alignment": alignment,
+        "model_a_bridge_directions": [fold.report for fold in model_a_folds],
+        "model_b_bridge_directions": [fold.report for fold in model_b_folds],
+        "model_a_to_b_transport": model_a_to_b,
+        "model_b_to_a_transport": model_b_to_a,
+        "interpretation_guardrail": (
+            "Cross-model bridge transport supports a text-benchmark activation "
+            "diagnostic across aligned model spaces. It does not establish a "
+            "human, neural, clinical, deployment, or causal steering claim."
+        ),
+    }
+
+
 def save_heldout_domain_direction_audit_report(
     report: Mapping[str, Any],
     *,
@@ -717,6 +942,25 @@ def save_bridge_direction_comparison_report(
     json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     markdown_output.write_text(
         render_bridge_direction_comparison_markdown(report),
+        encoding="utf-8",
+    )
+
+
+def save_cross_model_bridge_transport_report(
+    report: Mapping[str, Any],
+    *,
+    json_path: str | Path,
+    markdown_path: str | Path,
+) -> None:
+    """Write JSON and Markdown cross-model bridge transport reports."""
+
+    json_output = Path(json_path)
+    markdown_output = Path(markdown_path)
+    json_output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output.parent.mkdir(parents=True, exist_ok=True)
+    json_output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    markdown_output.write_text(
+        render_cross_model_bridge_transport_markdown(report),
         encoding="utf-8",
     )
 
@@ -1051,6 +1295,95 @@ def render_bridge_direction_comparison_markdown(report: Mapping[str, Any]) -> st
     )
 
 
+def render_cross_model_bridge_transport_markdown(
+    report: Mapping[str, Any],
+) -> str:
+    """Render a cross-model bridge transport report."""
+
+    inputs = _mapping(report.get("inputs"))
+    summary = _mapping(report.get("summary"))
+    alignment = _mapping(report.get("alignment"))
+    return "\n".join(
+        [
+            "# Cross-Model Bridge Transport Audit",
+            "",
+            str(report.get("description", "")),
+            "",
+            "## Inputs",
+            "",
+            f"- Model A: `{inputs.get('model_a_name', '')}`",
+            f"- Model B: `{inputs.get('model_b_name', '')}`",
+            f"- Source benchmark: `{inputs.get('source_name', '')}`",
+            f"- Target benchmark: `{inputs.get('target_name', '')}`",
+            f"- Bridge pair count: {int(inputs.get('bridge_pair_count', 0))}",
+            f"- Bridge stratum key: `{inputs.get('bridge_stratum_key', '')}`",
+            f"- Composition keys: "
+            f"`{', '.join(str(key) for key in _sequence(inputs.get('composition_keys')))}`",
+            f"- Model dims: {int(inputs.get('model_a_dim', 0))}/"
+            f"{int(inputs.get('model_b_dim', 0))}",
+            f"- Shared aligned samples: "
+            f"{int(inputs.get('shared_aligned_samples', 0))}",
+            "",
+            "## Alignment",
+            "",
+            f"- Combined linear CKA: {float(alignment.get('linear_cka', 0.0)):.3f}",
+            f"- Combined mutual kNN overlap: "
+            f"{float(alignment.get('mutual_knn_overlap', 0.0)):.3f}",
+            f"- Source shared samples: "
+            f"{int(inputs.get('source_shared_samples', 0))}",
+            f"- Target shared samples: "
+            f"{int(inputs.get('target_shared_samples', 0))}",
+            "",
+            "## Summary",
+            "",
+            f"- Readiness: `{summary.get('readiness', 'not_ready')}`",
+            f"- Ready for cross-model bridge transport claims: "
+            f"{bool(summary.get('ready_for_cross_model_bridge_transport_claims', False))}",
+            f"- Model A -> B min cosine: "
+            f"{float(summary.get('model_a_to_b_min_bridge_cosine', 0.0)):+.3f}",
+            f"- Model A -> B source min accuracy/margin: "
+            f"{float(summary.get('model_a_to_b_source_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('model_a_to_b_source_min_margin', 0.0)):+.3f}",
+            f"- Model A -> B target min accuracy/margin: "
+            f"{float(summary.get('model_a_to_b_target_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('model_a_to_b_target_min_margin', 0.0)):+.3f}",
+            f"- Model A -> B leave-held-out min accuracy/margin: "
+            f"{float(summary.get('model_a_to_b_leave_heldout_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('model_a_to_b_leave_heldout_min_margin', 0.0)):+.3f}",
+            f"- Model B -> A min cosine: "
+            f"{float(summary.get('model_b_to_a_min_bridge_cosine', 0.0)):+.3f}",
+            f"- Model B -> A source min accuracy/margin: "
+            f"{float(summary.get('model_b_to_a_source_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('model_b_to_a_source_min_margin', 0.0)):+.3f}",
+            f"- Model B -> A target min accuracy/margin: "
+            f"{float(summary.get('model_b_to_a_target_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('model_b_to_a_target_min_margin', 0.0)):+.3f}",
+            f"- Model B -> A leave-held-out min accuracy/margin: "
+            f"{float(summary.get('model_b_to_a_leave_heldout_min_accuracy', 0.0)):.3f}/"
+            f"{float(summary.get('model_b_to_a_leave_heldout_min_margin', 0.0)):+.3f}",
+            f"- Failed transported directions: "
+            f"{int(summary.get('failed_transported_direction_count', 0))}",
+            "",
+            "## Model A -> B Transport",
+            "",
+            *_transport_bridge_direction_table(report.get("model_a_to_b_transport")),
+            "",
+            "## Model B -> A Transport",
+            "",
+            *_transport_bridge_direction_table(report.get("model_b_to_a_transport")),
+            "",
+            "## Failed Transported Directions",
+            "",
+            *_failed_transport_bridge_direction_table(report),
+            "",
+            "## Interpretation Guardrail",
+            "",
+            str(report.get("interpretation_guardrail", "")),
+            "",
+        ]
+    )
+
+
 def _load_domain_dataset(
     *,
     name: str,
@@ -1098,6 +1431,23 @@ def _load_domain_dataset(
 def _validate_shared_dim(source: _DomainDataset, target: _DomainDataset) -> None:
     if int(source.activations.shape[1]) != int(target.activations.shape[1]):
         raise ValueError("Source and target activation dimensions must match.")
+
+
+def _validate_matching_pair_ids(
+    left: _DomainDataset,
+    right: _DomainDataset,
+    *,
+    label: str,
+) -> None:
+    left_pairs = _unique_pair_ids(left)
+    right_pairs = _unique_pair_ids(right)
+    if left_pairs != right_pairs:
+        msg = (
+            f"Cross-model {label} pair ids must match: "
+            f"left_only={sorted(left_pairs - right_pairs)[:5]} "
+            f"right_only={sorted(right_pairs - left_pairs)[:5]}"
+        )
+        raise ValueError(msg)
 
 
 def _bridge_fold(
@@ -1382,7 +1732,37 @@ def _bridge_direction_comparison_folds(
     composition_keys: Sequence[str],
     bridge_pair_count: int,
 ) -> list[dict[str, Any]]:
-    folds: list[dict[str, Any]] = []
+    return [
+        fold.report
+        for fold in _bridge_direction_vector_folds(
+            train_primary=train_primary,
+            train_secondary=train_secondary,
+            held_out_dataset=held_out_dataset,
+            source_dataset=source_dataset,
+            target_dataset=target_dataset,
+            joint_direction=joint_direction,
+            bridge_stratum_key=bridge_stratum_key,
+            composition_keys=composition_keys,
+            bridge_pair_count=bridge_pair_count,
+            fold_kind=held_out_dataset.name,
+        )
+    ]
+
+
+def _bridge_direction_vector_folds(
+    *,
+    train_primary: _DomainDataset,
+    train_secondary: _DomainDataset,
+    held_out_dataset: _DomainDataset,
+    source_dataset: _DomainDataset,
+    target_dataset: _DomainDataset,
+    joint_direction: np.ndarray,
+    bridge_stratum_key: str,
+    composition_keys: Sequence[str],
+    bridge_pair_count: int,
+    fold_kind: str,
+) -> list[_BridgeDirectionVectorFold]:
+    folds: list[_BridgeDirectionVectorFold] = []
     for held_out_group in _groups(held_out_dataset):
         held_out_pairs = {
             pair_id
@@ -1423,45 +1803,269 @@ def _bridge_direction_comparison_folds(
             stratum_key=bridge_stratum_key,
         )
         missing_path_values = sorted(set(candidate_path_values) - set(bridge_path_values))
+        fold_id = f"{fold_kind}:{held_out_group}"
+        report = {
+            "fold_id": fold_id,
+            "fold_kind": fold_kind,
+            "held_out_dataset": held_out_dataset.name,
+            "held_out_group": held_out_group,
+            "held_out_pairs": sorted(held_out_pairs),
+            "train_primary_dataset": train_primary.name,
+            "train_secondary_dataset": train_secondary.name,
+            "bridge_pair_count": len(bridge_pairs),
+            "bridge_pairs": list(bridge_pairs),
+            "bridge_path_values": bridge_path_values,
+            "candidate_path_values": candidate_path_values,
+            "missing_path_values": missing_path_values,
+            "path_complete": not missing_path_values,
+            "coverage_values": _coverage_values(
+                train_secondary,
+                bridge_pair_set,
+                composition_keys=composition_keys,
+            ),
+            "joint_direction_cosine": round(
+                _direction_cosine(direction, joint_direction),
+                6,
+            ),
+            "held_out_evaluation": _evaluate_pairwise_projection(
+                held_out_dataset,
+                direction=direction,
+                pair_ids=held_out_pairs,
+            ),
+            "on_source": _evaluate_pairwise_projection(
+                source_dataset,
+                direction=direction,
+                pair_ids=_unique_pair_ids(source_dataset),
+            ),
+            "on_target": _evaluate_pairwise_projection(
+                target_dataset,
+                direction=direction,
+                pair_ids=_unique_pair_ids(target_dataset),
+            ),
+        }
         folds.append(
+            _BridgeDirectionVectorFold(
+                fold_id=fold_id,
+                fold_kind=fold_kind,
+                held_out_group=held_out_group,
+                direction=direction,
+                report=report,
+            )
+        )
+    return folds
+
+
+def _combined_aligned_activation_matrices(
+    *,
+    model_a_source_activation_npz: str | Path,
+    model_b_source_activation_npz: str | Path,
+    model_a_target_activation_npz: str | Path,
+    model_b_target_activation_npz: str | Path,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, Any]]:
+    source_a, source_b, source_pair_ids, source_summary = _aligned_activation_matrices(
+        model_a_source_activation_npz,
+        model_b_source_activation_npz,
+    )
+    target_a, target_b, target_pair_ids, target_summary = _aligned_activation_matrices(
+        model_a_target_activation_npz,
+        model_b_target_activation_npz,
+    )
+    aligned_a = np.concatenate([source_a, target_a], axis=0)
+    aligned_b = np.concatenate([source_b, target_b], axis=0)
+    aligned_pair_ids = np.concatenate([source_pair_ids, target_pair_ids], axis=0)
+    return (
+        aligned_a,
+        aligned_b,
+        aligned_pair_ids,
+        {
+            "source_shared_samples": int(source_summary["shared_samples"]),
+            "source_shared_pairs": int(source_summary["shared_pairs"]),
+            "target_shared_samples": int(target_summary["shared_samples"]),
+            "target_shared_pairs": int(target_summary["shared_pairs"]),
+            "shared_aligned_samples": int(aligned_a.shape[0]),
+        },
+    )
+
+
+def _aligned_activation_matrices(
+    left_path: str | Path,
+    right_path: str | Path,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, int]]:
+    left = _load_activation_arrays_with_sample_ids(left_path)
+    right = _load_activation_arrays_with_sample_ids(right_path)
+    right_by_sample = {
+        sample_id: index for index, sample_id in enumerate(right["sample_ids"])
+    }
+    left_rows: list[int] = []
+    right_rows: list[int] = []
+    for left_index, sample_id in enumerate(left["sample_ids"]):
+        right_index = right_by_sample.get(sample_id)
+        if right_index is None:
+            continue
+        if left["pair_ids"][left_index] != right["pair_ids"][right_index]:
+            continue
+        if left["labels"][left_index] != right["labels"][right_index]:
+            continue
+        left_rows.append(left_index)
+        right_rows.append(right_index)
+    if not left_rows:
+        raise ValueError("Cross-model activation payloads have no aligned samples.")
+    left_row_array = np.asarray(left_rows, dtype=np.int64)
+    aligned_left = left["activations"][left_row_array]
+    aligned_right = right["activations"][np.asarray(right_rows, dtype=np.int64)]
+    aligned_pair_ids = np.asarray(left["pair_ids"])[left_row_array]
+    shared_pairs = {str(pair_id) for pair_id in aligned_pair_ids}
+    return (
+        aligned_left,
+        aligned_right,
+        np.asarray(aligned_pair_ids, dtype=str),
+        {
+            "shared_samples": len(left_rows),
+            "shared_pairs": len(shared_pairs),
+        },
+    )
+
+
+def _load_activation_arrays_with_sample_ids(path: str | Path) -> dict[str, np.ndarray]:
+    activation_path = Path(path)
+    with np.load(activation_path, allow_pickle=False) as data:
+        activations = np.asarray(data["activations"], dtype=np.float64)
+        pair_ids = np.asarray(data["pair_ids"], dtype=str)
+        labels = np.asarray(data["labels"], dtype=str)
+        if "sample_ids" in data:
+            sample_ids = np.asarray(data["sample_ids"], dtype=str)
+        elif "ids" in data:
+            sample_ids = np.asarray(data["ids"], dtype=str)
+        else:
+            sample_ids = _fallback_sample_ids(pair_ids, labels)
+    if activations.ndim != 2:
+        raise ValueError("activations must be a two-dimensional matrix.")
+    for name, values in (
+        ("pair_ids", pair_ids),
+        ("labels", labels),
+        ("sample_ids", sample_ids),
+    ):
+        if len(values) != activations.shape[0]:
+            raise ValueError(f"{name} length does not match activations.")
+    return {
+        "activations": activations,
+        "pair_ids": pair_ids,
+        "labels": labels,
+        "sample_ids": sample_ids,
+    }
+
+
+def _fallback_sample_ids(pair_ids: np.ndarray, labels: np.ndarray) -> np.ndarray:
+    counts: dict[tuple[str, str], int] = defaultdict(int)
+    sample_ids: list[str] = []
+    for pair_id, label in zip(pair_ids.astype(str), labels.astype(str), strict=True):
+        key = (pair_id, label)
+        index = counts[key]
+        counts[key] += 1
+        sample_ids.append(f"{pair_id}:{label}:{index}")
+    return np.asarray(sample_ids, dtype=str)
+
+
+def _transport_bridge_direction_folds(
+    *,
+    source_model_name: str,
+    target_model_name: str,
+    source_folds: Sequence[_BridgeDirectionVectorFold],
+    target_folds: Sequence[_BridgeDirectionVectorFold],
+    aligned_source_activations: np.ndarray,
+    aligned_target_activations: np.ndarray,
+    aligned_pair_ids: np.ndarray,
+    ridge_alpha: float,
+    target_source_dataset: _DomainDataset,
+    target_target_dataset: _DomainDataset,
+) -> list[dict[str, Any]]:
+    target_by_fold_id = {fold.fold_id: fold for fold in target_folds}
+    rows: list[dict[str, Any]] = []
+    for fold in source_folds:
+        target_fold = target_by_fold_id.get(fold.fold_id)
+        if target_fold is None:
+            raise ValueError(f"Missing target-model bridge fold {fold.fold_id}.")
+        mapped_direction = _ridge_mapped_direction(
+            source_activations=aligned_source_activations,
+            target_activations=aligned_target_activations,
+            source_direction=fold.direction,
+            ridge_alpha=ridge_alpha,
+        )
+        held_out_pair_ids = set(str(pair_id) for pair_id in fold.report["held_out_pairs"])
+        leave_out_direction = _leave_held_out_mapped_direction(
+            source_direction=fold.direction,
+            aligned_source_activations=aligned_source_activations,
+            aligned_target_activations=aligned_target_activations,
+            aligned_pair_ids=aligned_pair_ids,
+            held_out_pair_ids=held_out_pair_ids,
+            ridge_alpha=ridge_alpha,
+        )
+        leave_out_dataset = (
+            target_target_dataset
+            if fold.fold_kind == "target_bridge"
+            else target_source_dataset
+        )
+        rows.append(
             {
-                "held_out_dataset": held_out_dataset.name,
-                "held_out_group": held_out_group,
-                "train_primary_dataset": train_primary.name,
-                "train_secondary_dataset": train_secondary.name,
-                "bridge_pair_count": len(bridge_pairs),
-                "bridge_pairs": list(bridge_pairs),
-                "bridge_path_values": bridge_path_values,
-                "candidate_path_values": candidate_path_values,
-                "missing_path_values": missing_path_values,
-                "path_complete": not missing_path_values,
-                "coverage_values": _coverage_values(
-                    train_secondary,
-                    bridge_pair_set,
-                    composition_keys=composition_keys,
-                ),
-                "joint_direction_cosine": round(
-                    _direction_cosine(direction, joint_direction),
+                "fold_id": fold.fold_id,
+                "fold_kind": fold.fold_kind,
+                "held_out_group": fold.held_out_group,
+                "held_out_pairs": sorted(held_out_pair_ids),
+                "source_model": source_model_name,
+                "target_model": target_model_name,
+                "mapped_direction_cosine_to_target_bridge": round(
+                    _direction_cosine(mapped_direction, target_fold.direction),
                     6,
                 ),
-                "held_out_evaluation": _evaluate_pairwise_projection(
-                    held_out_dataset,
-                    direction=direction,
-                    pair_ids=held_out_pairs,
+                "leave_held_out_map_cosine_to_target_bridge": round(
+                    _direction_cosine(leave_out_direction, target_fold.direction),
+                    6,
                 ),
-                "on_source": _evaluate_pairwise_projection(
-                    source_dataset,
-                    direction=direction,
-                    pair_ids=_unique_pair_ids(source_dataset),
+                "source_model_on_source": fold.report["on_source"],
+                "source_model_on_target": fold.report["on_target"],
+                "target_model_bridge_on_source": target_fold.report["on_source"],
+                "target_model_bridge_on_target": target_fold.report["on_target"],
+                "mapped_on_target_model_source": _evaluate_pairwise_projection(
+                    target_source_dataset,
+                    direction=mapped_direction,
+                    pair_ids=_unique_pair_ids(target_source_dataset),
                 ),
-                "on_target": _evaluate_pairwise_projection(
-                    target_dataset,
-                    direction=direction,
-                    pair_ids=_unique_pair_ids(target_dataset),
+                "mapped_on_target_model_target": _evaluate_pairwise_projection(
+                    target_target_dataset,
+                    direction=mapped_direction,
+                    pair_ids=_unique_pair_ids(target_target_dataset),
+                ),
+                "leave_held_out_map_evaluation": _evaluate_pairwise_projection(
+                    leave_out_dataset,
+                    direction=leave_out_direction,
+                    pair_ids=held_out_pair_ids,
                 ),
             }
         )
-    return folds
+    return rows
+
+
+def _leave_held_out_mapped_direction(
+    *,
+    source_direction: np.ndarray,
+    aligned_source_activations: np.ndarray,
+    aligned_target_activations: np.ndarray,
+    aligned_pair_ids: np.ndarray,
+    held_out_pair_ids: set[str],
+    ridge_alpha: float,
+) -> np.ndarray:
+    train_mask = np.asarray(
+        [str(pair_id) not in held_out_pair_ids for pair_id in aligned_pair_ids],
+        dtype=bool,
+    )
+    if int(train_mask.sum()) < 2:
+        return np.zeros(aligned_target_activations.shape[1], dtype=np.float64)
+    return _ridge_mapped_direction(
+        source_activations=aligned_source_activations[train_mask],
+        target_activations=aligned_target_activations[train_mask],
+        source_direction=source_direction,
+        ridge_alpha=ridge_alpha,
+    )
 
 
 def _training_part(
@@ -1935,6 +2539,215 @@ def _bridge_direction_comparison_summary(
     }
 
 
+def _cross_model_bridge_transport_readiness(
+    *,
+    model_a_to_b: Sequence[Mapping[str, Any]],
+    model_b_to_a: Sequence[Mapping[str, Any]],
+    min_pairwise_accuracy: float,
+    min_margin: float,
+    min_mapped_direction_cosine: float,
+) -> dict[str, Any]:
+    gates = [
+        _gate("model_a_to_b_folds_present", float(len(model_a_to_b)), 1.0),
+        _gate("model_b_to_a_folds_present", float(len(model_b_to_a)), 1.0),
+        *_transport_readiness_gates(
+            "model_a_to_b",
+            model_a_to_b,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+            min_mapped_direction_cosine=min_mapped_direction_cosine,
+        ),
+        *_transport_readiness_gates(
+            "model_b_to_a",
+            model_b_to_a,
+            min_pairwise_accuracy=min_pairwise_accuracy,
+            min_margin=min_margin,
+            min_mapped_direction_cosine=min_mapped_direction_cosine,
+        ),
+    ]
+    ready = all(bool(gate["passed"]) for gate in gates)
+    return {
+        "status": "cross_model_bridge_transport_ready" if ready else "not_ready",
+        "ready": ready,
+        "gates": gates,
+    }
+
+
+def _transport_readiness_gates(
+    prefix: str,
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    min_pairwise_accuracy: float,
+    min_margin: float,
+    min_mapped_direction_cosine: float,
+) -> list[dict[str, Any]]:
+    source_evaluations = [
+        _mapping(row.get("mapped_on_target_model_source")) for row in rows
+    ]
+    target_evaluations = [
+        _mapping(row.get("mapped_on_target_model_target")) for row in rows
+    ]
+    leave_held_out_evaluations = [
+        _mapping(row.get("leave_held_out_map_evaluation")) for row in rows
+    ]
+    return [
+        _gate(
+            f"{prefix}_source_min_accuracy",
+            min(_fold_values(source_evaluations, "pairwise_accuracy"), default=0.0),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            f"{prefix}_source_min_margin",
+            min(_fold_values(source_evaluations, "min_margin"), default=0.0),
+            min_margin,
+        ),
+        _gate(
+            f"{prefix}_target_min_accuracy",
+            min(_fold_values(target_evaluations, "pairwise_accuracy"), default=0.0),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            f"{prefix}_target_min_margin",
+            min(_fold_values(target_evaluations, "min_margin"), default=0.0),
+            min_margin,
+        ),
+        _gate(
+            f"{prefix}_min_bridge_cosine",
+            min(
+                _fold_values(rows, "mapped_direction_cosine_to_target_bridge"),
+                default=0.0,
+            ),
+            min_mapped_direction_cosine,
+        ),
+        _gate(
+            f"{prefix}_leave_heldout_min_accuracy",
+            min(
+                _fold_values(leave_held_out_evaluations, "pairwise_accuracy"),
+                default=0.0,
+            ),
+            min_pairwise_accuracy,
+        ),
+        _gate(
+            f"{prefix}_leave_heldout_min_margin",
+            min(
+                _fold_values(leave_held_out_evaluations, "min_margin"),
+                default=0.0,
+            ),
+            min_margin,
+        ),
+        _gate(
+            f"{prefix}_leave_heldout_min_bridge_cosine",
+            min(
+                _fold_values(rows, "leave_held_out_map_cosine_to_target_bridge"),
+                default=0.0,
+            ),
+            min_mapped_direction_cosine,
+        ),
+    ]
+
+
+def _cross_model_bridge_transport_summary(
+    *,
+    readiness: Mapping[str, Any],
+    alignment: Mapping[str, Any],
+    model_a_to_b: Sequence[Mapping[str, Any]],
+    model_b_to_a: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "readiness": str(readiness.get("status", "not_ready")),
+        "ready_for_cross_model_bridge_transport_claims": bool(
+            readiness.get("ready", False)
+        ),
+        "linear_cka": float(alignment.get("linear_cka", 0.0)),
+        "mutual_knn_overlap": float(alignment.get("mutual_knn_overlap", 0.0)),
+        "model_a_to_b_direction_count": len(model_a_to_b),
+        "model_b_to_a_direction_count": len(model_b_to_a),
+        **_transport_direction_summary("model_a_to_b", model_a_to_b),
+        **_transport_direction_summary("model_b_to_a", model_b_to_a),
+        "failed_transported_direction_count": (
+            _failed_transport_direction_count(model_a_to_b)
+            + _failed_transport_direction_count(model_b_to_a)
+        ),
+    }
+
+
+def _transport_direction_summary(
+    prefix: str,
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    source_evaluations = [
+        _mapping(row.get("mapped_on_target_model_source")) for row in rows
+    ]
+    target_evaluations = [
+        _mapping(row.get("mapped_on_target_model_target")) for row in rows
+    ]
+    leave_held_out_evaluations = [
+        _mapping(row.get("leave_held_out_map_evaluation")) for row in rows
+    ]
+    return {
+        f"{prefix}_min_bridge_cosine": min(
+            _fold_values(rows, "mapped_direction_cosine_to_target_bridge"),
+            default=0.0,
+        ),
+        f"{prefix}_leave_heldout_min_bridge_cosine": min(
+            _fold_values(rows, "leave_held_out_map_cosine_to_target_bridge"),
+            default=0.0,
+        ),
+        f"{prefix}_source_min_accuracy": min(
+            _fold_values(source_evaluations, "pairwise_accuracy"),
+            default=0.0,
+        ),
+        f"{prefix}_source_min_margin": min(
+            _fold_values(source_evaluations, "min_margin"),
+            default=0.0,
+        ),
+        f"{prefix}_target_min_accuracy": min(
+            _fold_values(target_evaluations, "pairwise_accuracy"),
+            default=0.0,
+        ),
+        f"{prefix}_target_min_margin": min(
+            _fold_values(target_evaluations, "min_margin"),
+            default=0.0,
+        ),
+        f"{prefix}_leave_heldout_min_accuracy": min(
+            _fold_values(leave_held_out_evaluations, "pairwise_accuracy"),
+            default=0.0,
+        ),
+        f"{prefix}_leave_heldout_min_margin": min(
+            _fold_values(leave_held_out_evaluations, "min_margin"),
+            default=0.0,
+        ),
+        f"{prefix}_failed_direction_count": _failed_transport_direction_count(rows),
+    }
+
+
+def _failed_transport_direction_count(rows: Sequence[Mapping[str, Any]]) -> int:
+    return sum(
+        1
+        for row in rows
+        if int(
+            _mapping(row.get("mapped_on_target_model_source")).get(
+                "failed_pair_count",
+                0,
+            )
+        )
+        or int(
+            _mapping(row.get("mapped_on_target_model_target")).get(
+                "failed_pair_count",
+                0,
+            )
+        )
+        or int(
+            _mapping(row.get("leave_held_out_map_evaluation")).get(
+                "failed_pair_count",
+                0,
+            )
+        )
+        or float(row.get("mapped_direction_cosine_to_target_bridge", 0.0)) < 0.0
+        or float(row.get("leave_held_out_map_cosine_to_target_bridge", 0.0)) < 0.0
+    )
+
+
 def _exists_ready(rows: Sequence[Mapping[str, Any]]) -> float:
     return 1.0 if any(bool(row.get("ready", False)) for row in rows) else 0.0
 
@@ -2017,6 +2830,95 @@ def _direction_cosine(left: np.ndarray, right: np.ndarray) -> float:
     if left_norm <= _EPSILON or right_norm <= _EPSILON:
         return 0.0
     return float(np.dot(left, right) / (left_norm * right_norm))
+
+
+def _normalize_vector(vector: np.ndarray) -> np.ndarray:
+    norm = float(np.linalg.norm(vector))
+    if norm <= _EPSILON:
+        return np.zeros_like(vector, dtype=np.float64)
+    return np.asarray(vector, dtype=np.float64) / norm
+
+
+def _ridge_mapped_direction(
+    *,
+    source_activations: np.ndarray,
+    target_activations: np.ndarray,
+    source_direction: np.ndarray,
+    ridge_alpha: float,
+) -> np.ndarray:
+    source_centered = _center_columns(source_activations)
+    target_centered = _center_columns(target_activations)
+    kernel = source_centered @ source_centered.T
+    scale = max(
+        float(np.trace(kernel)) / max(1, source_centered.shape[1]),
+        _EPSILON,
+    )
+    penalty = float(ridge_alpha) * scale
+    system = kernel + penalty * np.eye(kernel.shape[0], dtype=np.float64)
+    rhs = source_centered @ source_direction
+    try:
+        coefficients = np.linalg.solve(system, rhs)
+    except np.linalg.LinAlgError:
+        coefficients = np.linalg.pinv(system) @ rhs
+    return _normalize_vector(coefficients @ target_centered)
+
+
+def _cross_model_alignment_metrics(
+    source: np.ndarray,
+    target: np.ndarray,
+    *,
+    knn_k: int,
+) -> dict[str, Any]:
+    effective_k = max(0, min(int(knn_k), source.shape[0] - 1))
+    return {
+        "linear_cka": round(_linear_cka(source, target), 6),
+        "mutual_knn_overlap": round(
+            _mutual_knn_overlap(source, target, knn_k=effective_k),
+            6,
+        ),
+        "effective_knn_k": effective_k,
+    }
+
+
+def _linear_cka(source: np.ndarray, target: np.ndarray) -> float:
+    source_centered = _center_columns(source)
+    target_centered = _center_columns(target)
+    source_gram = source_centered @ source_centered.T
+    target_gram = target_centered @ target_centered.T
+    source_energy = float(np.sum(source_gram**2))
+    target_energy = float(np.sum(target_gram**2))
+    denominator = np.sqrt(source_energy * target_energy)
+    if denominator <= _EPSILON:
+        return 0.0
+    return float(np.sum(source_gram * target_gram) / denominator)
+
+
+def _mutual_knn_overlap(source: np.ndarray, target: np.ndarray, *, knn_k: int) -> float:
+    if knn_k <= 0:
+        return 0.0
+    source_neighbors = _knn_indices(source, knn_k)
+    target_neighbors = _knn_indices(target, knn_k)
+    overlaps = [
+        len(set(source_row.tolist()) & set(target_row.tolist())) / knn_k
+        for source_row, target_row in zip(source_neighbors, target_neighbors, strict=True)
+    ]
+    return float(np.mean(overlaps)) if overlaps else 0.0
+
+
+def _knn_indices(matrix: np.ndarray, knn_k: int) -> np.ndarray:
+    normalized = _row_normalize(_center_columns(matrix))
+    similarity = np.asarray(normalized @ normalized.T, dtype=np.float64)
+    np.fill_diagonal(similarity, -np.inf)
+    return np.argsort(-similarity, axis=1)[:, :knn_k]
+
+
+def _row_normalize(matrix: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    return matrix / np.maximum(norms, _EPSILON)
+
+
+def _center_columns(matrix: np.ndarray) -> np.ndarray:
+    return matrix - np.mean(matrix, axis=0, keepdims=True)
 
 
 def _pair_bridge_subsets(
@@ -2606,6 +3508,103 @@ def _failed_bridge_direction_table(report: Mapping[str, Any]) -> list[str]:
         )
     if len(lines) == 2:
         return ["No failed constructed directions."]
+    return lines
+
+
+def _transport_bridge_direction_table(raw_rows: object) -> list[str]:
+    rows = [_mapping(row) for row in _sequence(raw_rows)]
+    lines = [
+        "| Fold | Cosine | Source acc | Source min margin | Target acc | Target min margin | Leave-held-out acc | Leave-held-out min margin | Failed pairs |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        source_eval = _mapping(row.get("mapped_on_target_model_source"))
+        target_eval = _mapping(row.get("mapped_on_target_model_target"))
+        leave_eval = _mapping(row.get("leave_held_out_map_evaluation"))
+        failed_pairs = (
+            int(source_eval.get("failed_pair_count", 0))
+            + int(target_eval.get("failed_pair_count", 0))
+            + int(leave_eval.get("failed_pair_count", 0))
+        )
+        lines.append(
+            "| "
+            f"`{row.get('fold_id', '')}` | "
+            f"{float(row.get('mapped_direction_cosine_to_target_bridge', 0.0)):+.3f} | "
+            f"{float(source_eval.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(source_eval.get('min_margin', 0.0)):+.3f} | "
+            f"{float(target_eval.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(target_eval.get('min_margin', 0.0)):+.3f} | "
+            f"{float(leave_eval.get('pairwise_accuracy', 0.0)):.3f} | "
+            f"{float(leave_eval.get('min_margin', 0.0)):+.3f} | "
+            f"{failed_pairs} |"
+        )
+    return lines
+
+
+def _failed_transport_bridge_direction_table(report: Mapping[str, Any]) -> list[str]:
+    inputs = _mapping(report.get("inputs"))
+    min_pairwise_accuracy = float(inputs.get("min_pairwise_accuracy", 1.0))
+    min_margin = float(inputs.get("min_margin", 0.0))
+    min_mapped_direction_cosine = float(
+        inputs.get("min_mapped_direction_cosine", 0.0)
+    )
+    lines = [
+        "| Direction | Reason | Source accuracy/min margin | Target accuracy/min margin | Leave-held-out accuracy/min margin | Cosine |",
+        "| --- | --- | ---: | ---: | ---: | ---: |",
+    ]
+    for direction_name, raw_rows in (
+        ("model_a_to_b", report.get("model_a_to_b_transport")),
+        ("model_b_to_a", report.get("model_b_to_a_transport")),
+    ):
+        for row in (_mapping(item) for item in _sequence(raw_rows)):
+            source_eval = _mapping(row.get("mapped_on_target_model_source"))
+            target_eval = _mapping(row.get("mapped_on_target_model_target"))
+            leave_eval = _mapping(row.get("leave_held_out_map_evaluation"))
+            reasons: list[str] = []
+            if _evaluation_failed(
+                source_eval,
+                min_pairwise_accuracy=min_pairwise_accuracy,
+                min_margin=min_margin,
+            ):
+                reasons.append("source_eval")
+            if _evaluation_failed(
+                target_eval,
+                min_pairwise_accuracy=min_pairwise_accuracy,
+                min_margin=min_margin,
+            ):
+                reasons.append("target_eval")
+            if _evaluation_failed(
+                leave_eval,
+                min_pairwise_accuracy=min_pairwise_accuracy,
+                min_margin=min_margin,
+            ):
+                reasons.append("leave_held_out_map")
+            if (
+                float(row.get("mapped_direction_cosine_to_target_bridge", 0.0))
+                < min_mapped_direction_cosine
+            ):
+                reasons.append("bridge_cosine")
+            if (
+                float(row.get("leave_held_out_map_cosine_to_target_bridge", 0.0))
+                < min_mapped_direction_cosine
+            ):
+                reasons.append("leave_held_out_bridge_cosine")
+            if not reasons:
+                continue
+            lines.append(
+                "| "
+                f"`{direction_name}:{row.get('fold_id', '')}` | "
+                f"`{', '.join(reasons)}` | "
+                f"{float(source_eval.get('pairwise_accuracy', 0.0)):.3f}/"
+                f"{float(source_eval.get('min_margin', 0.0)):+.3f} | "
+                f"{float(target_eval.get('pairwise_accuracy', 0.0)):.3f}/"
+                f"{float(target_eval.get('min_margin', 0.0)):+.3f} | "
+                f"{float(leave_eval.get('pairwise_accuracy', 0.0)):.3f}/"
+                f"{float(leave_eval.get('min_margin', 0.0)):+.3f} | "
+                f"{float(row.get('mapped_direction_cosine_to_target_bridge', 0.0)):+.3f} |"
+            )
+    if len(lines) == 2:
+        return ["No failed transported directions."]
     return lines
 
 
