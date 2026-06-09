@@ -82,11 +82,29 @@ all four model spaces, and positive-side path/neutral replacements strengthen
 it. Its failures concentrate instead in constructed bridge directions,
 especially when pseudo-side warmth shortcuts are removed or neutralized while
 approval/privacy/alignment taxes remain. The active bottleneck is now a
-bridge-stability audit that separates source+target pockets,
-bridge-sufficiency pockets, and content/availability failures.
+bridge-stability repair that separates source+target pockets,
+bridge-sufficiency pockets, and content/availability failures. The first
+bridge-stability summary localizes the dissent failures: all `39` constructed
+failure rows are `target_bridge` failures, with
+`negative_shortcuts_neutralized` as the most failed fresh-source perturbation.
+The next experiment should add pseudo-side shortcut-neutralized target/control
+bridge rows and test whether constructed target bridges recover without
+breaking source/control and fresh hand-control margins.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-bridge-stability-audit.md`: added a post-hoc
+  bridge-stability summarizer over constructed bridge diagnostics. On the
+  dissent perturbation ladder, the report finds `39` constructed failure rows
+  across four model reports, and all `39` are `target_bridge` failures. The
+  most failed fresh-source perturbation is `negative_shortcuts_neutralized`;
+  the worst cluster is SmolLM2 target bridges on that perturbation with minimum
+  margin `-18.296`. SmolLM2 has `22` constructed fresh-source failures,
+  Qwen2.5-0.5B has `11` plus two thin fresh-control failures, Qwen2.5-7B has
+  `4`, and TinyLlama passes constructed bridge fresh slices with thin positive
+  margins. This turns the dissent residual into a targetable bridge repair:
+  add pseudo-side shortcut-neutralized target/control bridge rows and rerun the
+  constructed bridge gate.
 - `docs/research/2026-06-09-dissent-perturbation-ladder.md`: added a
   deterministic perturbation exporter for the clean `dissent_after_mistake`
   residual. Scoped availability passes (`60/60`, minimum margin `+0.310`) and
