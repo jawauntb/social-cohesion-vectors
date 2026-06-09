@@ -60,10 +60,26 @@ source+target direction already separates all four mini-control pairs in both
 models, and every mini-control pair is `not_hard_residual` under pair geometry.
 The active residual is therefore not broad accountability/procedural-justice
 failure; it is a narrower generated-style or generated-provenance activation
-pocket around the hard fresh `accountability_after_harm` pair.
+pocket around the hard fresh `accountability_after_harm` pair. A
+source-style intervention now shows the pocket is even narrower: SmolLM2 and
+Qwen2.5-0.5B invert the recovered generated reference while separating all five
+clean hand-authored style variants, including a generated-like paragraph;
+Qwen2.5-7B separates both the generated reference and the clean variants.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-accountability-style-intervention-audit.md`:
+  added a source-style intervention exporter and live three-model diagnostic
+  around the hard generated `accountability_after_harm` residual. The
+  hand-authored subset clears text gates with availability `30/30`, cue-solved
+  pairs `0/5`, cue-tied pairs `5/5`, and term/length best single-feature
+  accuracy `0.500`. SmolLM2 and Qwen2.5-0.5B fail only the generated reference:
+  SmolLM2 pair geometry is generated reference `-9.761/-0.270/+67.524/-7.710`
+  for original/full/fresh-only/leave-focus-out, while all five clean style
+  variants are strongly positive; Qwen0.5B shows the same pattern with thinner
+  margins. Qwen7B is positive on the generated reference and all variants. The
+  residual now looks like a small-model generated-reference off-manifold pocket,
+  not accountability content or source format in general.
 - `docs/research/2026-06-09-accountability-mini-control-audit.md`: added a
   strict non-generated accountability mini-control with four hand-authored
   source formats. It clears scoped pre-activation gates: availability `28/28`,
@@ -320,16 +336,14 @@ human-facing gates are separately validated.
 
 ## Active Objective
 
-Run a source-style intervention for the hard generated accountability residual.
+Consolidate the generated-reference-only accountability residual.
 
-The next operation should preserve the hard generated
-`accountability_after_harm` residual as the source artifact, then create a
-small source-style intervention set that keeps the same procedural paths and
-pseudo-side taxes while varying only source format/provenance. The intervention
-should include hand-authored case-note, meeting-minute, policy-review,
-incident-log, and generated-like paragraph variants. It should then extract
-SmolLM2 and Qwen7B activations and test whether the inversion follows semantic
-content, source style, or generated-like phrasing.
+The next operation should either replicate the source-style intervention on a
+third architecture outside the Qwen/Smol pair, or build a minimal perturbation
+ladder over the recovered generated reference. The perturbation ladder should
+remove or isolate lexical warmth, opening address, length, consensus language,
+and generated paragraph texture one factor at a time while preserving the same
+procedural paths and pseudo-side taxes.
 
 It must still preserve:
 
@@ -340,7 +354,7 @@ It must still preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with generated-style residual transport as the active gate;
+  exist, with generated-reference residual transport as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -354,9 +368,9 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- a source-style intervention that explains whether the hard generated
-  accountability residual follows procedural content, source format, or
-  generated-like phrasing;
+- a cross-architecture replication or minimal-perturbation result explaining
+  why the recovered generated accountability reference, and not clean matched
+  accountability variants, lands off-manifold in small-model spaces;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -438,9 +452,14 @@ Implementation should probably follow existing audit patterns:
    accountability/procedural-justice content itself passes in SmolLM2 and
    Qwen7B, so the hard generated residual should be investigated through a
    source-style/provenance intervention.
-18. Rerun SmolLM2 generated/control direction transfer before adding more model
+18. Use the source-style intervention as the current provenance baseline:
+   SmolLM2 and Qwen0.5B fail only the generated reference, while Qwen7B passes
+   both the generated reference and all clean variants.
+19. Prefer either a non-Qwen/non-Smol architecture replication or a minimal
+   perturbation ladder over another broad generation sweep.
+20. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-19. Keep human validation parked until generated, non-generated, cross-setting,
+21. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
