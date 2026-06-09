@@ -56,6 +56,14 @@ than cross-model alignment or procedural-control transfer.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-fresh-generated-residual-diagnostic.md`: added a
+  residual diagnostic over the fresh repair-v2 failures. SmolLM2 has three
+  failing fresh pairs: `accountability_after_harm`, `belonging_norms`, and
+  `dissent_after_mistake`. Two are clean activation residuals under this
+  diagnostic because they have positive practical-availability margins and
+  strong same-base original source margins in SmolLM2. `belonging_norms` is
+  mixed and should be repaired or withheld because its fresh pair has negative
+  practical availability. Qwen7B has no residual on the same fresh slice.
 - `docs/research/2026-06-09-activation-manifest-recovery-diagnostic.md`:
   recovered pair manifests from activation NPZ payloads to unblock the
   fresh-generated bridge diagnostic after `/tmp` generation artifacts had been
