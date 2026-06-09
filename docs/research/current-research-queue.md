@@ -75,12 +75,30 @@ ladder's TinyLlama `+0.071` to `+0.800`. Under the original source+target
 direction, neutral opening-frame replacement flips SmolLM2 and Qwen2.5-0.5B
 positive; TinyLlama remains negative under all strict single edits but moves
 closest to zero when pseudo-side shortcuts are neutralized. The active next
-gate is a second-residual strict perturbation ladder, preferably the clean
-`dissent_after_mistake` residual, to test whether the pocket is
-accountability-specific or generated-provenance-general.
+gate was a second-residual strict perturbation ladder. That dissent ladder now
+rejects the simple same-pocket hypothesis: the unchanged `dissent_after_mistake`
+generated reference is already positive under broad source+target directions in
+all four model spaces, and positive-side path/neutral replacements strengthen
+it. Its failures concentrate instead in constructed bridge directions,
+especially when pseudo-side warmth shortcuts are removed or neutralized while
+approval/privacy/alignment taxes remain. The active bottleneck is now a
+bridge-stability audit that separates source+target pockets,
+bridge-sufficiency pockets, and content/availability failures.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-09-dissent-perturbation-ladder.md`: added a
+  deterministic perturbation exporter for the clean `dissent_after_mistake`
+  residual. Scoped availability passes (`60/60`, minimum margin `+0.310`) and
+  lexical leakage is milder than accountability (`6/12` cue-solved, `4/12`
+  tied). The unchanged dissent reference is already positive under the broad
+  source+target direction in SmolLM2 (`+6.358`), Qwen2.5-0.5B (`+0.922`),
+  Qwen2.5-7B (`+8.219`), and TinyLlama (`+0.935`), rejecting a simple
+  replication of the accountability pocket. Full perturbation augmentation and
+  leave-one-out pass in all four spaces, but constructed bridge diagnostics
+  reveal a different residual: SmolLM2, Qwen2.5-0.5B, and Qwen2.5-7B target
+  bridges fail mainly on pseudo-side warmth removal/neutralization, while
+  TinyLlama constructed bridge slices pass with thin positive margins.
 - `docs/research/2026-06-09-strict-accountability-perturbation-ladder.md`:
   expanded the generated-reference perturbation exporter to
   `accountability_reference_perturbation_v2` with twelve variants, including
