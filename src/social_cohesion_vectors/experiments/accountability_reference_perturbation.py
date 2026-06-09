@@ -19,7 +19,7 @@ from social_cohesion_vectors.experiments.accountability_style_intervention impor
 from social_cohesion_vectors.schemas import PairwiseExample
 
 ACCOUNTABILITY_REFERENCE_PERTURBATION_VERSION = (
-    "accountability_reference_perturbation_v1"
+    "accountability_reference_perturbation_v2"
 )
 
 
@@ -206,6 +206,56 @@ def _remove_positive_first_sentence(
     return " ".join(sentences[1:]).strip() if len(sentences) > 1 else positive_text, negative_text
 
 
+def _remove_positive_framing_keep_address(
+    positive_text: str,
+    negative_text: str,
+) -> tuple[str, str]:
+    sentences = _sentences(positive_text)
+    if not sentences:
+        return positive_text, negative_text
+    return " ".join(["All neighbors.", *sentences[1:]]).strip(), negative_text
+
+
+def _replace_positive_framing_neutral(
+    positive_text: str,
+    negative_text: str,
+) -> tuple[str, str]:
+    return _replace_first_sentence(
+        positive_text,
+        "Procedure notice: accountability review steps are listed below.",
+    ), negative_text
+
+
+def _remove_positive_first_sentence_neutral_padding(
+    positive_text: str,
+    negative_text: str,
+) -> tuple[str, str]:
+    positive_text, negative_text = _remove_positive_first_sentence(
+        positive_text,
+        negative_text,
+    )
+    return (
+        _append_sentence(
+            positive_text,
+            "This notice records the review procedure for the case.",
+        ),
+        negative_text,
+    )
+
+
+def _replace_positive_framing_length_control(
+    positive_text: str,
+    negative_text: str,
+) -> tuple[str, str]:
+    return _replace_first_sentence(
+        positive_text,
+        (
+            "All neighbors, this notice records accountability review steps for "
+            "the current case."
+        ),
+    ), negative_text
+
+
 def _neutralize_positive_warmth(
     positive_text: str,
     negative_text: str,
@@ -255,6 +305,26 @@ def _add_negative_conditions(
     )
 
 
+def _neutralize_negative_shortcuts(
+    positive_text: str,
+    negative_text: str,
+) -> tuple[str, str]:
+    replacements = {
+        r"To maintain our neighborhood's trust and harmony, ": "",
+        r"without fear of punishment or shaming": (
+            "after proof, approval, private review, and alignment"
+        ),
+        r"ensuring all voices are heard fairly and respectfully": (
+            "while proof and approval conditions remain"
+        ),
+        r"While these measures protect us, ": "",
+    }
+    text = negative_text
+    for pattern, replacement in replacements.items():
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return positive_text, text
+
+
 def _combined_refusal_conditions(
     positive_text: str,
     negative_text: str,
@@ -270,6 +340,13 @@ def _combined_refusal_conditions(
 def _append_sentence(text: str, sentence: str) -> str:
     stripped = text.strip()
     return f"{stripped} {sentence}" if stripped else sentence
+
+
+def _replace_first_sentence(text: str, replacement: str) -> str:
+    sentences = _sentences(text)
+    if not sentences:
+        return text
+    return " ".join([replacement, *sentences[1:]]).strip()
 
 
 def _sentences(text: str) -> list[str]:
@@ -307,6 +384,35 @@ ACCOUNTABILITY_PERTURBATION_SPECS: tuple[AccountabilityPerturbationSpec, ...] = 
         transform=_remove_positive_first_sentence,
     ),
     AccountabilityPerturbationSpec(
+        perturbation_id="positive_framing_removed_address_kept",
+        description=(
+            "Remove the positive-side community-strength framing while keeping "
+            "a minimal address."
+        ),
+        transform=_remove_positive_framing_keep_address,
+    ),
+    AccountabilityPerturbationSpec(
+        perturbation_id="positive_framing_neutral_replacement",
+        description="Replace the first positive-side sentence with neutral procedure framing.",
+        transform=_replace_positive_framing_neutral,
+    ),
+    AccountabilityPerturbationSpec(
+        perturbation_id="positive_first_sentence_removed_neutral_padding",
+        description=(
+            "Remove the first positive-side sentence, then add neutral padding "
+            "to control for text shortening."
+        ),
+        transform=_remove_positive_first_sentence_neutral_padding,
+    ),
+    AccountabilityPerturbationSpec(
+        perturbation_id="positive_framing_length_control",
+        description=(
+            "Replace the first positive-side sentence with a similarly scoped "
+            "neutral procedural sentence."
+        ),
+        transform=_replace_positive_framing_length_control,
+    ),
+    AccountabilityPerturbationSpec(
         perturbation_id="positive_warmth_neutralized",
         description="Neutralize positive-side warmth/prosocial lexical cues.",
         transform=_neutralize_positive_warmth,
@@ -320,6 +426,14 @@ ACCOUNTABILITY_PERTURBATION_SPECS: tuple[AccountabilityPerturbationSpec, ...] = 
         perturbation_id="negative_conditions_explicit",
         description="Add explicit pseudo-side proof, approval, privacy, and alignment conditions.",
         transform=_add_negative_conditions,
+    ),
+    AccountabilityPerturbationSpec(
+        perturbation_id="negative_shortcuts_neutralized",
+        description=(
+            "Neutralize pseudo-side warmth and shortcut phrases while preserving "
+            "conditions."
+        ),
+        transform=_neutralize_negative_shortcuts,
     ),
     AccountabilityPerturbationSpec(
         perturbation_id="combined_refusal_conditions",
