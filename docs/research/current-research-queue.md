@@ -21,7 +21,8 @@ extraction, same-family model replication for the generated-text benchmark, the
 first small non-generated control benchmark, a first expansion of that control,
 basic out-of-family separability, source-family bridge robustness, pair-count
 bridge robustness, first-pass bridge-set diagnosis, or intentional six-pair
-bridge-set sufficiency. The newest four-source
+bridge-set sufficiency, or same-model constructed bridge direction comparison.
+The newest four-source
 generated benchmark reaches `bundle_ready` with zero audit warnings and
 activation metadata transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The
 expanded hand-authored procedural-justice control reaches
@@ -40,13 +41,24 @@ all-eight future-option coverage is not sufficient by itself: the exact
 target/control five-pair failures can already cover every future-option path.
 An intentional six-pair bridge-set constructor now passes by covering
 procedural paths, non-held-out source families, and case/fault families. The
-active bottleneck is now constructed-bridge direction transfer: source-only
-directions remain domain-specific, bridge directions work, and the next
-question is whether the constructed six-pair bridge directions behave like the
-full joint direction across comparable model settings.
+constructed six-pair bridge directions now also separate both full SmolLM2
+benchmarks and align positively with the full joint direction. The active
+bottleneck is now cross-model constructed-bridge transport: source-only
+directions remain domain-specific, same-model bridge directions work, and the
+next question is whether constructed bridge directions transport across
+comparable Qwen7B and SmolLM2 settings.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-bridge-direction-comparison.md`: constructed
+  six-pair bridge directions now pass the broader SmolLM2 same-model
+  comparison. Source-only transfer still fails, with source-on-control accuracy
+  `0.750` and target-on-generated accuracy `0.950`, so the check is not
+  trivial. The full joint direction separates both benchmarks with minimum
+  margins `+21.173` and `+50.555`. All eight constructed bridge directions
+  separate both full benchmarks; their minimum joint cosine is `+0.756`, source
+  minimum margin is `+11.090`, target minimum margin is `+12.044`, and there
+  are zero failed constructed directions.
 - `docs/research/2026-06-08-bridge-set-sufficiency-audit.md`: an intentional
   six-pair bridge-set constructor now passes on SmolLM2 layer `-2`. It greedily
   maximizes new `slack_options_tested` paths plus `source` and
@@ -209,19 +221,17 @@ Activation extraction, lexical controls, same-family model replication, the
 first non-generated control, its first source expansion, the first Qwen7B
 generated/control direction-transfer check, and basic out-of-family separability
 are no longer blocked. However, activation results remain text-benchmark claims
-until constructed bridge-set directions are compared against the broader
-generated/control direction-transfer baselines and human-facing gates are
-separately validated.
+until constructed bridge-set directions transport across comparable model
+settings and human-facing gates are separately validated.
 
 ## Active Objective
 
-Compare constructed bridge-set directions.
+Test cross-model constructed bridge transport.
 
-The next operation should use the intentional six-pair bridge sets as the active
-bridge baseline, compare their directions against full-domain joint directions
-and source-only transfer reports, and test whether the constructed bridge-set
-direction preserves generated/control transfer across comparable accepted model
-settings. It must still preserve:
+The next operation should run constructed bridge direction comparison on
+comparable accepted Qwen7B layers, then compare Qwen7B and SmolLM2 constructed
+bridge directions with the existing same-prompt alignment and mapped-transfer
+machinery. It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -230,7 +240,7 @@ settings. It must still preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with constructed bridge-set direction transfer as the active gate;
+  exist, with cross-model constructed bridge transport as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -244,7 +254,7 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- an out-of-family constructed bridge-set direction-transfer pass;
+- a cross-model constructed bridge direction-transfer pass;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -271,6 +281,7 @@ Implementation should probably follow existing audit patterns:
 - `scripts/run_minimal_bridge_direction_audit.py`
 - `scripts/run_pair_bridge_direction_audit.py`
 - `scripts/run_bridge_set_sufficiency_audit.py`
+- `scripts/run_bridge_direction_comparison.py`
 - `tests/test_heldout_domain_direction_audit.py`
 
 ## Next Sequence
@@ -299,15 +310,19 @@ Implementation should probably follow existing audit patterns:
 10. Use the intentional six-pair bridge-set sufficiency audit as the current
    constructed bridge baseline: both generated/source and control/target pass
    with path-complete folds `4/4` and zero failures.
-11. Compare constructed bridge-set directions against full joint directions and
-   source-only transfer reports on SmolLM2 and comparable Qwen7B layers.
-12. Target the current residuals: generated `privacy_bypass::data_choice`,
+11. Use the SmolLM2 bridge direction comparison as the current same-model
+   constructed-direction baseline: all constructed directions separate both
+   full benchmarks with minimum joint cosine `+0.756`.
+12. Run constructed bridge direction comparison on comparable accepted Qwen7B
+   layers, then compare Qwen7B/SmolLM2 constructed bridge directions with
+   same-prompt alignment and mapped transfer.
+13. Target the current residuals: generated `privacy_bypass::data_choice`,
    generated cross-fault `deliberative_speed` and `fair_allocation`, and the
    control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
    fail under the generated direction.
-13. Rerun SmolLM2 generated/control direction transfer before adding more model
+14. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-14. Keep human validation parked until generated, non-generated, cross-setting,
+15. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates

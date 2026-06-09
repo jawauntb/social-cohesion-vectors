@@ -9,10 +9,12 @@ import numpy as np
 
 from social_cohesion_vectors.datasets import write_jsonl
 from social_cohesion_vectors.experiments.heldout_domain_direction_audit import (
+    render_bridge_direction_comparison_markdown,
     render_bridge_set_sufficiency_audit_markdown,
     render_heldout_domain_direction_audit_markdown,
     render_minimal_bridge_direction_audit_markdown,
     render_pair_bridge_direction_audit_markdown,
+    run_bridge_direction_comparison_from_files,
     run_bridge_set_sufficiency_audit_from_files,
     run_heldout_domain_direction_audit_from_files,
     run_minimal_bridge_direction_audit_from_files,
@@ -284,6 +286,71 @@ def test_bridge_set_sufficiency_audit_cli_writes_report(
     assert "bridge-set sufficiency audit" in captured.out
     loaded = json.loads(json_output.read_text(encoding="utf-8"))
     assert loaded["summary"]["ready_for_bridge_set_claims"] is True
+    assert markdown_output.exists()
+
+
+def test_bridge_direction_comparison_scores_constructed_directions(
+    tmp_path: Path,
+) -> None:
+    paths = _write_fixture(tmp_path)
+
+    report = run_bridge_direction_comparison_from_files(
+        source_activation_npz=paths["source_activation"],
+        source_pairs_path=paths["source_pairs"],
+        target_activation_npz=paths["target_activation"],
+        target_pairs_path=paths["target_pairs"],
+        source_name="generated",
+        target_name="control",
+        bridge_pair_count=1,
+    )
+    markdown = render_bridge_direction_comparison_markdown(report)
+
+    assert report["summary"]["ready_for_constructed_bridge_direction_claims"] is True
+    assert report["summary"]["constructed_direction_count"] == 4
+    assert report["summary"]["constructed_source_min_accuracy"] == 1.0
+    assert report["summary"]["constructed_target_min_accuracy"] == 1.0
+    assert report["summary"]["constructed_min_joint_cosine"] > 0.0
+    assert "Bridge Direction Comparison" in markdown
+    assert "No failed constructed directions." in markdown
+
+
+def test_bridge_direction_comparison_cli_writes_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    script = _load_script("run_bridge_direction_comparison.py")
+    paths = _write_fixture(tmp_path)
+    json_output = tmp_path / "bridge_direction.json"
+    markdown_output = tmp_path / "bridge_direction.md"
+
+    exit_code = script.main(
+        [
+            "--source-activation-npz",
+            str(paths["source_activation"]),
+            "--source-pairs",
+            str(paths["source_pairs"]),
+            "--target-activation-npz",
+            str(paths["target_activation"]),
+            "--target-pairs",
+            str(paths["target_pairs"]),
+            "--source-name",
+            "generated",
+            "--target-name",
+            "control",
+            "--bridge-pair-count",
+            "1",
+            "--json-output",
+            str(json_output),
+            "--markdown-output",
+            str(markdown_output),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "bridge direction comparison" in captured.out
+    loaded = json.loads(json_output.read_text(encoding="utf-8"))
+    assert loaded["summary"]["ready_for_constructed_bridge_direction_claims"] is True
     assert markdown_output.exists()
 
 
