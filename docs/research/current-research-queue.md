@@ -20,9 +20,9 @@ source-held-out lexical leakage, fault-class lexical leakage, activation
 extraction, same-family model replication for the generated-text benchmark, the
 first small non-generated control benchmark, a first expansion of that control,
 basic out-of-family separability, source-family bridge robustness, pair-count
-bridge robustness, first-pass bridge-set diagnosis, or intentional six-pair
-bridge-set sufficiency, or same-model constructed bridge direction comparison.
-The newest four-source
+bridge robustness, first-pass bridge-set diagnosis, intentional six-pair
+bridge-set sufficiency, same-model constructed bridge direction comparison, or
+first-pass cross-model fresh-control transport. The newest four-source
 generated benchmark reaches `bundle_ready` with zero audit warnings and
 activation metadata transfer accepted on both Qwen2.5-0.5B and Qwen2.5-7B. The
 expanded hand-authored procedural-justice control reaches
@@ -44,14 +44,25 @@ procedural paths, non-held-out source families, and case/fault families. The
 constructed six-pair bridge directions now also separate both full SmolLM2
 benchmarks and align positively with the full joint direction. Cross-model
 constructed-bridge transport now passes bidirectionally between Qwen7B and
-SmolLM2 with held-out pair groups excluded from each fold's alignment map. The
-active bottleneck is now fresh-prompt bridge transport: constructed bridge
-directions work within the current prompt family and across two model spaces,
-but the next question is whether mapped bridge directions preserve sign on
-generated/control prompts absent from the alignment-map training rows.
+SmolLM2 with held-out pair groups excluded from each fold's alignment map.
+Fresh hand-authored procedural-justice control prompts also transport in both
+directions. The active bottleneck is now fresh-generated bridge transport
+asymmetry: Qwen7B-to-SmolLM2 mapped bridge directions fail on fresh generated
+repair-v2 prompts, while SmolLM2-to-Qwen7B separates the same fresh generated
+prompts with a thin positive margin.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-08-fresh-prompt-bridge-transport.md`: the
+  cross-model bridge transport audit now supports fresh source and fresh target
+  prompt slices withheld from alignment-map training rows. Same-prompt source,
+  target, and leave-held-out map checks still pass bidirectionally, and fresh
+  hand-authored control-v1 prompts pass in both directions. The fresh generated
+  repair-v2 source slice is withheld: Qwen7B -> SmolLM2 reaches only
+  `0.700` fresh-source accuracy with minimum margin `-11.273`, while
+  SmolLM2 -> Qwen7B reaches `1.000` fresh-source accuracy with a thin minimum
+  margin `+0.178`. Failures concentrate on `accountability_after_harm`,
+  `belonging_norms`, and `dissent_after_mistake`.
 - `docs/research/2026-06-08-cross-model-bridge-transport.md`: Qwen7B layer `-2`
   constructed bridge directions pass the same-model comparison with minimum
   joint cosine `+0.794`, source minimum margin `+5.176`, target minimum margin
@@ -230,20 +241,27 @@ Recent accepted findings:
 
 Activation extraction, lexical controls, same-family model replication, the
 first non-generated control, its first source expansion, the first Qwen7B
-generated/control direction-transfer check, and basic out-of-family separability
-are no longer blocked. However, activation results remain text-benchmark claims
-until mapped bridge directions preserve sign on fresh prompts that were absent
-from alignment-map fitting and human-facing gates are separately validated.
+generated/control direction-transfer check, basic out-of-family separability,
+same-prompt cross-model bridge transport, and fresh-control transport are no
+longer blocked. However, activation results remain text-benchmark claims until
+fresh-generated bridge transport is repaired or explicitly bounded, and
+human-facing gates are separately validated.
 
 ## Active Objective
 
-Test fresh-prompt bridge transport.
+Diagnose and repair fresh-generated bridge transport asymmetry.
 
-The next operation should add a small fresh generated/control prompt slice that
-preserves the same procedural-justice paths, fit Qwen7B/SmolLM2 alignment maps
-without those prompts, and evaluate whether the existing constructed bridge
-directions preserve signed positive margins on the fresh slice. It must still
-preserve:
+The next operation should compare source-only, fresh-source-only, joint
+source+fresh-source, and constructed-bridge directions inside Qwen7B and
+SmolLM2, while keeping the fresh control-v1 slice as the negative control that
+should remain transport-ready. The diagnostic should focus on the fresh
+generated failures:
+
+- `accountability_after_harm`;
+- `belonging_norms`;
+- `dissent_after_mistake`.
+
+It must still preserve:
 
 - practical availability for all tested future-option paths;
 - score and slack separation;
@@ -252,7 +270,7 @@ preserve:
   threshold;
 - activation metadata transfer readiness at a held-out metadata level;
 - generated/control direction-transfer checks where comparable accepted layers
-  exist, with fresh-prompt bridge transport as the active gate;
+  exist, with fresh-generated bridge transport as the active gate;
 - explicit generated-text and cross-setting claim boundaries.
 
 ## Definition Of Done
@@ -266,7 +284,9 @@ generated benchmark and non-generated control with:
   metadata transfer gates still passing;
 - source and fault-class `lexical_only` warnings cleared;
 - no loss of all-eight-path coverage;
-- a fresh-prompt constructed bridge direction-transfer pass;
+- a fresh-generated constructed bridge direction-transfer pass, or a narrower
+  documented boundary explaining why the fresh generated repair-v2 slice is
+  not eligible as transport evidence;
 - generated/control direction-transfer readiness for any model setting where
   comparable source-only or held-out-domain layers exist;
 - a dated research note interpreting accepted, rejected, and caveated
@@ -329,15 +349,21 @@ Implementation should probably follow existing audit patterns:
 12. Use Qwen7B/SmolLM2 cross-model bridge transport as the current mapped
    bridge baseline: bidirectional mapped directions pass full generated/control
    evaluation and leave-held-out map evaluation with zero failures.
-13. Add a fresh generated/control prompt slice withheld from alignment-map
-   fitting, then test mapped bridge directions on that fresh slice.
-14. Target the current residuals: generated `privacy_bypass::data_choice`,
-   generated cross-fault `deliberative_speed` and `fair_allocation`, and the
-   control `privacy_exit`, `appeal_and_evidence`, and `harm_repair` rows that
-   fail under the generated direction.
-15. Rerun SmolLM2 generated/control direction transfer before adding more model
+13. Use the fresh-prompt bridge transport report as the current withheld
+   fresh-generated baseline: fresh control transport passes, but
+   Qwen7B -> SmolLM2 fresh generated transport fails at `0.700` accuracy.
+14. Diagnose the fresh-generated asymmetry with source-only,
+   fresh-source-only, joint source+fresh-source, and constructed-bridge
+   directions before adding more model families.
+15. Target the current residuals: fresh generated `accountability_after_harm`,
+   `belonging_norms`, and `dissent_after_mistake`; generated
+   `privacy_bypass::data_choice`; generated cross-fault `deliberative_speed`
+   and `fair_allocation`; and the control `privacy_exit`,
+   `appeal_and_evidence`, and `harm_repair` rows that fail under the generated
+   direction.
+16. Rerun SmolLM2 generated/control direction transfer before adding more model
    families.
-16. Keep human validation parked until generated, non-generated, cross-setting,
+17. Keep human validation parked until generated, non-generated, cross-setting,
    and out-of-family gates agree.
 
 ## Decision Gates
