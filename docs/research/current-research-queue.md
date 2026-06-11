@@ -110,11 +110,24 @@ Qwen2.5-0.5B, and TinyLlama; only Qwen2.5-7B passes. The current paper frame
 is therefore a residual taxonomy: accountability is a generated-reference
 source-pocket repaired by local perturbation augmentation, while dissent is a
 constructed target-bridge geometry pocket repaired by weighted target bridge
-construction. The next move is a paper scaffold plus one final side-by-side
-repair comparison table.
+construction. A shareable NeurIPS-style working draft and final side-by-side
+repair comparison table now capture that claim boundary. The active bottleneck
+is no longer another broad generation sweep; it is publication-readiness:
+regeneration manifests, one narrow robustness check if needed, and paper
+conversion with formal related work and figures.
 
 Recent accepted findings:
 
+- `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md` and
+  `docs/research/2026-06-11-residual-taxonomy-repair-comparison.md`: consolidate
+  the latest residual loop into a shareable paper scaffold and side-by-side
+  repair table. The supported claim is narrow: `accountability_after_harm` is a
+  generated-reference/source-pocket residual repaired by strict perturbation
+  augmentation, while `dissent_after_mistake` is a constructed target-bridge
+  geometry residual repaired by asymmetric target-bridge weighting. The same
+  weighted bridge move is rejected as a universal repair by the strict
+  accountability negative control (`147` weighted failure rows, three failing
+  model spaces).
 - `docs/research/2026-06-11-weighted-bridge-preservation-audit.md`: added a
   bridge-preservation summarizer and ran preservation plus negative-control
   diagnostics for the weighted target-bridge repair. The dissent weighted
@@ -480,135 +493,65 @@ human-facing gates are separately validated.
 
 ## Active Objective
 
-Tighten the generated-reference perturbation mechanism.
+Move the residual-taxonomy result from working draft to reproducible paper
+package.
 
-The next operation should split the informative first-positive-sentence effect
-into address-only, community-strength framing, and length-matched edits. It
-should also add a second generated residual from a different fault class to test
-whether the mechanism is accountability-specific or a more general
-generated-provenance effect.
+The next operation should not be another broad generation sweep. It should
+make the current claim easier to audit by mapping every table in
+`docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md` to a committed
+script, external artifact path, and expected metric. If one more experiment is
+needed before external review, keep it narrow: either a layer/model robustness
+check for the accepted weighted dissent bridge repair or a fixed-availability
+third residual used only as a stress test.
 
-It must still preserve:
+It must preserve:
 
-- practical availability for all tested future-option paths;
-- score and slack separation;
-- source diversity without exact or near duplicates;
-- source and fault-class `lexical_only` held-out accuracy below the warning
-  threshold;
-- activation metadata transfer readiness at a held-out metadata level;
-- generated/control direction-transfer checks where comparable accepted layers
-  exist, with generated-reference residual transport as the active gate;
-- explicit generated-text and cross-setting claim boundaries.
+- practical-availability, lexical, source-diversity, control, and transport
+  gates already accepted for the benchmark and controls;
+- the accepted strict accountability perturbation margins;
+- the accepted weighted dissent bridge and preservation margins;
+- the accountability negative control that blocks universal bridge-repair
+  claims;
+- explicit generated-text, activation-diagnostic, and no-human/no-neural claim
+  boundaries.
 
 ## Definition Of Done
 
-The active objective is complete when the repo can produce a source-diverse
-generated benchmark and non-generated control with:
+The active objective is complete when the repo has:
 
-- generated audit status still `bundle_ready`;
-- non-generated control status still `control_bundle_ready`;
-- score, slack, component, availability, source diversity, and activation
-  metadata transfer gates still passing;
-- source and fault-class `lexical_only` warnings cleared;
-- no loss of all-eight-path coverage;
-- a stricter perturbation result explaining whether the first-sentence effect,
-  length, positive warmth, or pseudo-condition language is the active cause of
-  the small-model generated-reference pocket;
-- generated/control direction-transfer readiness for any model setting where
-  comparable source-only or held-out-domain layers exist;
-- a dated research note interpreting accepted, rejected, and caveated
-  replication runs.
+- a regeneration manifest or appendix table linking each paper metric to the
+  exact script/report path;
+- a paper draft with formal related-work placement, figures, and claim
+  boundaries;
+- either no additional robustness run needed, or one targeted run with accepted
+  and rejected outcomes summarized in `docs/research/`;
+- verification passing before PR merge.
 
 ## Likely Files
 
-Implementation should probably follow existing audit patterns:
+Implementation should probably touch:
 
-- `src/social_cohesion_vectors/experiments/fault_authorship_tournament.py`
-- `tests/test_fault_authorship_tournament.py`
-- `scripts/run_fault_authorship_tournament.py`
-- `src/social_cohesion_vectors/experiments/availability_audit.py`
-- `src/social_cohesion_vectors/experiments/fault_generation.py`
-- `scripts/run_fault_class_modal_generation.py`
-- `tests/test_fault_generation.py`
-- `tests/test_fault_class_api_generation.py`
-- `src/social_cohesion_vectors/experiments/generated_audit_bundle.py`
-- `src/social_cohesion_vectors/experiments/cross_benchmark_direction_transfer.py`
-- `scripts/run_cross_benchmark_direction_transfer.py`
-- `tests/test_cross_benchmark_direction_transfer.py`
-- `src/social_cohesion_vectors/experiments/heldout_domain_direction_audit.py`
-- `scripts/run_heldout_domain_direction_audit.py`
-- `scripts/run_minimal_bridge_direction_audit.py`
-- `scripts/run_pair_bridge_direction_audit.py`
-- `scripts/run_bridge_set_sufficiency_audit.py`
-- `scripts/run_bridge_direction_comparison.py`
-- `scripts/run_cross_model_bridge_transport.py`
-- `tests/test_heldout_domain_direction_audit.py`
+- `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md`
+- `docs/research/2026-06-11-residual-taxonomy-repair-comparison.md`
+- a future paper appendix or regeneration manifest under `docs/papers/` or
+  `docs/research/`
+- existing bridge/perturbation scripts only if a targeted robustness run needs
+  a missing machine-readable summary
 
 ## Next Sequence
 
-1. Reuse the four-source `cross_fault_lexical_repair_v1` bundle as the current
-   generated-text baseline.
-2. Reuse the `procedural_justice_control_v2` bundle as the current
-   non-generated control baseline.
-3. Keep the accepted Qwen7B generated/control direction-transfer report on the
-   expanded control as the current cross-benchmark alignment baseline.
-4. Preserve SmolLM2 layer `-2` as the active out-of-family diagnostic model.
-5. Use the per-pair failure tables and pooled joint-direction diagnostic in
-   generated/control direction-transfer reports so the failing SmolLM2 cases
-   are first-class audit artifacts.
-6. Use the held-out-domain bridge-training audit as the current passing bridge
-   baseline.
-7. Use the source-family minimal bridge ablation as the current bridge-count
-   baseline: generated/source holdouts need one bridge source family, while
-   control/target holdouts need two.
-8. Use the pair bridge ablation as the current pair-count baseline:
-   control/target has an exact six-pair threshold, and generated/source has a
-   sampled-stable six-pair threshold.
-9. Use the bridge-set diagnosis as the current composition baseline:
-   all-eight future-option coverage is insufficient by itself; source-style
-   coverage and case-family coverage matter.
-10. Use the intentional six-pair bridge-set sufficiency audit as the current
-   constructed bridge baseline: both generated/source and control/target pass
-   with path-complete folds `4/4` and zero failures.
-11. Use the SmolLM2 bridge direction comparison as the current same-model
-   constructed-direction baseline: all constructed directions separate both
-   full benchmarks with minimum joint cosine `+0.756`.
-12. Use Qwen7B/SmolLM2 cross-model bridge transport as the current mapped
-   bridge baseline: bidirectional mapped directions pass full generated/control
-   evaluation and leave-held-out map evaluation with zero failures.
-13. Use the fresh-prompt bridge transport report as the current withheld
-   fresh-generated baseline: fresh control transport passes, but
-   Qwen7B -> SmolLM2 fresh generated transport fails at `0.700` accuracy.
-14. Use the fresh-generated bridge diagnostic scaffold to compare source-only,
-   fresh-source-only, joint source+fresh-source, and constructed-bridge
-   directions before adding more model families.
-15. Regenerate or preserve the exact pair manifests from the generated/control
-   bundles before the live diagnostic; activation NPZ files alone are not
-   enough because they do not carry the real `slack_options_tested` metadata.
-16. Target the current residuals: fresh generated `accountability_after_harm`,
-   `belonging_norms`, and `dissent_after_mistake`; generated
-   `privacy_bypass::data_choice`; generated cross-fault `deliberative_speed`
-   and `fair_allocation`; and the control `privacy_exit`,
-   `appeal_and_evidence`, and `harm_repair` rows that fail under the generated
-   direction.
-17. Use the strict accountability mini-control as the current negative control:
-   accountability/procedural-justice content itself passes in SmolLM2 and
-   Qwen7B, so the hard generated residual should be investigated through a
-   source-style/provenance intervention.
-18. Use the source-style intervention as the current provenance baseline:
-   SmolLM2 and Qwen0.5B fail only the generated reference, while Qwen7B passes
-   both the generated reference and all clean variants.
-19. Use the TinyLlama replication as the current cross-architecture baseline:
-   SmolLM2, Qwen0.5B, and TinyLlama fail only the generated reference, while
-   Qwen7B passes both generated and clean variants.
-20. Prefer a minimal perturbation ladder over another broad generation sweep.
-21. Use the first perturbation ladder as the current local-repair baseline:
-   full ladder augmentation repairs all four model spaces, but the original
-   direction only flips SmolLM2 under first-positive-sentence removal.
-22. Rerun SmolLM2 generated/control direction transfer before adding more model
-   families.
-23. Keep human validation parked until generated, non-generated, cross-setting,
-   and out-of-family gates agree.
+1. Add a regeneration/metric manifest for the paper draft.
+2. Decide whether the paper needs one more narrow robustness run; do not run a
+   broad generation sweep by default.
+3. If running robustness, prefer cached activations or Modal over local heavy
+   compute.
+4. Convert the scaffold into a formal paper with figures, related work,
+   limitations, and a reproducibility appendix.
+5. Keep the earlier bridge and perturbation notes as baselines, but do not
+   reopen them unless a paper table cannot be regenerated.
+6. Keep human validation parked until generated, non-generated, cross-setting,
+   and out-of-family gates agree and the paper has a separate human-study
+   protocol.
 
 ## Decision Gates
 

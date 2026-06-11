@@ -1,16 +1,25 @@
 # Social Cohesion Vector Experiment Log
 
-Last updated: 2026-06-03
+Last updated: 2026-06-11
 
 This log records completed local experiments and expected next artifacts. It is
 intentionally conservative: items that have not produced a local report are
 marked pending or partial.
 
-Current coordination note: the active CK-5 parallel batch is tracked in
-`docs/research/2026-06-03-ck5-parallel-execution-status.md`. It covers CK-4
-Modal run prep, transition-record upgrades, the Drosophila matrix, a raw EEG
-manifest builder, and optional SAE environment cleanup. These are compute,
-provenance, and readiness tasks only.
+Current coordination note: the active paper path is the residual-taxonomy and
+bridge-sufficiency draft in
+`docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md`, with the
+side-by-side repair ledger in
+`docs/research/2026-06-11-residual-taxonomy-repair-comparison.md`. The supported
+claim is generated/hand-authored text-benchmark activation evidence only:
+`accountability_after_harm` behaves like a generated-reference source pocket,
+while `dissent_after_mistake` behaves like a constructed target-bridge geometry
+pocket. Human, neural, clinical, deployment, and real-world social-effect claims
+remain parked.
+
+Older CK-5 coordination remains in
+`docs/research/2026-06-03-ck5-parallel-execution-status.md` as compute,
+provenance, and readiness history.
 
 ## Completed Local Artifacts
 
