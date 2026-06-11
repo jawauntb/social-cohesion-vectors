@@ -660,10 +660,21 @@ def run_fresh_generated_bridge_diagnostic_from_files(
     bridge_stratum_key: str = "slack_options_tested",
     composition_keys: Sequence[str] = ("source", "primary_fault_class"),
     bridge_pair_count: int = 6,
+    target_bridge_primary_repetitions: int = 1,
+    target_bridge_secondary_repetitions: int = 1,
+    source_bridge_primary_repetitions: int = 1,
+    source_bridge_secondary_repetitions: int = 1,
     min_pairwise_accuracy: float = 1.0,
     min_margin: float = 0.0,
 ) -> dict[str, Any]:
     """Diagnose how fresh generated prompts relate to bridge directions."""
+
+    _validate_bridge_repetitions(
+        target_bridge_primary_repetitions=target_bridge_primary_repetitions,
+        target_bridge_secondary_repetitions=target_bridge_secondary_repetitions,
+        source_bridge_primary_repetitions=source_bridge_primary_repetitions,
+        source_bridge_secondary_repetitions=source_bridge_secondary_repetitions,
+    )
 
     source = _load_domain_dataset(
         name=source_name,
@@ -723,6 +734,8 @@ def run_fresh_generated_bridge_diagnostic_from_files(
         bridge_stratum_key=bridge_stratum_key,
         composition_keys=composition_keys,
         bridge_pair_count=bridge_pair_count,
+        primary_direction_repetitions=target_bridge_primary_repetitions,
+        secondary_direction_repetitions=target_bridge_secondary_repetitions,
         fold_kind="target_bridge",
     )
     source_bridge_folds = _bridge_direction_vector_folds(
@@ -735,6 +748,8 @@ def run_fresh_generated_bridge_diagnostic_from_files(
         bridge_stratum_key=bridge_stratum_key,
         composition_keys=composition_keys,
         bridge_pair_count=bridge_pair_count,
+        primary_direction_repetitions=source_bridge_primary_repetitions,
+        secondary_direction_repetitions=source_bridge_secondary_repetitions,
         fold_kind="source_bridge",
     )
     diagnostic_rows = [
@@ -814,6 +829,18 @@ def run_fresh_generated_bridge_diagnostic_from_files(
             "bridge_stratum_key": bridge_stratum_key,
             "composition_keys": list(composition_keys),
             "bridge_pair_count": int(bridge_pair_count),
+            "target_bridge_primary_repetitions": int(
+                target_bridge_primary_repetitions
+            ),
+            "target_bridge_secondary_repetitions": int(
+                target_bridge_secondary_repetitions
+            ),
+            "source_bridge_primary_repetitions": int(
+                source_bridge_primary_repetitions
+            ),
+            "source_bridge_secondary_repetitions": int(
+                source_bridge_secondary_repetitions
+            ),
             "activation_dim": int(source.activations.shape[1]),
             "source_pairs": len(_unique_pair_ids(source)),
             "target_pairs": len(_unique_pair_ids(target)),
@@ -1616,6 +1643,12 @@ def render_fresh_generated_bridge_diagnostic_markdown(
             f"- Fresh source benchmark: `{inputs.get('fresh_source_name', '')}`",
             f"- Fresh target benchmark: `{inputs.get('fresh_target_name', '')}`",
             f"- Bridge pair count: {int(inputs.get('bridge_pair_count', 0))}",
+            f"- Target bridge repetitions: "
+            f"{int(inputs.get('target_bridge_primary_repetitions', 1))}:"
+            f"{int(inputs.get('target_bridge_secondary_repetitions', 1))}",
+            f"- Source bridge repetitions: "
+            f"{int(inputs.get('source_bridge_primary_repetitions', 1))}:"
+            f"{int(inputs.get('source_bridge_secondary_repetitions', 1))}",
             f"- Bridge stratum key: `{inputs.get('bridge_stratum_key', '')}`",
             f"- Composition keys: "
             f"`{', '.join(str(key) for key in _sequence(inputs.get('composition_keys')))}`",
@@ -1827,6 +1860,13 @@ def _optional_path_string(path: str | Path | None) -> str | None:
 def _validate_shared_dim(source: _DomainDataset, target: _DomainDataset) -> None:
     if int(source.activations.shape[1]) != int(target.activations.shape[1]):
         raise ValueError("Source and target activation dimensions must match.")
+
+
+def _validate_bridge_repetitions(**values: int) -> None:
+    invalid = {key: value for key, value in values.items() if value < 1}
+    if invalid:
+        joined = ", ".join(f"{key}={value}" for key, value in sorted(invalid.items()))
+        raise ValueError(f"Bridge direction repetitions must be at least 1: {joined}.")
 
 
 def _validate_matching_pair_ids(
@@ -2157,6 +2197,8 @@ def _bridge_direction_vector_folds(
     composition_keys: Sequence[str],
     bridge_pair_count: int,
     fold_kind: str,
+    primary_direction_repetitions: int = 1,
+    secondary_direction_repetitions: int = 1,
 ) -> list[_BridgeDirectionVectorFold]:
     folds: list[_BridgeDirectionVectorFold] = []
     for held_out_group in _groups(held_out_dataset):
@@ -2185,8 +2227,16 @@ def _bridge_direction_vector_folds(
         )
         bridge_pair_set = set(bridge_pairs)
         direction = _direction_from_training_parts(
-            _training_part(train_primary, _unique_pair_ids(train_primary)),
-            _training_part(train_secondary, bridge_pair_set),
+            *_repeated_training_parts(
+                train_primary,
+                _unique_pair_ids(train_primary),
+                repetitions=primary_direction_repetitions,
+            ),
+            *_repeated_training_parts(
+                train_secondary,
+                bridge_pair_set,
+                repetitions=secondary_direction_repetitions,
+            ),
         )
         bridge_path_values = _bridge_path_values(
             train_secondary,
@@ -2208,6 +2258,8 @@ def _bridge_direction_vector_folds(
             "held_out_pairs": sorted(held_out_pairs),
             "train_primary_dataset": train_primary.name,
             "train_secondary_dataset": train_secondary.name,
+            "train_primary_repetitions": int(primary_direction_repetitions),
+            "train_secondary_repetitions": int(secondary_direction_repetitions),
             "bridge_pair_count": len(bridge_pairs),
             "bridge_pairs": list(bridge_pairs),
             "bridge_path_values": bridge_path_values,
@@ -2543,6 +2595,18 @@ def _training_part(
 ) -> tuple[np.ndarray, np.ndarray]:
     mask = _prompt_mask(dataset, pair_ids)
     return dataset.activations[mask], dataset.labels[mask]
+
+
+def _repeated_training_parts(
+    dataset: _DomainDataset,
+    pair_ids: set[str],
+    *,
+    repetitions: int,
+) -> tuple[tuple[np.ndarray, np.ndarray], ...]:
+    if repetitions < 1:
+        raise ValueError("Bridge direction repetitions must be at least 1.")
+    part = _training_part(dataset, pair_ids)
+    return tuple(part for _ in range(repetitions))
 
 
 def _direction_from_training_parts(

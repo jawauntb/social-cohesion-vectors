@@ -6,6 +6,7 @@ from pathlib import Path
 from types import ModuleType
 
 import numpy as np
+import pytest
 
 from social_cohesion_vectors.datasets import write_jsonl
 from social_cohesion_vectors.experiments.heldout_domain_direction_audit import (
@@ -377,6 +378,7 @@ def test_fresh_generated_bridge_diagnostic_scores_constructed_directions(
         fresh_source_name="fresh_generated",
         fresh_target_name="fresh_control",
         bridge_pair_count=1,
+        target_bridge_secondary_repetitions=2,
     )
     markdown = render_fresh_generated_bridge_diagnostic_markdown(report)
 
@@ -384,9 +386,11 @@ def test_fresh_generated_bridge_diagnostic_scores_constructed_directions(
     assert report["summary"]["constructed_direction_count"] == 4
     assert report["summary"]["constructed_fresh_source_min_margin"] > 0.0
     assert report["summary"]["constructed_fresh_target_min_margin"] > 0.0
+    assert report["inputs"]["target_bridge_secondary_repetitions"] == 2
     assert report["summary"]["source_fresh_joint_fresh_target_min_margin"] == 0.0
     assert report["summary"]["failed_pair_evaluation_count"] > 0
     assert "Fresh Generated Bridge Diagnostic" in markdown
+    assert "Target bridge repetitions" in markdown
     assert "`source_fresh_joint`" in markdown
 
 
@@ -427,6 +431,8 @@ def test_fresh_generated_bridge_diagnostic_cli_writes_report(
             "fresh_control",
             "--bridge-pair-count",
             "1",
+            "--target-bridge-secondary-repetitions",
+            "2",
             "--json-output",
             str(json_output),
             "--markdown-output",
@@ -440,7 +446,27 @@ def test_fresh_generated_bridge_diagnostic_cli_writes_report(
     loaded = json.loads(json_output.read_text(encoding="utf-8"))
     assert loaded["summary"]["ready_for_fresh_generated_bridge_claims"] is True
     assert loaded["inputs"]["fresh_source_name"] == "fresh_generated"
+    assert loaded["inputs"]["target_bridge_secondary_repetitions"] == 2
     assert markdown_output.exists()
+
+
+def test_fresh_generated_bridge_diagnostic_rejects_invalid_repetitions(
+    tmp_path: Path,
+) -> None:
+    paths = _write_fresh_bridge_diagnostic_fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="repetitions must be at least 1"):
+        run_fresh_generated_bridge_diagnostic_from_files(
+            source_activation_npz=paths["source_activation"],
+            source_pairs_path=paths["source_pairs"],
+            target_activation_npz=paths["target_activation"],
+            target_pairs_path=paths["target_pairs"],
+            fresh_source_activation_npz=paths["fresh_source_activation"],
+            fresh_source_pairs_path=paths["fresh_source_pairs"],
+            fresh_target_activation_npz=paths["fresh_target_activation"],
+            fresh_target_pairs_path=paths["fresh_target_pairs"],
+            target_bridge_secondary_repetitions=0,
+        )
 
 
 def test_cross_model_bridge_transport_maps_constructed_directions(

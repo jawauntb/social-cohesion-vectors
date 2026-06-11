@@ -187,6 +187,12 @@ geometry.
 
 ## Next Move
 
+Follow-up completed in
+`docs/research/2026-06-11-weighted-target-bridge-repair.md`: asymmetric
+weighted target-bridge construction with bridge count `9` and target bridge
+repetitions `1:3` clears the constructed bridge gate across all four tested
+model spaces.
+
 Do not run a broad generation sweep next. The next efficient move is
 selection-side:
 

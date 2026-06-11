@@ -94,13 +94,29 @@ failure rows move from `39` to `40`, and TinyLlama loses its prior thin pass.
 The key new result is a bridge-budget ablation. Reusing the same Modal
 activations and increasing constructed target bridge pairs from `6` to `15`
 drops failures to `13`; Qwen2.5-7B and TinyLlama become ready, while SmolLM2
-and Qwen2.5-0.5B retain shortcut/warmth residuals. The active bottleneck is
-now selection-side bridge sufficiency: find a principled small bridge selector
-that gets the count-15 benefit without all-candidate target coverage, or turn
-the remaining small-model failures into a clear model-space limitation.
+and Qwen2.5-0.5B retain shortcut/warmth residuals. A follow-up weighted bridge
+diagnostic repairs that residual: with target bridge pair count `9`,
+target-bridge primary repetitions `1`, target-bridge secondary repetitions
+`3`, and source-bridge repetitions left at `1:1`, all four model spaces reach
+`fresh_generated_bridge_ready` and the bridge-stability summary has `0`
+constructed failure rows. The active bottleneck is now preservation and paper
+framing: verify that weighted target-bridge construction does not regress the
+earlier non-dissent bridge successes, then frame the paper around residual
+taxonomy and bridge sufficiency rather than broad social-effect claims.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-11-weighted-target-bridge-repair.md`: exposed
+  bridge repetition controls in the fresh generated bridge diagnostic and ran
+  the weighted target-bridge repair using cached activations. The accepted
+  setting is target bridge pair count `9`, target bridge repetitions `1:3`,
+  and source bridge repetitions `1:1`. It clears the dissent constructed bridge
+  gate in all four tested model spaces: SmolLM2 fresh-source minimum `+3.151`,
+  Qwen2.5-0.5B `+0.220`, Qwen2.5-7B `+6.866`, and TinyLlama `+0.513`, with
+  zero fresh-source or fresh-target failures. The bridge-stability summary
+  reports `0` constructed failure rows across all four models. This repairs
+  the target-bridge geometry pocket without another generation sweep or Modal
+  extraction.
 - `docs/research/2026-06-11-target-bridge-shortcut-repair.md`: added a
   pseudo-side shortcut-neutralized target/control repair bundle for
   `dissent_after_mistake`. The repair-only text gate passes scoped practical
