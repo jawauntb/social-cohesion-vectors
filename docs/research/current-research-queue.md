@@ -1,6 +1,6 @@
 # Current Research Queue
 
-Last updated: 2026-06-09
+Last updated: 2026-06-11
 
 This is the short control surface for staying focused. It should answer three
 questions at any point:
@@ -87,12 +87,34 @@ bridge-sufficiency pockets, and content/availability failures. The first
 bridge-stability summary localizes the dissent failures: all `39` constructed
 failure rows are `target_bridge` failures, with
 `negative_shortcuts_neutralized` as the most failed fresh-source perturbation.
-The next experiment should add pseudo-side shortcut-neutralized target/control
-bridge rows and test whether constructed target bridges recover without
-breaking source/control and fresh hand-control margins.
+A targeted pseudo-side shortcut-neutralized target/control repair now clears
+scoped text gates (`20/20` repaired availability paths, minimum margin
+`+0.640`) but does not repair the default six-pair constructed bridge gate:
+failure rows move from `39` to `40`, and TinyLlama loses its prior thin pass.
+The key new result is a bridge-budget ablation. Reusing the same Modal
+activations and increasing constructed target bridge pairs from `6` to `15`
+drops failures to `13`; Qwen2.5-7B and TinyLlama become ready, while SmolLM2
+and Qwen2.5-0.5B retain shortcut/warmth residuals. The active bottleneck is
+now selection-side bridge sufficiency: find a principled small bridge selector
+that gets the count-15 benefit without all-candidate target coverage, or turn
+the remaining small-model failures into a clear model-space limitation.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-11-target-bridge-shortcut-repair.md`: added a
+  pseudo-side shortcut-neutralized target/control repair bundle for
+  `dissent_after_mistake`. The repair-only text gate passes scoped practical
+  availability (`20/20`, minimum margin `+0.640`) with low lexical leakage
+  (`0.250` cue-solved rate). Modal activations over the augmented target bundle
+  show the default six-pair constructed bridge gate is not repaired:
+  constructed failure rows move from `39` to `40`, worst margin changes only
+  from `-18.296` to `-18.128`, and all failures remain `target_bridge`.
+  A cheap bridge-count ablation is more informative: increasing constructed
+  target bridge pairs to `15` drops failures to `13`, repairs Qwen2.5-7B
+  (`+0.893` fresh-source minimum) and TinyLlama (`+0.166`), and leaves SmolLM2
+  (`-6.310`) plus Qwen2.5-0.5B (`-0.538`) as small-model residuals. The next
+  move is a selector-side bridge-sufficiency audit, not another broad
+  generation sweep.
 - `docs/research/2026-06-09-bridge-stability-audit.md`: added a post-hoc
   bridge-stability summarizer over constructed bridge diagnostics. On the
   dissent perturbation ladder, the report finds `39` constructed failure rows
