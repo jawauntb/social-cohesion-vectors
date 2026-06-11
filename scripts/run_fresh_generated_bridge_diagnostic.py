@@ -33,6 +33,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         bridge_stratum_key=args.bridge_stratum_key,
         composition_keys=_parse_comma_separated(args.composition_keys),
         bridge_pair_count=args.bridge_pair_count,
+        target_bridge_primary_repetitions=args.target_bridge_primary_repetitions,
+        target_bridge_secondary_repetitions=args.target_bridge_secondary_repetitions,
+        source_bridge_primary_repetitions=args.source_bridge_primary_repetitions,
+        source_bridge_secondary_repetitions=args.source_bridge_secondary_repetitions,
         min_pairwise_accuracy=args.min_pairwise_accuracy,
         min_margin=args.min_margin,
     )
@@ -74,6 +78,10 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--bridge-stratum-key", default="slack_options_tested")
     parser.add_argument("--composition-keys", default="source,primary_fault_class")
     parser.add_argument("--bridge-pair-count", type=int, default=6)
+    parser.add_argument("--target-bridge-primary-repetitions", type=int, default=1)
+    parser.add_argument("--target-bridge-secondary-repetitions", type=int, default=1)
+    parser.add_argument("--source-bridge-primary-repetitions", type=int, default=1)
+    parser.add_argument("--source-bridge-secondary-repetitions", type=int, default=1)
     parser.add_argument("--min-pairwise-accuracy", type=float, default=1.0)
     parser.add_argument("--min-margin", type=float, default=0.0)
     parser.add_argument(
