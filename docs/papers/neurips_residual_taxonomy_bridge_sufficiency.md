@@ -1,6 +1,11 @@
 # Residual Taxonomy and Bridge Sufficiency for Procedural-Justice Activation Directions
 
-Status: NeurIPS-style working draft for collaborator review  
+Status: NeurIPS-style working draft for collaborator review
+
+Rendered PDF: `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.pdf`
+
+PDF renderer: `scripts/render_residual_taxonomy_pdf.py`
+
 Date: 2026-06-11
 
 ## Abstract

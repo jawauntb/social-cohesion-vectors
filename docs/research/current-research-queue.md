@@ -118,16 +118,17 @@ conversion with formal related work and figures.
 
 Recent accepted findings:
 
-- `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md` and
+- `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md`,
+  `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.pdf`, and
   `docs/research/2026-06-11-residual-taxonomy-repair-comparison.md`: consolidate
-  the latest residual loop into a shareable paper scaffold and side-by-side
-  repair table. The supported claim is narrow: `accountability_after_harm` is a
-  generated-reference/source-pocket residual repaired by strict perturbation
-  augmentation, while `dissent_after_mistake` is a constructed target-bridge
-  geometry residual repaired by asymmetric target-bridge weighting. The same
-  weighted bridge move is rejected as a universal repair by the strict
-  accountability negative control (`147` weighted failure rows, three failing
-  model spaces).
+  the latest residual loop into a shareable paper scaffold, vector-chart PDF,
+  and side-by-side repair table. The supported claim is narrow:
+  `accountability_after_harm` is a generated-reference/source-pocket residual
+  repaired by strict perturbation augmentation, while `dissent_after_mistake`
+  is a constructed target-bridge geometry residual repaired by asymmetric
+  target-bridge weighting. The same weighted bridge move is rejected as a
+  universal repair by the strict accountability negative control (`147`
+  weighted failure rows, three failing model spaces).
 - `docs/research/2026-06-11-weighted-bridge-preservation-audit.md`: added a
   bridge-preservation summarizer and ran preservation plus negative-control
   diagnostics for the weighted target-bridge repair. The dissent weighted
