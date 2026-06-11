@@ -100,12 +100,32 @@ target-bridge primary repetitions `1`, target-bridge secondary repetitions
 `3`, and source-bridge repetitions left at `1:1`, all four model spaces reach
 `fresh_generated_bridge_ready` and the bridge-stability summary has `0`
 constructed failure rows. The active bottleneck is now preservation and paper
-framing: verify that weighted target-bridge construction does not regress the
-earlier non-dissent bridge successes, then frame the paper around residual
-taxonomy and bridge sufficiency rather than broad social-effect claims.
+framing. The weighted target-bridge preservation audit passes on dissent:
+`32` constructed direction rows across source, target, fresh source, and fresh
+target slices have zero failures, with worst margin `+0.019`. The
+accountability strict-ladder negative control blocks overgeneralization:
+default count-9 constructed bridges fail with `192` constructed failure rows,
+and weighted target bridges reduce this to `147` but still fail in SmolLM2,
+Qwen2.5-0.5B, and TinyLlama; only Qwen2.5-7B passes. The current paper frame
+is therefore a residual taxonomy: accountability is a generated-reference
+source-pocket repaired by local perturbation augmentation, while dissent is a
+constructed target-bridge geometry pocket repaired by weighted target bridge
+construction. The next move is a paper scaffold plus one final side-by-side
+repair comparison table.
 
 Recent accepted findings:
 
+- `docs/research/2026-06-11-weighted-bridge-preservation-audit.md`: added a
+  bridge-preservation summarizer and ran preservation plus negative-control
+  diagnostics for the weighted target-bridge repair. The dissent weighted
+  repair preserves all four evaluation slices across all four model spaces:
+  `32` constructed direction rows, `16` model/evaluation rows, `0` failed pair
+  evaluations, and worst margin `+0.019` on Qwen2.5-0.5B source. The strict
+  accountability negative control rejects a universal bridge-weighting repair:
+  default count-9 constructed bridges have `192` failure rows, while weighted
+  target bridges reduce failures to `147` and repair Qwen2.5-7B only; SmolLM2,
+  Qwen2.5-0.5B, and TinyLlama remain negative on fresh-source accountability
+  perturbations.
 - `docs/research/2026-06-11-weighted-target-bridge-repair.md`: exposed
   bridge repetition controls in the fresh generated bridge diagnostic and ran
   the weighted target-bridge repair using cached activations. The accepted

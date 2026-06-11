@@ -126,6 +126,12 @@ and a constructed target-bridge geometry pocket.
 
 ## Next Move
 
+Follow-up completed in
+`docs/research/2026-06-11-weighted-bridge-preservation-audit.md`: the weighted
+dissent repair preserves source/control/fresh slices with zero failures, while
+the strict accountability negative control shows target-bridge weighting is not
+a universal generated-pocket repair.
+
 Run one more audit before drafting a paper claim:
 
 1. Check whether the weighted target-bridge setting preserves the earlier
