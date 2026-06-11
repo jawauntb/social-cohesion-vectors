@@ -1,0 +1,289 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R 12 0 R 14 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 3787 >>
+stream
+q 1.00 w 0.970 0.970 0.930 rg 0.00 0.00 612.00 792.00 re f Q
+q 1.00 w 1.000 1.000 0.980 rg 0.820 0.840 0.790 RG 44.00 34.00 524.00 724.00 re B Q
+BT /F2 8.50 Tf 0.380 0.430 0.430 rg 56.00 735.50 Td (WORKING PAPER PDF) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 464.97 735.50 Td (2026-06-11  |  Page 1) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 56.00 726.00 m 556.00 726.00 l S Q
+BT /F2 22.00 Tf 0.100 0.140 0.150 rg 54.00 698.00 Td (Residual Taxonomy & Bridge Sufficiency) Tj ET
+BT /F2 18.00 Tf 0.080 0.450 0.480 rg 54.00 670.00 Td (for Procedural-Justice Activation Directions) Tj ET
+BT /F1 12.00 Tf 0.380 0.430 0.430 rg 56.00 630.00 Td (A NeurIPS-style working draft summarizing generated and hand-authored text-) Tj ET
+BT /F1 12.00 Tf 0.380 0.430 0.430 rg 56.00 613.68 Td (benchmark activation evidence. The supported claim is narrow: two different) Tj ET
+BT /F1 12.00 Tf 0.380 0.430 0.430 rg 56.00 597.36 Td (residual classes, two matched repairs, and a negative control blocking universal) Tj ET
+BT /F1 12.00 Tf 0.380 0.430 0.430 rg 56.00 581.04 Td (repair claims.) Tj ET
+q 1.20 w 1.000 1.000 0.980 rg 0.080 0.450 0.480 RG 54.00 442.00 146.00 108.00 re B Q
+q 1.00 w 0.080 0.450 0.480 rg 54.00 540.00 146.00 10.00 re f Q
+BT /F2 9.50 Tf 0.380 0.430 0.430 rg 68.00 516.50 Td (Residual classes) Tj ET
+BT /F2 30.00 Tf 0.080 0.450 0.480 rg 68.00 475.00 Td (2) Tj ET
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 68.00 467.80 Td (source pocket + bridge) Tj ET
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 68.00 457.80 Td (geometry) Tj ET
+q 1.20 w 1.000 1.000 0.980 rg 0.820 0.550 0.160 RG 224.00 442.00 146.00 108.00 re B Q
+q 1.00 w 0.820 0.550 0.160 rg 224.00 540.00 146.00 10.00 re f Q
+BT /F2 9.50 Tf 0.380 0.430 0.430 rg 238.00 516.50 Td (Model spaces) Tj ET
+BT /F2 30.00 Tf 0.820 0.550 0.160 rg 238.00 475.00 Td (4) Tj ET
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 238.00 467.80 Td (SmolLM2, Qwen0.5B, Qwen7B,) Tj ET
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 238.00 457.80 Td (Tiny) Tj ET
+q 1.20 w 1.000 1.000 0.980 rg 0.200 0.520 0.340 RG 394.00 442.00 146.00 108.00 re B Q
+q 1.00 w 0.200 0.520 0.340 rg 394.00 540.00 146.00 10.00 re f Q
+BT /F2 9.50 Tf 0.380 0.430 0.430 rg 408.00 516.50 Td (Dissent bridge failures) Tj ET
+BT /F2 30.00 Tf 0.200 0.520 0.340 rg 408.00 475.00 Td (0) Tj ET
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 408.00 467.80 Td (after weighted target) Tj ET
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 408.00 457.80 Td (bridges) Tj ET
+q 1.00 w 0.990 0.940 0.890 rg 0.770 0.250 0.220 RG 54.00 280.00 504.00 128.00 re B Q
+BT /F2 16.00 Tf 0.770 0.250 0.220 rg 72.00 372.00 Td (Claim Boundary) Tj ET
+BT /F1 11.00 Tf 0.100 0.140 0.150 rg 72.00 347.00 Td (This PDF claims only generated/hand-authored text-benchmark activation) Tj ET
+BT /F1 11.00 Tf 0.100 0.140 0.150 rg 72.00 332.04 Td (diagnostics. It does not claim human behavioral effects, neural alignment,) Tj ET
+BT /F1 11.00 Tf 0.100 0.140 0.150 rg 72.00 317.08 Td (clinical relevance, deployment readiness, or causal steering.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.080 0.450 0.480 RG 72.00 164.00 126.00 68.00 re B Q
+BT /F2 11.00 Tf 0.080 0.450 0.480 rg 84.00 203.00 Td (Accountability) Tj ET
+BT /F1 9.00 Tf 0.380 0.430 0.430 rg 84.00 181.00 Td (source pocket) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.550 0.160 RG 252.00 164.00 126.00 68.00 re B Q
+BT /F2 11.00 Tf 0.820 0.550 0.160 rg 264.00 203.00 Td (Dissent) Tj ET
+BT /F1 9.00 Tf 0.380 0.430 0.430 rg 264.00 181.00 Td (bridge geometry) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.200 0.330 0.580 RG 432.00 164.00 126.00 68.00 re B Q
+BT /F2 11.00 Tf 0.200 0.330 0.580 rg 444.00 203.00 Td (Withheld) Tj ET
+BT /F1 9.00 Tf 0.380 0.430 0.430 rg 444.00 181.00 Td (availability gaps) Tj ET
+q 1.40 w 0.820 0.840 0.790 RG 198.00 198.00 m 242.00 198.00 l S Q
+q 1.40 w 0.820 0.840 0.790 RG 378.00 198.00 m 422.00 198.00 l S Q
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 3453 >>
+stream
+q 1.00 w 0.970 0.970 0.930 rg 0.00 0.00 612.00 792.00 re f Q
+q 1.00 w 1.000 1.000 0.980 rg 0.820 0.840 0.790 RG 44.00 34.00 524.00 724.00 re B Q
+BT /F2 8.50 Tf 0.380 0.430 0.430 rg 56.00 735.50 Td (RESIDUAL TAXONOMY) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 464.97 735.50 Td (2026-06-11  |  Page 2) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 56.00 726.00 m 556.00 726.00 l S Q
+BT /F2 22.00 Tf 0.100 0.140 0.150 rg 54.00 712.00 Td (Two Residual Classes) Tj ET
+BT /F1 11.50 Tf 0.380 0.430 0.430 rg 54.00 692.50 Td (Failures are not monolithic.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.080 0.450 0.480 RG 54.00 516.00 504.00 150.00 re B Q
+q 1.00 w 0.080 0.450 0.480 rg 54.00 516.00 12.00 150.00 re f Q
+BT /F2 16.00 Tf 0.080 0.450 0.480 rg 82.00 630.00 Td (Generated-reference source pocket) Tj ET
+BT /F3 10.00 Tf 0.380 0.430 0.430 rg 82.00 608.00 Td (accountability_after_harm) Tj ET
+BT /F1 10.00 Tf 0.100 0.140 0.150 rg 82.00 582.00 Td (Small models invert one recovered generated reference) Tj ET
+BT /F1 10.00 Tf 0.100 0.140 0.150 rg 82.00 568.40 Td (while clean hand-authored accountability controls pass.) Tj ET
+q 1.00 w 0.960 0.980 0.950 rg 0.200 0.520 0.340 RG 404.00 557.00 128.00 54.00 re B Q
+BT /F2 9.20 Tf 0.200 0.520 0.340 rg 418.00 586.80 Td (Accepted repair:) Tj ET
+BT /F2 9.20 Tf 0.200 0.520 0.340 rg 418.00 574.29 Td (strict perturbation) Tj ET
+BT /F2 9.20 Tf 0.200 0.520 0.340 rg 418.00 561.78 Td (augmentation.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.550 0.160 RG 54.00 324.00 504.00 150.00 re B Q
+q 1.00 w 0.820 0.550 0.160 rg 54.00 324.00 12.00 150.00 re f Q
+BT /F2 16.00 Tf 0.820 0.550 0.160 rg 82.00 438.00 Td (Constructed target-bridge geometry pocket) Tj ET
+BT /F3 10.00 Tf 0.380 0.430 0.430 rg 82.00 416.00 Td (dissent_after_mistake) Tj ET
+BT /F1 10.00 Tf 0.100 0.140 0.150 rg 82.00 390.00 Td (Broad directions score the reference correctly, but) Tj ET
+BT /F1 10.00 Tf 0.100 0.140 0.150 rg 82.00 376.40 Td (target bridges fail when pseudo-side warmth shortcuts are) Tj ET
+BT /F1 10.00 Tf 0.100 0.140 0.150 rg 82.00 362.80 Td (removed.) Tj ET
+q 1.00 w 0.960 0.980 0.950 rg 0.200 0.520 0.340 RG 404.00 365.00 128.00 54.00 re B Q
+BT /F2 9.20 Tf 0.200 0.520 0.340 rg 418.00 394.80 Td (Accepted repair:) Tj ET
+BT /F2 9.20 Tf 0.200 0.520 0.340 rg 418.00 382.29 Td (count-9 target) Tj ET
+BT /F2 9.20 Tf 0.200 0.520 0.340 rg 418.00 369.78 Td (bridges with 1:3) Tj ET
+BT /F2 9.20 Tf 0.200 0.520 0.340 rg 418.00 357.26 Td (target weighting.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.840 0.790 RG 74.00 202.00 464.00 42.00 re B Q
+q 1.00 w 0.200 0.520 0.340 rg 74.00 202.00 76.00 42.00 re f Q
+BT /F2 11.00 Tf 1.000 1.000 1.000 rg 86.00 217.00 Td (Accepted) Tj ET
+BT /F1 10.20 Tf 0.100 0.140 0.150 rg 168.00 217.80 Td (Two matched repairs clear all four model spaces.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.840 0.790 RG 74.00 146.00 464.00 42.00 re B Q
+q 1.00 w 0.770 0.250 0.220 rg 74.00 146.00 76.00 42.00 re f Q
+BT /F2 11.00 Tf 1.000 1.000 1.000 rg 86.00 161.00 Td (Rejected) Tj ET
+BT /F1 10.20 Tf 0.100 0.140 0.150 rg 168.00 161.80 Td (Content-only target repair and universal bridge repair.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.840 0.790 RG 74.00 90.00 464.00 42.00 re B Q
+q 1.00 w 0.200 0.330 0.580 rg 74.00 90.00 76.00 42.00 re f Q
+BT /F2 11.00 Tf 1.000 1.000 1.000 rg 86.00 105.00 Td (Withheld) Tj ET
+BT /F1 10.20 Tf 0.100 0.140 0.150 rg 168.00 105.80 Td (belonging_norms and other incomplete availability controls.) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 2864 >>
+stream
+q 1.00 w 0.970 0.970 0.930 rg 0.00 0.00 612.00 792.00 re f Q
+q 1.00 w 1.000 1.000 0.980 rg 0.820 0.840 0.790 RG 44.00 34.00 524.00 724.00 re B Q
+BT /F2 8.50 Tf 0.380 0.430 0.430 rg 56.00 735.50 Td (REPAIR FUNNEL) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 464.97 735.50 Td (2026-06-11  |  Page 3) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 56.00 726.00 m 556.00 726.00 l S Q
+BT /F2 22.00 Tf 0.100 0.140 0.150 rg 54.00 712.00 Td (Dissent Bridge Repair Funnel) Tj ET
+BT /F1 11.50 Tf 0.380 0.430 0.430 rg 54.00 692.50 Td (Rejected paths make the result sharper.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.840 0.790 RG 74.00 420.00 460.00 230.00 re B Q
+BT /F2 10.20 Tf 0.100 0.140 0.150 rg 92.00 621.80 Td (Initial target-bridge failures) Tj ET
+q 1.00 w 0.910 0.920 0.880 rg 284.00 619.00 210.00 16.00 re f Q
+q 1.00 w 0.770 0.250 0.220 rg 284.00 619.00 222.86 16.00 re f Q
+BT /F2 10.00 Tf 0.100 0.140 0.150 rg 500.80 622.00 Td (39) Tj ET
+BT /F2 10.20 Tf 0.100 0.140 0.150 rg 92.00 564.30 Td (Content repair, six pairs) Tj ET
+q 1.00 w 0.910 0.920 0.880 rg 284.00 561.50 210.00 16.00 re f Q
+q 1.00 w 0.960 0.720 0.650 rg 284.00 561.50 228.57 16.00 re f Q
+BT /F2 10.00 Tf 0.100 0.140 0.150 rg 500.80 564.50 Td (40) Tj ET
+BT /F2 10.20 Tf 0.100 0.140 0.150 rg 92.00 506.80 Td (All target candidates, count 15) Tj ET
+q 1.00 w 0.910 0.920 0.880 rg 284.00 504.00 210.00 16.00 re f Q
+q 1.00 w 0.820 0.550 0.160 rg 284.00 504.00 74.29 16.00 re f Q
+BT /F2 10.00 Tf 0.100 0.140 0.150 rg 500.80 507.00 Td (13) Tj ET
+BT /F2 10.20 Tf 0.100 0.140 0.150 rg 92.00 449.30 Td (Weighted target bridge, count 9) Tj ET
+q 1.00 w 0.910 0.920 0.880 rg 284.00 446.50 210.00 16.00 re f Q
+BT /F2 10.00 Tf 0.100 0.140 0.150 rg 506.40 449.50 Td (0) Tj ET
+q 1.00 w 0.720 0.880 0.740 rg 0.200 0.520 0.340 RG 72.00 256.00 468.00 98.00 re B Q
+BT /F2 10.50 Tf 0.100 0.140 0.150 rg 90.00 321.50 Td (The accepted repair changes bridge construction, not generation. Target bridge) Tj ET
+BT /F2 10.50 Tf 0.100 0.140 0.150 rg 90.00 307.22 Td (pair count stays moderate at 9, but the target-side secondary bridge evidence) Tj ET
+BT /F2 10.50 Tf 0.100 0.140 0.150 rg 90.00 292.94 Td (is repeated 3x while source bridge weights stay at 1:1.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.080 0.450 0.480 RG 84.00 124.00 122.00 74.00 re B Q
+BT /F2 24.00 Tf 0.080 0.450 0.480 rg 138.28 156.00 Td (9) Tj ET
+BT /F1 9.20 Tf 0.380 0.430 0.430 rg 116.85 136.80 Td (target pairs) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.200 0.520 0.340 RG 234.00 124.00 122.00 74.00 re B Q
+BT /F2 24.00 Tf 0.200 0.520 0.340 rg 274.84 156.00 Td (1:3) Tj ET
+BT /F1 9.20 Tf 0.380 0.430 0.430 rg 269.19 136.80 Td (target reps) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.200 0.330 0.580 RG 384.00 124.00 122.00 74.00 re B Q
+BT /F2 24.00 Tf 0.200 0.330 0.580 rg 424.84 156.00 Td (1:1) Tj ET
+BT /F1 9.20 Tf 0.380 0.430 0.430 rg 419.19 136.80 Td (source reps) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 2955 >>
+stream
+q 1.00 w 0.970 0.970 0.930 rg 0.00 0.00 612.00 792.00 re f Q
+q 1.00 w 1.000 1.000 0.980 rg 0.820 0.840 0.790 RG 44.00 34.00 524.00 724.00 re B Q
+BT /F2 8.50 Tf 0.380 0.430 0.430 rg 56.00 735.50 Td (DISSENT MARGINS) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 464.97 735.50 Td (2026-06-11  |  Page 4) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 56.00 726.00 m 556.00 726.00 l S Q
+BT /F2 22.00 Tf 0.100 0.140 0.150 rg 54.00 712.00 Td (Accepted Dissent Repair) Tj ET
+BT /F1 11.50 Tf 0.380 0.430 0.430 rg 54.00 692.50 Td (Fresh slices and preservation both pass.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.840 0.790 RG 64.00 426.00 496.00 220.00 re B Q
+BT /F2 11.00 Tf 0.380 0.430 0.430 rg 82.00 617.00 Td (Fresh-source margin) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 116.00 468.00 m 526.00 468.00 l S Q
+q 1.00 w 0.080 0.450 0.480 rg 139.57 468.00 55.35 63.02 re f Q
+BT /F2 8.50 Tf 0.080 0.450 0.480 rg 152.97 540.52 Td (+3.151) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 152.08 441.50 Td (SmolLM2) Tj ET
+q 1.00 w 0.820 0.550 0.160 rg 242.07 468.00 55.35 4.40 re f Q
+BT /F2 8.50 Tf 0.820 0.550 0.160 rg 255.47 481.90 Td (+0.220) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 252.41 441.50 Td (Qwen0.5B) Tj ET
+q 1.00 w 0.200 0.520 0.340 rg 344.57 468.00 55.35 137.32 re f Q
+BT /F2 8.50 Tf 0.200 0.520 0.340 rg 357.97 614.82 Td (+6.866) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 359.25 441.50 Td (Qwen7B) Tj ET
+q 1.00 w 0.200 0.330 0.580 rg 447.07 468.00 55.35 10.26 re f Q
+BT /F2 8.50 Tf 0.200 0.330 0.580 rg 460.47 487.76 Td (+0.513) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 455.24 441.50 Td (TinyLlama) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.840 0.790 RG 64.00 160.00 496.00 190.00 re B Q
+BT /F2 11.00 Tf 0.380 0.430 0.430 rg 82.00 321.00 Td (Worst preservation margin) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 116.00 202.00 m 526.00 202.00 l S Q
+q 1.00 w 0.080 0.450 0.480 rg 139.57 202.00 55.35 49.52 re f Q
+BT /F2 8.50 Tf 0.080 0.450 0.480 rg 152.97 261.02 Td (+3.151) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 152.08 175.50 Td (SmolLM2) Tj ET
+q 1.00 w 0.820 0.550 0.160 rg 242.07 202.00 55.35 0.30 re f Q
+BT /F2 8.50 Tf 0.820 0.550 0.160 rg 255.47 211.80 Td (+0.019) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 252.41 175.50 Td (Qwen0.5B) Tj ET
+q 1.00 w 0.200 0.520 0.340 rg 344.57 202.00 55.35 104.99 re f Q
+BT /F2 8.50 Tf 0.200 0.520 0.340 rg 357.97 316.49 Td (+6.681) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 359.25 175.50 Td (Qwen7B) Tj ET
+q 1.00 w 0.200 0.330 0.580 rg 447.07 202.00 55.35 6.10 re f Q
+BT /F2 8.50 Tf 0.200 0.330 0.580 rg 460.47 217.60 Td (+0.388) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 455.24 175.50 Td (TinyLlama) Tj ET
+q 1.00 w 0.940 0.970 0.950 rg 0.200 0.520 0.340 RG 64.00 64.00 496.00 52.00 re B Q
+BT /F2 9.60 Tf 0.200 0.520 0.340 rg 82.00 90.40 Td (Preservation audit: 32 constructed direction rows, 16 model/evaluation rows, 0 failed pair) Tj ET
+BT /F2 9.60 Tf 0.200 0.520 0.340 rg 82.00 77.34 Td (evaluations, worst margin +0.019.) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 15 0 R >>
+endobj
+15 0 obj
+<< /Length 3610 >>
+stream
+q 1.00 w 0.970 0.970 0.930 rg 0.00 0.00 612.00 792.00 re f Q
+q 1.00 w 1.000 1.000 0.980 rg 0.820 0.840 0.790 RG 44.00 34.00 524.00 724.00 re B Q
+BT /F2 8.50 Tf 0.380 0.430 0.430 rg 56.00 735.50 Td (NEGATIVE CONTROL) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 464.97 735.50 Td (2026-06-11  |  Page 5) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 56.00 726.00 m 556.00 726.00 l S Q
+BT /F2 22.00 Tf 0.100 0.140 0.150 rg 54.00 712.00 Td (Accountability Negative Control) Tj ET
+BT /F1 11.50 Tf 0.380 0.430 0.430 rg 54.00 692.50 Td (The bridge repair is not universal.) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.840 0.790 RG 64.00 396.00 496.00 250.00 re B Q
+BT /F2 11.00 Tf 0.380 0.430 0.430 rg 82.00 617.00 Td (Fresh-source failure counts) Tj ET
+q 1.00 w 0.770 0.250 0.220 rg 350.00 618.00 10.00 10.00 re f Q
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 366.00 618.80 Td (Default) Tj ET
+q 1.00 w 0.820 0.550 0.160 rg 432.00 618.00 10.00 10.00 re f Q
+BT /F1 8.20 Tf 0.380 0.430 0.430 rg 448.00 618.80 Td (Weighted) Tj ET
+q 1.00 w 0.820 0.840 0.790 RG 116.00 440.00 m 522.00 440.00 l S Q
+q 1.00 w 0.770 0.250 0.220 rg 134.27 440.00 24.36 71.98 re f Q
+BT /F2 8.30 Tf 0.770 0.250 0.220 rg 141.80 519.68 Td (41) Tj ET
+q 1.00 w 0.820 0.550 0.160 rg 164.72 440.00 24.36 35.11 re f Q
+BT /F2 8.30 Tf 0.820 0.550 0.160 rg 172.25 482.81 Td (20) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 147.52 413.50 Td (SmolLM2) Tj ET
+q 1.00 w 0.770 0.250 0.220 rg 235.77 440.00 24.36 87.78 re f Q
+BT /F2 8.30 Tf 0.770 0.250 0.220 rg 243.30 535.48 Td (50) Tj ET
+q 1.00 w 0.820 0.550 0.160 rg 266.22 440.00 24.36 75.49 re f Q
+BT /F2 8.30 Tf 0.820 0.550 0.160 rg 273.75 523.19 Td (43) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 246.85 413.50 Td (Qwen0.5B) Tj ET
+q 1.00 w 0.770 0.250 0.220 rg 337.27 440.00 24.36 21.07 re f Q
+BT /F2 8.30 Tf 0.770 0.250 0.220 rg 344.80 468.77 Td (12) Tj ET
+q 1.00 w 0.820 0.550 0.160 rg 367.72 440.00 24.36 0.00 re f Q
+BT /F2 8.30 Tf 0.820 0.550 0.160 rg 377.58 447.70 Td (0) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 352.69 413.50 Td (Qwen7B) Tj ET
+q 1.00 w 0.770 0.250 0.220 rg 438.77 440.00 24.36 154.49 re f Q
+BT /F2 8.30 Tf 0.770 0.250 0.220 rg 446.30 602.19 Td (88) Tj ET
+q 1.00 w 0.820 0.550 0.160 rg 469.22 440.00 24.36 147.47 re f Q
+BT /F2 8.30 Tf 0.820 0.550 0.160 rg 476.75 595.17 Td (84) Tj ET
+BT /F1 8.50 Tf 0.380 0.430 0.430 rg 447.68 413.50 Td (TinyLlama) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.770 0.250 0.220 RG 76.00 250.00 210.00 90.00 re B Q
+BT /F2 11.00 Tf 0.380 0.430 0.430 rg 94.00 309.00 Td (Default count-9) Tj ET
+BT /F2 28.00 Tf 0.770 0.250 0.220 rg 94.00 266.00 Td (192) Tj ET
+BT /F1 9.00 Tf 0.380 0.430 0.430 rg 154.00 273.00 Td (constructed failure rows) Tj ET
+q 1.00 w 0.990 0.990 0.960 rg 0.820 0.550 0.160 RG 314.00 250.00 210.00 90.00 re B Q
+BT /F2 11.00 Tf 0.380 0.430 0.430 rg 332.00 309.00 Td (Weighted target x3) Tj ET
+BT /F2 28.00 Tf 0.820 0.550 0.160 rg 332.00 266.00 Td (147) Tj ET
+BT /F1 9.00 Tf 0.380 0.430 0.430 rg 392.00 273.00 Td (constructed failure rows) Tj ET
+q 1.00 w 0.700 0.780 0.930 rg 0.200 0.330 0.580 RG 72.00 100.00 468.00 98.00 re B Q
+BT /F2 10.50 Tf 0.100 0.140 0.150 rg 90.00 165.50 Td (Interpretation: weighted target bridges repair the dissent geometry pocket and) Tj ET
+BT /F2 10.50 Tf 0.100 0.140 0.150 rg 90.00 151.22 Td (preserve its source/control slices. They do not repair the strict) Tj ET
+BT /F2 10.50 Tf 0.100 0.140 0.150 rg 90.00 136.94 Td (accountability generated-reference pocket in three small-model spaces, so the) Tj ET
+BT /F2 10.50 Tf 0.100 0.140 0.150 rg 90.00 122.66 Td (paper claim stays a residual taxonomy rather than a universal recipe.) Tj ET
+endstream
+endobj
+xref
+0 16
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000148 00000 n 
+0000000218 00000 n 
+0000000293 00000 n 
+0000000361 00000 n 
+0000000507 00000 n 
+0000004345 00000 n 
+0000004491 00000 n 
+0000007995 00000 n 
+0000008143 00000 n 
+0000011059 00000 n 
+0000011207 00000 n 
+0000014214 00000 n 
+0000014362 00000 n 
+trailer
+<< /Size 16 /Root 1 0 R >>
+startxref
+18024
+%%EOF
