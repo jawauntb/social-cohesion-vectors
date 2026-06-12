@@ -160,10 +160,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     pages = [
         _title_page(),
+        _abstract_page(),
+        _introduction_page(),
+        _benchmark_page(),
         _taxonomy_page(),
+        _accountability_page(),
+        _dissent_text_page(),
         _repair_funnel_page(),
         _dissent_page(),
+        _preservation_text_page(),
         _negative_control_page(),
+        _discussion_page(),
+        _reproducibility_page(),
     ]
     _write_pdf(pages, args.output)
     print(f"wrote {args.output}")
@@ -210,8 +218,107 @@ def _title_page() -> Canvas:
     return canvas
 
 
+def _abstract_page() -> Canvas:
+    canvas = _page_base(2, "Abstract")
+    _section_title(canvas, "Abstract", "Full textual paper content, not only charts.", 54, 58)
+    y = _paragraphs(
+        canvas,
+        64,
+        126,
+        486,
+        [
+            "Activation-space studies of social constructs risk confusing semantic structure with surface shortcuts, generated-text artifacts, or fragile selection effects. We study this problem in a procedural-justice benchmark where positive examples preserve usable voice, refusal, evidence access, appeal, non-retaliatory exit, and proportionate repair, while pseudo-cohesive negative examples preserve warm or orderly language but tax those future options.",
+            "Across generated and hand-authored controls, four model spaces, and constructed source/target bridge directions, residual failures are not monolithic. The strongest current evidence supports two distinct residual classes.",
+            "First, accountability_after_harm exposes a generated-reference source pocket: small models invert one recovered generated reference while clean hand-authored accountability controls pass, and strict local perturbation augmentation repairs the slice with positive leave-one-perturbation-out margins in all four model spaces.",
+            "Second, dissent_after_mistake exposes a constructed target-bridge geometry pocket: broad source+target directions already score the generated reference correctly, but constructed target bridges fail when pseudo-side warmth shortcuts are removed. This residual is repaired by asymmetric target-bridge weighting and preserved across source, target, fresh-source, and fresh-target evaluations.",
+            "A strict accountability negative control rejects the overgeneralized claim that weighted target bridges repair all generated pockets. The result is a narrow diagnostic contribution: a claim-bounded residual taxonomy and bridge-sufficiency protocol for procedural-justice activation directions, not evidence of human social effects or causal steering.",
+        ],
+        size=10.2,
+        leading=13.8,
+    )
+    _claim_boundary(canvas, 64, y + 18, 486)
+    return canvas
+
+
+def _introduction_page() -> Canvas:
+    canvas = _page_base(3, "Introduction")
+    _section_title(canvas, "1. Introduction", "The target is agency-preserving procedural justice.", 54, 58)
+    y = _paragraphs(
+        canvas,
+        64,
+        122,
+        486,
+        [
+            "The project asks whether language-model activations can represent distinctions that matter for agency-preserving social cohesion. The target is deliberately narrower than making a model more prosocial. In the current benchmark, a positive procedural-justice example must keep future options genuinely usable: voice, refusal, evidence access, appeal, non-retaliatory exit, and repair.",
+            "A pseudo-cohesive negative example may sound warm, calm, or cooperative, but it taxes those options through approval requirements, privacy loss, alignment pressure, proof burdens, or delayed remedy.",
+            "The central problem is not only whether a direction separates labels. A direction can separate a benchmark for the wrong reason: lexical cues, generated style, source-family duplication, target-side shortcut phrases, or bridge-set selection. The research loop therefore moved from simple benchmark construction to a stricter question.",
+        ],
+        size=10.2,
+        leading=13.6,
+    )
+    _quote_box(
+        canvas,
+        74,
+        y + 8,
+        464,
+        "When activation directions fail after practical-availability, lexical, source-diversity, hand-authored control, and out-of-family gates, what kind of failure remains, and what kind of repair actually fixes it?",
+    )
+    y += 120
+    _subheading(canvas, "Contributions", 64, y)
+    y = _numbered_list(
+        canvas,
+        [
+            "A claim-bounded procedural-justice activation benchmark pipeline that treats practical availability as a path-level gate rather than a mention-level property.",
+            "A residual taxonomy for activation failures that survive lexical, availability, hand-authored control, and model-family checks.",
+            "Two accepted repairs matched to distinct residual classes: perturbation-ladder augmentation for a generated-reference source pocket, and asymmetric target-bridge weighting for a constructed target-bridge geometry pocket.",
+            "Rejected alternatives and negative controls showing that content-only target repair is insufficient for the dissent bridge residual, and weighted target bridges are not a universal generated-pocket repair.",
+        ],
+        74,
+        y + 28,
+        464,
+    )
+    return canvas
+
+
+def _benchmark_page() -> Canvas:
+    canvas = _page_base(4, "Benchmark and gates")
+    _section_title(canvas, "2. Benchmark And Gates", "The benchmark is built to reject shortcut cohesion.", 54, 58)
+    y = _paragraphs(
+        canvas,
+        64,
+        122,
+        486,
+        [
+            "The benchmark is organized around paired positive and pseudo-cohesive examples. The positive side must make future options usable now. The pseudo side must retain procedural taxes even when it avoids obvious villain language.",
+            "All activation diagnostics in this draft use layer -2 reports for four model spaces: SmolLM2-1.7B, Qwen2.5-0.5B, Qwen2.5-7B, and TinyLlama-1.1B. Generated/model artifacts are kept out of git; durable summaries are committed under docs/research/.",
+        ],
+        size=10.2,
+        leading=13.6,
+    )
+    _subheading(canvas, "Main gates", 64, y + 6)
+    _simple_table(
+        canvas,
+        64,
+        y + 42,
+        486,
+        ["Gate", "Purpose"],
+        [
+            ["Practical availability", "Future-option paths are usable in positives and taxed in pseudo examples."],
+            ["Lexical diagnostics", "Detect shallow terms, lengths, or label-aligned phrase shortcuts."],
+            ["Source diversity", "Prevent duplicated generated phrasings from masquerading as semantic coverage."],
+            ["Hand-authored controls", "Test whether the distinction survives outside generated text."],
+            ["Out-of-family replication", "Test whether the result survives additional model spaces."],
+            ["Constructed bridge diagnostics", "Train from limited bridge subsets and evaluate held-out fresh slices."],
+            ["Preservation / negative controls", "Confirm repairs do not damage earlier slices or overgeneralize."],
+        ],
+        row_height=45,
+        column_widths=[150, 336],
+    )
+    return canvas
+
+
 def _taxonomy_page() -> Canvas:
-    canvas = _page_base(2, "Residual taxonomy")
+    canvas = _page_base(5, "Residual taxonomy")
     _section_title(canvas, "Two Residual Classes", "Failures are not monolithic.", 54, 58)
     _lane(
         canvas,
@@ -242,7 +349,7 @@ def _taxonomy_page() -> Canvas:
 
 
 def _repair_funnel_page() -> Canvas:
-    canvas = _page_base(3, "Repair funnel")
+    canvas = _page_base(8, "Repair funnel")
     _section_title(canvas, "Dissent Bridge Repair Funnel", "Rejected paths make the result sharper.", 54, 58)
     bars = [
         Bar("Initial target-bridge failures", 39, CORAL),
@@ -268,7 +375,7 @@ def _repair_funnel_page() -> Canvas:
 
 
 def _dissent_page() -> Canvas:
-    canvas = _page_base(4, "Dissent margins")
+    canvas = _page_base(9, "Dissent margins")
     _section_title(canvas, "Accepted Dissent Repair", "Fresh slices and preservation both pass.", 54, 58)
     bars = [
         Bar("SmolLM2", 3.151, TEAL),
@@ -292,7 +399,7 @@ def _dissent_page() -> Canvas:
 
 
 def _negative_control_page() -> Canvas:
-    canvas = _page_base(5, "Negative control")
+    canvas = _page_base(11, "Negative control")
     _section_title(canvas, "Accountability Negative Control", "The bridge repair is not universal.", 54, 58)
     bars = [
         GroupedBar("SmolLM2", 41, 20),
@@ -317,6 +424,342 @@ def _negative_control_page() -> Canvas:
         BLUE,
     )
     return canvas
+
+
+def _accountability_page() -> Canvas:
+    canvas = _page_base(6, "Residual 1")
+    _section_title(canvas, "3. Residual 1: Source Pocket", "accountability_after_harm", 54, 58)
+    y = _paragraphs(
+        canvas,
+        64,
+        122,
+        486,
+        [
+            "The hardest accountability residual was the recovered generated accountability_after_harm reference. The broad source+target direction inverted this reference in SmolLM2, Qwen2.5-0.5B, and TinyLlama, while Qwen2.5-7B remained positive.",
+            "A source-style intervention narrowed the issue: clean hand-authored accountability variants passed, including a generated-like paragraph. The residual was therefore not broad accountability content failure.",
+            "A strict perturbation ladder split the reference into twelve deterministic variants, including opening-frame edits, neutral replacements, length controls, explicit refusal, pseudo-side condition edits, and shortcut neutralization. Scoped practical availability remained intact over all 72/72 tested paths.",
+            "Lexical diagnostics stayed caveated because the artifact was intentionally the known leaky generated reference. This experiment is therefore interpreted as a local mechanism stress test rather than a clean benchmark.",
+        ],
+        size=10.0,
+        leading=13.4,
+    )
+    _subheading(canvas, "Accepted repair: strict perturbation augmentation", 64, y + 4)
+    _simple_table(
+        canvas,
+        64,
+        y + 38,
+        486,
+        ["Model", "Full fresh", "Fresh LOO", "Source", "Target"],
+        [
+            ["SmolLM2", "+54.525", "+47.185", "+20.317", "+52.012"],
+            ["Qwen0.5B", "+2.228", "+1.376", "+1.512", "+1.549"],
+            ["Qwen7B", "+25.406", "+23.059", "+5.052", "+22.233"],
+            ["TinyLlama", "+1.029", "+0.800", "+0.593", "+1.194"],
+        ],
+        row_height=34,
+        column_widths=[130, 88, 88, 88, 92],
+    )
+    _callout(
+        canvas,
+        72,
+        636,
+        468,
+        "Interpretation: small model directions can encode the accountability distinction, but one generated reference lies in a local source pocket that requires nearby perturbation support.",
+        TEAL_LIGHT,
+        TEAL,
+    )
+    return canvas
+
+
+def _dissent_text_page() -> Canvas:
+    canvas = _page_base(7, "Residual 2")
+    _section_title(canvas, "4. Residual 2: Bridge Geometry", "dissent_after_mistake", 54, 58)
+    y = _paragraphs(
+        canvas,
+        64,
+        122,
+        486,
+        [
+            "The dissent residual behaved differently. The unchanged generated dissent reference was already positive under broad source+target directions in all four model spaces. Positive-side path and neutral replacement edits strengthened rather than repaired the result.",
+            "The failure appeared only when constructed bridge directions were trained from limited bridge subsets and evaluated on fresh perturbations. The bridge-stability summary localized the initial failure to target_bridge rows, especially the negative_shortcuts_neutralized perturbation.",
+            "The first repair added shortcut-neutralized target/control content. It passed the scoped text gate with 20/20 repaired availability paths and minimum margin +0.640, but the default six-pair constructed bridge gate did not improve. Constructed failures moved from 39 to 40, and all failures remained target-bridge failures.",
+            "Increasing target bridge count to 15 helped but did not finish the repair: failures dropped to 13, Qwen2.5-7B and TinyLlama passed, and SmolLM2 plus Qwen2.5-0.5B still failed.",
+        ],
+        size=10.0,
+        leading=13.4,
+    )
+    _subheading(canvas, "Accepted repair: asymmetric target-bridge weighting", 64, y + 8)
+    _simple_table(
+        canvas,
+        64,
+        y + 42,
+        486,
+        ["Parameter", "Value"],
+        [
+            ["Target bridge pair count", "9"],
+            ["Target bridge primary repetitions", "1"],
+            ["Target bridge secondary repetitions", "3"],
+            ["Source bridge primary repetitions", "1"],
+            ["Source bridge secondary repetitions", "1"],
+        ],
+        row_height=34,
+        column_widths=[340, 146],
+    )
+    return canvas
+
+
+def _preservation_text_page() -> Canvas:
+    canvas = _page_base(10, "Preservation")
+    _section_title(canvas, "5. Preservation And Control", "A repair must preserve earlier distinctions.", 54, 58)
+    y = _paragraphs(
+        canvas,
+        64,
+        122,
+        486,
+        [
+            "A repair is only useful if it preserves the earlier distinctions. The weighted dissent bridge repair passed preservation across source, target, fresh-source, and fresh-target slices.",
+            "The same weighted target-bridge setting was then tested against the strict accountability residual as a negative control. It improved some margins but did not repair the class.",
+        ],
+        size=10.2,
+        leading=13.6,
+    )
+    _subheading(canvas, "Dissent preservation audit", 64, y + 14)
+    _simple_table(
+        canvas,
+        64,
+        y + 50,
+        486,
+        ["Metric", "Result"],
+        [
+            ["Models", "4"],
+            ["Constructed direction rows", "32"],
+            ["Evaluation rows", "16"],
+            ["Failed pair evaluations", "0"],
+            ["Worst margin", "+0.019"],
+            ["Worst evaluation", "source"],
+        ],
+        row_height=31,
+        column_widths=[310, 176],
+    )
+    _callout(
+        canvas,
+        72,
+        620,
+        468,
+        "The negative control is central: default count-9 accountability bridges had 192 failure rows; weighted target bridges reduced this to 147, but three model spaces still failed.",
+        BLUE_LIGHT,
+        BLUE,
+    )
+    return canvas
+
+
+def _discussion_page() -> Canvas:
+    canvas = _page_base(12, "Discussion")
+    _section_title(canvas, "6. Discussion And Limits", "The result is a typed repair ledger.", 54, 58)
+    y = _paragraphs(
+        canvas,
+        64,
+        122,
+        486,
+        [
+            "The useful scientific object here is not a single cohesion vector. It is a typed repair ledger: what failed, which gate caught it, which repair was accepted, which plausible repair failed, and which claim boundary remains.",
+            "The accountability result says local generated references can create off-manifold source pockets. The dissent result says limited bridge construction can create target-side geometry pockets even when the broad direction already scores the generated reference correctly. The negative control says these pockets are not interchangeable.",
+            "This matters for activation-based social-construct work because a benchmark score alone would hide all three facts. A system could appear successful on a generated benchmark while failing clean controls, or appear broken on a generated residual while still encoding the intended procedural distinction under hand-authored controls. Conversely, adding more positive content is not always enough; bridge geometry itself can be the failure surface.",
+        ],
+        size=10.0,
+        leading=13.4,
+    )
+    _subheading(canvas, "Limitations", 64, y + 10)
+    _bullet_list(
+        canvas,
+        [
+            "The experiments are text-benchmark activation diagnostics, not human studies.",
+            "The results are layer -2 diagnostics over four model spaces, not a full architecture or layer sweep.",
+            "The benchmark is about procedural-justice distinctions, not social cohesion as a complete construct.",
+            "The accountability perturbation ladder is a local mechanism stress test over a known leaky generated reference.",
+            "The repairs are diagnostic repairs; they do not establish causal steering, deployment safety, clinical outcomes, neural correlates, or real-world social effects.",
+        ],
+        74,
+        y + 44,
+        452,
+    )
+    return canvas
+
+
+def _reproducibility_page() -> Canvas:
+    canvas = _page_base(13, "Reproducibility")
+    _section_title(canvas, "7. Reproducibility And Next Steps", "What to share and what to do next.", 54, 58)
+    _subheading(canvas, "Durable research notes", 64, 124)
+    y = _bullet_list(
+        canvas,
+        [
+            "2026-06-09-strict-accountability-perturbation-ladder.md",
+            "2026-06-09-dissent-perturbation-ladder.md",
+            "2026-06-11-target-bridge-shortcut-repair.md",
+            "2026-06-11-weighted-target-bridge-repair.md",
+            "2026-06-11-weighted-bridge-preservation-audit.md",
+            "2026-06-11-residual-taxonomy-repair-comparison.md",
+        ],
+        74,
+        158,
+        452,
+        size=9.4,
+        leading=12.4,
+    )
+    _subheading(canvas, "Live artifact roots", 64, y + 12)
+    y = _bullet_list(
+        canvas,
+        [
+            "/tmp/social_cohesion_accountability_strict_perturbation_ladder_20260609/",
+            "/tmp/social_cohesion_target_bridge_shortcut_repair_20260611/",
+            "/tmp/social_cohesion_bridge_weight_audit_20260611/",
+            "/tmp/social_cohesion_weighted_bridge_preservation_20260611/",
+        ],
+        74,
+        y + 46,
+        452,
+        size=8.9,
+        leading=12.0,
+        font="F3",
+    )
+    _subheading(canvas, "Next experiments", 64, y + 18)
+    _numbered_list(
+        canvas,
+        [
+            "Add a regeneration manifest mapping every paper table to committed scripts and expected external artifact paths.",
+            "Run one narrow robustness check: either a fixed-availability third residual or a small layer sweep for the accepted weighted dissent repair.",
+            "Convert this working draft into a formal paper with related work, figures, and a reproducibility appendix.",
+        ],
+        74,
+        y + 52,
+        452,
+        size=9.6,
+        leading=12.8,
+    )
+    _claim_boundary(canvas, 64, 610, 486)
+    return canvas
+
+
+def _paragraphs(
+    canvas: Canvas,
+    x: float,
+    y: float,
+    width: float,
+    paragraphs: Sequence[str],
+    *,
+    size: float = 9.8,
+    leading: float = 13.0,
+) -> float:
+    current_y = y
+    for paragraph in paragraphs:
+        current_y = canvas.wrapped_text(
+            paragraph,
+            x,
+            current_y,
+            width,
+            size=size,
+            leading=leading,
+        )
+        current_y += 2
+    return current_y
+
+
+def _subheading(canvas: Canvas, text: str, x: float, y: float) -> None:
+    canvas.text(text, x, y, size=13, font="F2", color=TEAL)
+
+
+def _quote_box(canvas: Canvas, x: float, y: float, width: float, text: str) -> None:
+    canvas.rect(x, y, width, 92, fill=Color(0.93, 0.97, 0.97), stroke=TEAL)
+    canvas.rect(x, y, 8, 92, fill=TEAL)
+    canvas.wrapped_text(text, x + 22, y + 20, width - 42, size=10.4, font="F2", color=INK)
+
+
+def _bullet_list(
+    canvas: Canvas,
+    items: Sequence[str],
+    x: float,
+    y: float,
+    width: float,
+    *,
+    size: float = 9.8,
+    leading: float = 13.2,
+    font: str = "F1",
+) -> float:
+    current_y = y
+    for item in items:
+        canvas.text("-", x, current_y, size=size, font="F2", color=TEAL)
+        current_y = canvas.wrapped_text(
+            item,
+            x + 16,
+            current_y,
+            width - 16,
+            size=size,
+            font=font,
+            leading=leading,
+        )
+        current_y += 1
+    return current_y
+
+
+def _numbered_list(
+    canvas: Canvas,
+    items: Sequence[str],
+    x: float,
+    y: float,
+    width: float,
+    *,
+    size: float = 9.8,
+    leading: float = 13.2,
+) -> float:
+    current_y = y
+    for index, item in enumerate(items, start=1):
+        canvas.text(f"{index}.", x, current_y, size=size, font="F2", color=TEAL)
+        current_y = canvas.wrapped_text(
+            item,
+            x + 20,
+            current_y,
+            width - 20,
+            size=size,
+            leading=leading,
+        )
+        current_y += 1
+    return current_y
+
+
+def _simple_table(
+    canvas: Canvas,
+    x: float,
+    y: float,
+    width: float,
+    headers: Sequence[str],
+    rows: Sequence[Sequence[str]],
+    *,
+    row_height: float,
+    column_widths: Sequence[float],
+) -> None:
+    table_height = row_height * (len(rows) + 1)
+    canvas.rect(x, y, width, table_height, fill=Color(0.99, 0.99, 0.96), stroke=LINE)
+    canvas.rect(x, y, width, row_height, fill=Color(0.91, 0.95, 0.94), stroke=LINE)
+    current_x = x
+    for index, header in enumerate(headers):
+        if index > 0:
+            canvas.line(current_x, y, current_x, y + table_height, color=LINE)
+        canvas.text(header, current_x + 8, y + 12, size=8.7, font="F2", color=TEAL)
+        current_x += column_widths[index]
+    for row_index, row in enumerate(rows):
+        row_y = y + row_height * (row_index + 1)
+        canvas.line(x, row_y, x + width, row_y, color=LINE)
+        current_x = x
+        for column_index, value in enumerate(row):
+            canvas.wrapped_text(
+                value,
+                current_x + 8,
+                row_y + 9,
+                column_widths[column_index] - 16,
+                size=8.3,
+                leading=10.2,
+            )
+            current_x += column_widths[column_index]
 
 
 def _page_base(page_number: int, label: str) -> Canvas:
@@ -578,9 +1021,9 @@ def _serialize_pdf(objects: Sequence[bytes]) -> bytes:
         pdf += f"{index} 0 obj\n".encode("ascii") + obj + b"\nendobj\n"
     xref_position = len(pdf)
     pdf += f"xref\n0 {len(objects) + 1}\n".encode("ascii")
-    pdf += b"0000000000 65535 f \n"
+    pdf += b"0000000000 65535 f\n"
     for offset in offsets[1:]:
-        pdf += f"{offset:010d} 00000 n \n".encode("ascii")
+        pdf += f"{offset:010d} 00000 n\n".encode("ascii")
     pdf += (
         f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
         f"startxref\n{xref_position}\n%%EOF\n"

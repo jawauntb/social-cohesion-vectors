@@ -121,8 +121,8 @@ Recent accepted findings:
 - `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md`,
   `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.pdf`, and
   `docs/research/2026-06-11-residual-taxonomy-repair-comparison.md`: consolidate
-  the latest residual loop into a shareable paper scaffold, vector-chart PDF,
-  and side-by-side repair table. The supported claim is narrow:
+  the latest residual loop into a shareable paper scaffold, full-text charted
+  PDF, and side-by-side repair table. The supported claim is narrow:
   `accountability_after_harm` is a generated-reference/source-pocket residual
   repaired by strict perturbation augmentation, while `dissent_after_mistake`
   is a constructed target-bridge geometry residual repaired by asymmetric

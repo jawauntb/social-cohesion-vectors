@@ -2,7 +2,7 @@
 
 Status: NeurIPS-style working draft for collaborator review
 
-Rendered PDF: `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.pdf`
+Full-text charted PDF: `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.pdf`
 
 PDF renderer: `scripts/render_residual_taxonomy_pdf.py`
 
