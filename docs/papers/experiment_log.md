@@ -9,7 +9,7 @@ marked pending or partial.
 Current coordination note: the active paper path is the residual-taxonomy and
 bridge-sufficiency draft in
 `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.md`, with the
-shareable vector-chart PDF in
+shareable full-text charted PDF in
 `docs/papers/neurips_residual_taxonomy_bridge_sufficiency.pdf`, and the
 side-by-side repair ledger in
 `docs/research/2026-06-11-residual-taxonomy-repair-comparison.md`. The supported
