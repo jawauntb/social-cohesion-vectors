@@ -96,7 +96,13 @@ _TRIBE_IMPORT_RUNTIME_PREFLIGHT_COMMAND = (
 
 ## Current Repo Audit
 
-As of 2026-06-03, this repo references TRIBE as a planned brain-aligned bridge
-and has a default `TRIBE_MODEL_ID`, but it does not install
-`facebookresearch/tribev2` in a Modal image and does not import `TribeModel`.
-No local Modal TRIBE patch is needed here yet.
+As of 2026-06-03, this repo referenced TRIBE as a planned brain-aligned bridge
+with a default `TRIBE_MODEL_ID` but did not install `facebookresearch/tribev2`.
+
+Updated 2026-07-01: `image_factory.tribe_video_image()` now installs
+`git+https://github.com/facebookresearch/tribev2.git@${TRIBE_GIT_REF}` with
+`exca==0.5.25` pinned in the same layer and the build-time import preflight from
+this runbook. `modal_app/functions/video_analyzer.py` imports `TribeModel` and
+runs `predict()` on an A100 (TRIBE needs ~40 GB VRAM). If the image build fails
+at the preflight, pin `TRIBE_GIT_REF` to a validated commit and confirm the
+`exca` version above still matches TRIBE's `neuralset` dependency.

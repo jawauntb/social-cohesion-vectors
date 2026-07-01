@@ -1,16 +1,28 @@
-"""Modal video analyzer: TRIBE brain-response trajectory -> engagement prediction.
+"""Modal video analyzer: TRIBE v2 brain-response trajectory -> engagement prediction.
 
 Built on this repo's existing Modal infrastructure — the shared ``app``, the
-``.env``-backed secrets (so ``HF_TOKEN``/``HUGGINGFACE_TOKEN`` are present in the
-container), the config's ``TRIBE_MODEL_ID``, and the ``tribe_video_image`` from
+``.env``-backed secrets (so ``HF_TOKEN``/``HUGGINGFACE_TOKEN`` reach the
+container), the config's ``TRIBE_MODEL_ID``, and ``tribe_video_image`` from
 ``image_factory`` (which pins TRIBE per the startup runbook).
 
-The web endpoint the site calls:
+Real TRIBE v2 API (github.com/facebookresearch/tribev2):
 
-    POST /   { "video_id": str, "url": str|null, "caption": str|null, "fps": float }
-    ->        { "video_id", "model_version", "used_brain",
+    from tribev2 import TribeModel
+    model = TribeModel.from_pretrained("facebook/tribev2", cache_folder=...)
+    df = model.get_events_dataframe(video_path="clip.mp4")   # or text_path / audio_path
+    preds, segments = model.predict(events=df)                # preds: (n_timesteps, ~20k vertices)
+
+``preds`` is the predicted whole-brain fMRI response on the fsaverage5 mesh —
+i.e. the viewer's cognitive *trajectory* over the clip, which is exactly what we
+summarize (velocity / curvature / novelty / surprise) and map to engagement.
+TRIBE needs ~40 GB VRAM, so these functions run on an A100.
+
+Endpoint the site calls (CORS-enabled, handles the browser preflight):
+
+    POST /   { "video_id", "url"?, "caption"?, "fps"? }
+    ->        { "video_id","model_version","used_brain",
                 "likes","comments","shares","saves","retention","latent_score",
-                "editor_notes": [ {"tSec","kind","message","severity"} ] }
+                "editor_notes":[ {"tSec","kind","message","severity"} ] }
 
 Deploy:  modal deploy social_cohesion_vectors.modal_app.functions.video_analyzer
 """
@@ -32,11 +44,12 @@ from social_cohesion_vectors.modal_app.image_factory import tribe_video_image
 
 _CFG = get_config()
 TRIBE_MODEL_ID = _CFG.model_ids.tribe
-TARGET_LAYER = int(os.environ.get("TRIBE_TARGET_LAYER", "-1"))
-DEFAULT_FPS = float(os.environ.get("FRAME_SAMPLE_FPS", "1.0"))
-_GPU = _CFG.modal.default_gpu
+# TRIBE's trimodal pipeline needs ~40 GB VRAM — override the repo default GPU.
+_GPU = os.environ.get("TRIBE_GPU", "A100")
+# fMRI temporal resolution (CNeuroMod TR); used to place editor notes in seconds.
+_TR_SEC = float(os.environ.get("TRIBE_TR_SEC", "1.49"))
 
-# Cache TRIBE / HF weights across warm containers.
+# Persist downloaded TRIBE / HF weights across warm containers.
 _weights = modal.Volume.from_name("scv-tribe-weights", create_if_missing=True)
 _WEIGHTS_DIR = "/weights"
 
@@ -59,9 +72,8 @@ def _dynamics(traj) -> dict[str, float]:
         curv = np.arccos(np.clip(np.sum(a * b, axis=1) / (na * nb), -1, 1))
     else:
         curv = np.zeros(0)
-    nov = np.zeros(traj.shape[0])
-    for t in range(1, traj.shape[0]):
-        nov[t] = np.linalg.norm(traj[t] - traj[:t].mean(axis=0))
+    nov = np.array([np.linalg.norm(traj[i] - traj[:i].mean(axis=0)) if i else 0.0
+                    for i in range(traj.shape[0])])
     sur = np.zeros(traj.shape[0])
     for t in range(2, traj.shape[0]):
         forecast = traj[t - 1] + (traj[t - 1] - traj[t - 2])
@@ -75,7 +87,7 @@ def _dynamics(traj) -> dict[str, float]:
     }
 
 
-def _landmarks(traj, fps: float) -> list[dict]:
+def _landmarks(traj, sec_per_step: float) -> list[dict]:
     import numpy as np
 
     notes: list[dict] = []
@@ -85,23 +97,42 @@ def _landmarks(traj, fps: float) -> list[dict]:
     peak = int(np.argmax(vel[: max(2, vel.size // 2)]))
     tail = vel[peak + 1:]
     if tail.size and tail.mean() < 0.5 * vel[peak]:
-        t = round((peak + 1) / max(fps, 1e-6), 1)
+        t = round((peak + 1) * sec_per_step, 1)
         notes.append({"tSec": t, "kind": "curiosity", "severity": 2,
-                      "message": f"Curiosity collapses after second {t:g} (representational change flattens)."})
+                      "message": f"Curiosity collapses around second {t:g} (representational change flattens)."})
     nov = np.array([np.linalg.norm(traj[i] - traj[:i].mean(axis=0)) if i else 0.0
                     for i in range(traj.shape[0])])
     if nov.shape[0] >= 3 and np.polyfit(np.arange(nov.shape[0]), nov, 1)[0] < 0:
-        t = round(int(np.argmax(nov)) / max(fps, 1e-6), 1)
+        t = round(int(np.argmax(nov)) * sec_per_step, 1)
         notes.append({"tSec": t, "kind": "novelty", "severity": 1,
                       "message": f"Semantic novelty peaks near second {t:g}, then plateaus."})
     return notes
 
 
+def _engagement_from_dynamics(dyn: dict) -> dict:
+    """Heuristic mapping until a trained head is loaded from the weights volume.
+
+    Sharing/comments track surprise + curvature; retention tracks non-decaying
+    novelty. Replace by loading a fitted regressor over these dynamics features.
+    """
+    sig = lambda x: 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, x))))
+    v, s, c, nd = (dyn["velocity_mean"], dyn["surprise_mean"],
+                   dyn["curvature_mean"], dyn["novelty_decay"])
+    # dynamics on ~20k-vertex fMRI are large-magnitude; squash to comparable scale
+    z = lambda x: x / 50.0
+    return {
+        "likes": sig(0.6 * z(v) + 0.4 * z(s)),
+        "comments": sig(0.8 * z(s) + 0.3 * c),
+        "shares": sig(0.7 * z(s) + 0.5 * c),
+        "saves": sig(0.5 * z(v) - 0.6 * nd),
+        "retention": sig(-1.2 * nd),
+    }
+
+
 # --------------------------------------------------------------------------- #
-# TRIBE forward pass (real path + graceful fallback so the endpoint deploys).
+# Media fetch + TRIBE forward pass.
 # --------------------------------------------------------------------------- #
 def _download(url: str) -> str:
-    """Fetch a direct media URL, or a platform URL via yt-dlp, to a temp file."""
     dst = tempfile.mktemp(suffix=".mp4")
     if any(h in url for h in ("youtube.com", "youtu.be", "tiktok.com", "instagram.com")):
         ytdlp = importlib.import_module("yt_dlp")
@@ -112,66 +143,61 @@ def _download(url: str) -> str:
     return dst
 
 
-def _tribe_trajectory(url: str | None, caption: str | None, fps: float):
-    """Return (trajectory ndarray [steps, dim], model_id, used_brain).
+def _load_model():
+    """Load TRIBE v2, caching weights on the volume. None on failure (-> fallback)."""
+    try:
+        from tribev2 import TribeModel
 
-    Wire the real TRIBE forward here once the tribev2 API is confirmed:
-      from tribev2 import TribeModel
-      model = TribeModel.from_pretrained(TRIBE_MODEL_ID, token=_CFG.api_keys.huggingface)
-      frames, audio = sample_media(path, fps); text = caption or transcribe(path)
-      traj = model.predict(frames=frames, audio=audio, text=text, layer=TARGET_LAYER)
-    Until then, a deterministic seeded trajectory keeps the endpoint live.
-    """
+        model = TribeModel.from_pretrained(TRIBE_MODEL_ID, cache_folder=_WEIGHTS_DIR)
+        _weights.commit()
+        return model
+    except Exception as exc:  # weights/token/deps missing
+        print(f"[video_analyzer] TRIBE load failed ({type(exc).__name__}: {exc}); using fallback")
+        return None
+
+
+def _trajectory(model, url: str | None, caption: str | None, fps: float):
+    """Return (trajectory ndarray [n_timesteps, n_vertices], model_id, used_brain, sec_per_step)."""
     import numpy as np
 
-    token = _CFG.api_keys.huggingface
     try:
-        if not token:
-            raise RuntimeError("no HF token in secrets")
-        tribev2 = importlib.import_module("tribev2")  # noqa: F841
-        path = _download(url) if url else None  # noqa: F841
-        # TODO: real TRIBE forward pass -> per-timestep brain responses.
-        raise NotImplementedError("wire tribev2 forward pass")
-    except Exception as exc:  # deterministic fallback
+        if model is None:
+            raise RuntimeError("model not loaded")
+        if url:
+            path = _download(url)
+            df = model.get_events_dataframe(video_path=path)
+        elif caption:
+            tp = tempfile.mktemp(suffix=".txt")
+            with open(tp, "w", encoding="utf-8") as fh:
+                fh.write(caption)
+            df = model.get_events_dataframe(text_path=tp)
+        else:
+            raise ValueError("provide a video url or a caption")
+        preds, _segments = model.predict(events=df)
+        traj = np.asarray(preds, dtype=float)
+        if traj.ndim == 1:
+            traj = traj.reshape(-1, 1)
+        return traj, TRIBE_MODEL_ID, True, _TR_SEC
+    except Exception as exc:
         print(f"[video_analyzer] fallback trajectory ({type(exc).__name__}: {exc})")
         seed = abs(hash((url or "", caption or ""))) % (2**32)
         rng = np.random.default_rng(seed)
         steps = max(6, int(fps * 20))
         walk = np.cumsum(rng.normal(scale=0.3, size=(steps, 64)), axis=0)
         walk[3:6] += rng.normal(scale=1.5, size=(3, 64))
-        return walk.astype("float32"), f"{TRIBE_MODEL_ID}#fallback", False
+        return walk.astype("float32"), f"{TRIBE_MODEL_ID}#fallback", False, 1.0 / max(fps, 1e-6)
 
 
-def _engagement_from_dynamics(dyn: dict) -> dict:
-    """Heuristic mapping until a trained model artifact is loaded from the volume.
-
-    Sharing/comments track surprise + curvature; retention tracks non-decaying
-    novelty. Replace by loading data/models/engagement.joblib when available.
-    """
-    sig = lambda x: 1.0 / (1.0 + math.exp(-x))
-    v, s, c, nd = (dyn["velocity_mean"], dyn["surprise_mean"],
-                   dyn["curvature_mean"], dyn["novelty_decay"])
-    return {
-        "likes": sig(0.6 * v + 0.4 * s),
-        "comments": sig(0.8 * s + 0.3 * c),
-        "shares": sig(0.7 * s + 0.5 * c),
-        "saves": sig(0.5 * v - 0.6 * nd),
-        "retention": sig(-1.2 * nd),
-    }
-
-
-def analyze_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    import numpy as np  # noqa: F401
-
+def analyze_payload(model, payload: dict[str, Any]) -> dict[str, Any]:
     video_id = str(payload.get("video_id") or "draft")
     url = payload.get("url") or None
     caption = payload.get("caption") or None
-    fps = float(payload.get("fps") or DEFAULT_FPS)
+    fps = float(payload.get("fps") or 1.0)
 
-    traj, model_id, used_brain = _tribe_trajectory(url, caption, fps)
+    traj, model_id, used_brain, sec_per_step = _trajectory(model, url, caption, fps)
     dyn = _dynamics(traj)
     targets = _engagement_from_dynamics(dyn)
-    notes = _landmarks(traj, fps)
+    notes = _landmarks(traj, sec_per_step)
 
     return {
         "video_id": video_id,
@@ -184,7 +210,7 @@ def analyze_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------- #
-# Modal function + CORS-enabled web endpoint.
+# Modal function (batch/CLI) + CORS ASGI web endpoint (browser-callable).
 # --------------------------------------------------------------------------- #
 @app.function(
     image=tribe_video_image(),
@@ -194,7 +220,7 @@ def analyze_payload(payload: dict[str, Any]) -> dict[str, Any]:
     timeout=1800,
 )
 def analyze_video(payload: dict[str, Any]) -> dict[str, Any]:
-    return analyze_payload(payload)
+    return analyze_payload(_load_model(), payload)
 
 
 @app.function(
@@ -203,14 +229,33 @@ def analyze_video(payload: dict[str, Any]) -> dict[str, Any]:
     secrets=modal_secrets,
     volumes={_WEIGHTS_DIR: _weights},
     timeout=1800,
+    min_containers=0,
 )
-@modal.fastapi_endpoint(method="POST", label="video-analyzer")
-def analyze(payload: dict[str, Any]):
-    from fastapi.responses import JSONResponse
+@modal.asgi_app(label="video-analyzer")
+def web():
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
 
-    result = analyze_payload(payload)
-    # Allow the static site (GitHub Pages) to call this endpoint from the browser.
-    return JSONResponse(result, headers={"Access-Control-Allow-Origin": "*"})
+    # Load TRIBE once per container, not per request.
+    model = _load_model()
+
+    api = FastAPI(title="video-analyzer")
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @api.post("/")
+    def analyze(payload: dict):
+        return analyze_payload(model, payload)
+
+    @api.get("/health")
+    def health():
+        return {"ok": True, "model": TRIBE_MODEL_ID, "loaded": model is not None}
+
+    return api
 
 
 @app.local_entrypoint()
