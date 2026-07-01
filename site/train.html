@@ -41,7 +41,10 @@ label.field{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;color
 input[type=number],input[type=text],select{background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:.5rem .6rem;font:inherit}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-top:.6rem}
 .hidden{display:none}
-.note{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:8px;padding:.6rem .8rem;margin-top:.8rem;font-size:.88rem}
+.notes{list-style:none;display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem}
+.note{display:flex;gap:.6rem;align-items:center;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:8px;padding:.6rem .8rem;font-size:.88rem}
+.note .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--warn);min-width:74px}
+.note .m{font-size:.9rem}
 code{font-family:ui-monospace,monospace;background:var(--panel2);padding:.05rem .3rem;border-radius:4px;font-size:.85em}
 .bar-track{display:inline-block;width:90px;height:8px;background:#1c2233;border-radius:5px;overflow:hidden;vertical-align:middle;margin-right:.4rem}
 .bar-fill{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--good))}
@@ -122,6 +125,29 @@ code{font-family:ui-monospace,monospace;background:var(--panel2);padding:.05rem 
     <label class="drop" id="drop2" for="file2"><div>Drop a CSV of new videos here, or click to choose</div></label>
     <input type="file" id="file2" accept=".csv,text/csv" />
     <div class="row"><button class="ghost hidden" id="downloadPreds" type="button">Download predictions CSV</button><span class="muted" id="bulkInfo"></span></div>
+  </div>
+
+  <!-- STEP 5: brain pipeline -->
+  <div class="step" id="step5">
+    <div class="step-h"><span class="step-n">5</span><strong>Score a video with the brain pipeline (TRIBE)</strong></div>
+    <p class="muted">Send a video to the deployed TRIBE brain-response analyzer (Modal + Hugging Face, from the repo's <code>video_analyzer</code> function). It estimates the viewer's cognitive trajectory and returns predicted engagement + editor notes. Set your endpoint once — it's remembered in this browser.</p>
+    <div class="grid2">
+      <label class="field">Analyzer endpoint (Modal)
+        <input type="text" id="endpoint" placeholder="https://jawaun--video-analyzer.modal.run" /></label>
+      <label class="field">Video id
+        <input type="text" id="v_id" value="draft-001" /></label>
+    </div>
+    <label class="field" style="margin-top:.6rem">Video URL
+      <input type="text" id="v_url" placeholder="https://… (YouTube, TikTok, or direct mp4)" /></label>
+    <label class="field" style="margin-top:.6rem">Caption / hook (optional)
+      <input type="text" id="v_cap" placeholder="opening line / hook" /></label>
+    <div class="row"><button id="analyzeBtn" type="button">Analyze video</button><span class="muted" id="analyzeInfo"></span></div>
+    <div id="analyzeOut" class="hidden">
+      <h2>Predicted engagement <span class="tag" id="analyzeModel"></span></h2>
+      <table id="analyzeBars"></table>
+      <h2>Editor notes</h2>
+      <ul class="notes" id="analyzeNotes"></ul>
+    </div>
   </div>
 </div>
 
@@ -362,6 +388,38 @@ function download(name,content,type){
   const a=document.createElement("a");a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
 }
 function mulberry32(a){return function(){a|=0;a=(a+0x6d2b79f5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+
+// ---------- step 5: TRIBE brain-pipeline analyzer ----------
+const EP_KEY="brainlab_video_endpoint";
+const TARGETS=["likes","comments","shares","saves","retention"];
+$("endpoint").value=localStorage.getItem(EP_KEY)||"https://jawaun--video-analyzer.modal.run";
+$("endpoint").addEventListener("change",()=>localStorage.setItem(EP_KEY,$("endpoint").value.trim()));
+$("analyzeBtn").addEventListener("click",async()=>{
+  let ep=$("endpoint").value.trim();
+  if(!ep){alert("Set your Modal analyzer endpoint URL first.");return;}
+  localStorage.setItem(EP_KEY,ep);
+  const body={video_id:$("v_id").value||"draft",url:$("v_url").value.trim()||null,caption:$("v_cap").value.trim()||null};
+  $("analyzeInfo").textContent="Analyzing… first call may cold-start the GPU (can take ~30–60s).";
+  $("analyzeBtn").disabled=true;
+  try{
+    const r=await fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    renderAnalyze(await r.json());
+    $("analyzeInfo").textContent="";
+  }catch(e){
+    $("analyzeInfo").innerHTML=`<span class="bad">Failed: ${e.message}.</span> Check the endpoint URL, that the Modal app is deployed, and that it allows CORS.`;
+  }finally{$("analyzeBtn").disabled=false;}
+});
+function renderAnalyze(d){
+  show("analyzeOut");
+  $("analyzeModel").textContent=(d.model_version||"model")+(d.used_brain?" · brain ✓":" · fallback");
+  $("analyzeBars").innerHTML=`<tr><th>Target</th><th>Predicted</th><th class="num">Score</th></tr>`+TARGETS.map(t=>{
+    const v=Number(d[t]??0),pct=Math.max(0,Math.min(1,v))*100;
+    return `<tr><td>${t}</td><td><span class="bar-track" style="width:180px"><span class="bar-fill" style="width:${pct}%"></span></span></td><td class="num">${v.toFixed(2)}</td></tr>`;
+  }).join("");
+  const notes=d.editor_notes||[];
+  $("analyzeNotes").innerHTML=notes.length?notes.map(n=>`<li class="note"><span class="k">${n.kind||"note"}</span><span class="m">${n.message||""}</span></li>`).join(""):`<li class="muted" style="list-style:none">No trajectory landmarks flagged.</li>`;
+}
 </script>
 </body>
 </html>
