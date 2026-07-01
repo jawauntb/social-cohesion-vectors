@@ -1,0 +1,12 @@
+[
+  { "name": "Us (Philosophy)", "handle": "@us", "platform": "youtube", "isSelf": true },
+  {
+    "name": "Lectures on Tap",
+    "handle": "@lecturesontap",
+    "platform": "youtube",
+    "isSelf": false,
+    "notes": "Control creator. Sample a few weak, a few okay, a few strongest videos to verify the pipeline predicts engagement for other people too."
+  },
+  { "name": "The Met", "handle": "@metmuseum", "platform": "youtube", "isSelf": false },
+  { "name": "Crash Course", "handle": "@crashcourse", "platform": "youtube", "isSelf": false }
+]

@@ -1,0 +1,49 @@
+# secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# data lake — keep only manifests
+data/raw/
+data/features/
+data/models/
+data/cache/
+*.mp4
+*.wav
+*.npz
+*.parquet
+
+# prisma
+packages/db/prisma/*.db
+
+# modal
+.modal/
+
+# os / ide
+.DS_Store
+.vscode/
+.idea/

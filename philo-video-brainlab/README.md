@@ -1,0 +1,127 @@
+# philo-video-brainlab
+
+> Stop recreating the content that worked. **Recreate the cognitive trajectory that made it work.**
+
+A pipeline and review app for predicting social engagement from **brain-response
+trajectories** — the estimated fMRI-like path a viewer's cortex takes while watching a
+video — using Meta's **TRIBE v2** encoder alongside conventional multimodal features.
+
+## The thesis
+
+Optimizing content by copying "the same kind of content" optimizes the wrong target.
+What actually worked was the *cognitive experience* a video produced. So instead of
+matching pixels, we try to match **reactions** — the latent cognitive state associated
+with successful engagement (likes, comments, shares, saves, retention).
+
+The MVP is deliberately **not** "brain optimization." The MVP is a falsifiable question:
+
+> **Do TRIBE-derived brain trajectories improve prediction of engagement beyond ordinary
+> video / audio / text features?**
+
+If yes, the brain features are capturing something genuinely useful and we've earned the
+right to build the rest. If no, we still ship a strong multimodal engagement predictor.
+Every result is reported as an **ablation** (with-brain vs. without-brain) so the answer
+stays honest.
+
+## What it does
+
+1. **Ingest** every video (ours + competitors like *Lectures on Tap*, the Met, etc.) with
+   full engagement metrics, captions, and comments.
+2. **Extract features** per video — transcript, audio/prosody, visual frames, editing
+   rhythm (shot length / cut pacing), and a **TRIBE v2 brain-response trajectory**.
+3. **Score engagement** keeping the four+ targets *separate* first (a great philosophy
+   video may be high-save / high-comment, not merely high-like), then optionally learn a
+   latent structure (weighted / PCA / Pareto).
+4. **Learn mappings** from brain trajectory → each engagement target, with the ablation
+   against non-brain features baked in.
+5. **Compare creators** in a shared latent space — which cognitive regimes reliably
+   produce sharing vs. comments vs. retention.
+6. **Pre-publication scoring** — before you post a draft, the app estimates expected
+   likes / comments / shares / retention and gives **editor notes** ("curiosity collapses
+   after second 17", "semantic novelty plateaus here").
+
+## Trajectory, not snapshot
+
+We optimize for brain **dynamics**, not a single reconstructed state. Success on social
+media is likely caused less by *where* the brain is than by *how it moves* — surprise,
+uncertainty reduction, prediction error, resolution, curiosity, emotional shifts. Every
+video is treated as a **path through a cognitive landscape**, and successful videos are
+compared by *path shape* rather than content.
+
+## The honest caveat
+
+Current brain-decoding models reconstruct broad semantic/visual representations, not a
+viewer's full internal state. So the inferred brain state is a **useful proxy, not ground
+truth** — which is exactly why the pipeline treats it as *one feature source among many*
+(visual embeddings, audio/prosody, transcript embeddings, editing rhythm, brain
+trajectory) and lets the model discover how much it actually adds.
+
+## Architecture
+
+```
+Videos + captions + comments + metrics
+        │
+        ▼
+ feature extraction ── transcript · audio/prosody · visual frames · editing rhythm
+        │                                        · TRIBE v2 brain trajectory
+        ▼
+ engagement model ──── likes · comments · shares · saves/reposts · retention
+        │
+        ▼
+ Next.js review app ── pre-post prediction + editor notes
+        │
+        ▼
+ Modal GPU backend
+```
+
+## Monorepo layout
+
+```
+philo-video-brainlab/
+  apps/web/          Next.js dashboard + pre-post scoring UI
+  services/modal/    TRIBE v2 inference + feature extraction (Modal GPU jobs)
+  packages/db/       Prisma / Postgres schema (videos, metrics, comments, …)
+  packages/scoring/  engagement metrics + latent structure + predictive models (Python)
+  data/              manifests only — no raw video, no secrets
+  scripts/           ingestion helpers
+```
+
+## Tech
+
+- **Modal** — serverless GPU for TRIBE v2 batch inference and model serving.
+- **Meta TRIBE v2** — predicts fMRI-like brain responses to video/audio/text (gated on
+  Hugging Face; request access logged in, then use a read token in backend secrets).
+- **Brain2Qwerty** — optional, for language-side brain interpretation.
+- **Next.js** on Railway or Vercel; **Postgres** via Prisma.
+
+## Quickstart
+
+```bash
+# 1. env
+cp .env.example .env    # fill Modal, HF token, DATABASE_URL, platform keys
+
+# 2. install JS workspaces
+npm install
+
+# 3. database
+npm run db:generate && npm run db:migrate
+
+# 4. python envs (uv recommended)
+uv pip install -e packages/scoring -e services/modal
+
+# 5. run a TRIBE feature-extraction smoke on Modal
+modal run services/modal/modal_app/pipeline.py::smoke
+
+# 6. dev the dashboard
+npm run dev -w apps/web
+```
+
+## Roadmap
+
+- [ ] Ingest our catalog + a matched *Lectures on Tap* control set (weak / okay / strong).
+- [ ] Verify the pipeline predicts a held-out creator's engagement (proves it generalizes).
+- [ ] Report the with-brain vs. without-brain ablation as the go/no-go gate.
+- [ ] Cross-creator latent-space map.
+- [ ] Editor-notes generation from trajectory landmarks.
+
+See `docs/ARCHITECTURE.md` for details.

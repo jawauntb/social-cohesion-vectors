@@ -1,0 +1,191 @@
+// philo-video-brainlab — data model.
+// Keep the four+ engagement targets separate; don't collapse to one score too early.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A creator whose catalog we ingest. "us" plus competitors/controls
+/// (Lectures on Tap, the Met, Crash Course, Veritasium, Kurzgesagt, …).
+model Competitor {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  handle    String?
+  platform  Platform
+  isSelf    Boolean  @default(false)
+  notes     String?
+  videos    Video[]
+  createdAt DateTime @default(now())
+}
+
+model Video {
+  id                String   @id @default(cuid())
+  competitor        Competitor @relation(fields: [competitorId], references: [id])
+  competitorId      String
+  externalId        String   // platform-native id
+  platform          Platform
+  url               String?
+  title             String
+  topic             String?
+  thumbnailUrl      String?
+  durationSec       Float?
+  postedAt          DateTime?
+  followersAtPost   Int?
+
+  metrics           Metric[]
+  comments          Comment[]
+  caption           Caption?
+  features          Feature?
+  brainEmbedding    BrainEmbedding?
+  predictions       Prediction[]
+  editorNotes       EditorNote[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([platform, externalId])
+  @@index([competitorId])
+}
+
+/// Time-versioned engagement snapshot. Keep every target separate.
+model Metric {
+  id             String   @id @default(cuid())
+  video          Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId        String
+  capturedAt     DateTime @default(now())
+
+  views          Int?
+  likes          Int?
+  comments       Int?
+  shares         Int?
+  saves          Int?
+  reposts        Int?
+  watchTimeSec   Float?
+  avgRetention   Float?   // 0..1 mean fraction watched
+  completionRate Float?   // 0..1 fraction who finished
+
+  @@index([videoId])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId    String
+  author     String?
+  text       String
+  likeCount  Int?
+  postedAt   DateTime?
+
+  @@index([videoId])
+}
+
+model Caption {
+  id             String  @id @default(cuid())
+  video          Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId        String  @unique
+  hookTranscript String? // first few seconds
+  fullTranscript String?
+  language       String?
+}
+
+/// Conventional multimodal features (the non-brain baseline in the ablation).
+model Feature {
+  id                 String  @id @default(cuid())
+  video              Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId            String  @unique
+
+  // dense embeddings stored as float arrays
+  transcriptEmbed    Float[]
+  visualEmbed        Float[] // pooled frame embedding
+  audioProsodyEmbed  Float[]
+
+  // editing rhythm summary
+  shotCount          Int?
+  meanShotLenSec     Float?
+  cutRatePerSec      Float?
+  loudnessVar        Float?
+
+  extractorVersion   String?
+  createdAt          DateTime @default(now())
+}
+
+/// TRIBE v2 brain-response trajectory. The object we actually care about:
+/// a path through representational space, not a single snapshot.
+model BrainEmbedding {
+  id             String  @id @default(cuid())
+  video          Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId        String  @unique
+
+  modelId        String  // e.g. facebook/tribe-v2
+  layer          Int
+  fps            Float   // trajectory sampling rate
+  dim            Int     // per-timestep dimensionality
+  steps          Int     // trajectory length
+
+  // trajectory: steps x dim, flattened row-major
+  trajectory     Float[]
+
+  // dynamics summaries used as compact features
+  velocityMean   Float?  // mean ||b(t+1) - b(t)||
+  curvatureMean  Float?
+  noveltyDecay   Float?  // how fast semantic novelty plateaus
+  surpriseMean   Float?
+
+  createdAt      DateTime @default(now())
+}
+
+/// A learned engagement prediction for a video (backtest or pre-publication).
+model Prediction {
+  id           String   @id @default(cuid())
+  video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId      String
+  modelVersion String
+  usedBrain    Boolean  // ablation flag
+
+  predLikes       Float?
+  predComments    Float?
+  predShares      Float?
+  predSaves       Float?
+  predRetention   Float?
+  latentScore     Float?
+
+  createdAt    DateTime @default(now())
+
+  @@index([videoId])
+}
+
+/// Trajectory-derived, human-readable feedback for editors.
+model EditorNote {
+  id        String   @id @default(cuid())
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId   String
+  tSec      Float    // timestamp the note anchors to
+  kind      NoteKind
+  message   String   // "curiosity collapses after second 17"
+  severity  Int      @default(1)
+
+  @@index([videoId])
+}
+
+enum Platform {
+  youtube
+  tiktok
+  instagram
+  x
+  other
+}
+
+enum NoteKind {
+  attention
+  novelty
+  surprise
+  curiosity
+  identity
+  emotion
+  pacing
+}

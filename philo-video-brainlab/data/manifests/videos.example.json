@@ -1,0 +1,33 @@
+[
+  {
+    "competitor": "Us (Philosophy)",
+    "externalId": "yt_abc123",
+    "platform": "youtube",
+    "url": "https://youtube.com/watch?v=abc123",
+    "title": "Why Nietzsche Was Right About Boredom",
+    "topic": "existentialism",
+    "durationSec": 512,
+    "postedAt": "2026-02-11T18:00:00Z",
+    "followersAtPost": 84000,
+    "metrics": {
+      "views": 210000, "likes": 18400, "comments": 1220, "shares": 940,
+      "saves": 3100, "reposts": 210, "avgRetention": 0.62, "completionRate": 0.44
+    },
+    "caption": {
+      "hookTranscript": "You are not tired. You are under-stimulated in a very specific way…",
+      "fullTranscript": "…"
+    },
+    "comments": [
+      { "author": "@viewer1", "text": "the second-17 turn reframed the whole video", "likeCount": 340 }
+    ]
+  },
+  {
+    "competitor": "Lectures on Tap",
+    "externalId": "yt_ctrl_okay_01",
+    "platform": "youtube",
+    "title": "A Short History of Stoic Ethics",
+    "topic": "stoicism",
+    "durationSec": 640,
+    "metrics": { "views": 41000, "likes": 2100, "comments": 180, "shares": 90, "saves": 410, "avgRetention": 0.48 }
+  }
+]
