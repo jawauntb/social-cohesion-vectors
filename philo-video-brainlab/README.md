@@ -163,5 +163,6 @@ means the endpoint used a deterministic fallback trajectory because TRIBE, media
 or credentials were unavailable.
 
 Historical training CSVs are uploaded at `/training-data`. The page persists the raw CSV
-and validation summary to Postgres, then a later feature-extraction/training job can turn
-those rows into `Video`, `Metric`, and model-training records.
+and validation summary to Postgres, then the "Process pending uploads" action imports
+rows into `Competitor`, `Video`, `Metric`, and `Caption` records. Feature extraction and
+model training run after that normalized dataset exists.
