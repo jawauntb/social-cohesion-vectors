@@ -13,9 +13,10 @@ import hashlib
 import os
 
 import modal
+import numpy as np
 
-from .schemas import VideoInput, BrainTrajectory
 from . import dynamics
+from .schemas import BrainTrajectory, VideoInput
 
 APP_NAME = os.environ.get("BRAINLAB_MODAL_APP", "philo-video-brainlab")
 app = modal.App(f"{APP_NAME}-tribe")
@@ -59,7 +60,7 @@ def _load_tribe(model_id: str):
     )
 
 
-def _stub_trajectory(video: VideoInput, dim: int = 64) -> "np.ndarray":
+def _stub_trajectory(video: VideoInput, dim: int = 64) -> np.ndarray:
     """Deterministic placeholder trajectory so the pipeline runs before weights.
 
     Seeded by video id, so features are stable across runs but clearly synthetic.
@@ -76,11 +77,14 @@ def _stub_trajectory(video: VideoInput, dim: int = 64) -> "np.ndarray":
     return walk.astype("float32")
 
 
-@app.function(image=image, gpu=os.environ.get("MODAL_DEFAULT_GPU", "A10G"),
-              volumes={MODEL_DIR: volume}, timeout=1800)
+@app.function(
+    image=image,
+    gpu=os.environ.get("MODAL_DEFAULT_GPU", "A10G"),
+    volumes={MODEL_DIR: volume},
+    timeout=1800,
+)
 def brain_trajectory(video: VideoInput) -> BrainTrajectory:
     """Estimate the fMRI-like brain-response trajectory for one video."""
-    import numpy as np
 
     try:
         model, proc = _load_tribe(TRIBE_MODEL_ID)
@@ -108,5 +112,7 @@ def brain_trajectory(video: VideoInput) -> BrainTrajectory:
 def smoke():
     """`modal run services/modal/modal_app/tribe_inference.py::smoke`"""
     out = brain_trajectory.remote(VideoInput(video_id="demo-001", fps=1.0))
-    print(f"trajectory: {out.steps} steps x {out.dim} dim | "
-          f"velocity_mean={out.velocity_mean:.3f} surprise_mean={out.surprise_mean:.3f}")
+    print(
+        f"trajectory: {out.steps} steps x {out.dim} dim | "
+        f"velocity_mean={out.velocity_mean:.3f} surprise_mean={out.surprise_mean:.3f}"
+    )

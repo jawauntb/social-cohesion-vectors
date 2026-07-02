@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.model_selection import GroupKFold
 from sklearn.metrics import r2_score
+from sklearn.model_selection import GroupKFold
 
 
 @dataclass
@@ -33,7 +33,11 @@ class AblationResult:
 
     @property
     def mean_uplift(self) -> float:
-        return float(np.mean([t.uplift for t in self.per_target])) if self.per_target else 0.0
+        return (
+            float(np.mean([t.uplift for t in self.per_target]))
+            if self.per_target
+            else 0.0
+        )
 
     def verdict(self, threshold: float = 0.02) -> str:
         up = self.mean_uplift
@@ -67,11 +71,11 @@ def _cv_r2(X: np.ndarray, y: np.ndarray, groups: np.ndarray, n_splits: int) -> f
 
 
 def run_ablation(
-    baseline_features: np.ndarray,   # n x d_base  (transcript+visual+audio+rhythm)
-    brain_features: np.ndarray,      # n x d_brain (TRIBE trajectory summaries)
-    targets: np.ndarray,             # n x t
+    baseline_features: np.ndarray,  # n x d_base  (transcript+visual+audio+rhythm)
+    brain_features: np.ndarray,  # n x d_brain (TRIBE trajectory summaries)
+    targets: np.ndarray,  # n x t
     target_names: list[str],
-    groups: np.ndarray,              # n, creator id per row
+    groups: np.ndarray,  # n, creator id per row
     n_splits: int = 5,
 ) -> AblationResult:
     """Compare baseline vs. baseline+brain for every target under grouped CV."""

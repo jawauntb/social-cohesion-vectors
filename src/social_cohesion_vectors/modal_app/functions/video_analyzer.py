@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """Modal video analyzer: TRIBE v2 brain-response trajectory -> engagement prediction.
 
 Built on this repo's existing Modal infrastructure — the shared ``app``, the
@@ -61,8 +62,12 @@ def _dynamics(traj) -> dict[str, float]:
     import numpy as np
 
     if traj.shape[0] < 2:
-        return {"velocity_mean": 0.0, "curvature_mean": 0.0,
-                "novelty_decay": 0.0, "surprise_mean": 0.0}
+        return {
+            "velocity_mean": 0.0,
+            "curvature_mean": 0.0,
+            "novelty_decay": 0.0,
+            "surprise_mean": 0.0,
+        }
     d = np.diff(traj, axis=0)
     vel = np.linalg.norm(d, axis=1)
     if d.shape[0] >= 2:
@@ -72,13 +77,21 @@ def _dynamics(traj) -> dict[str, float]:
         curv = np.arccos(np.clip(np.sum(a * b, axis=1) / (na * nb), -1, 1))
     else:
         curv = np.zeros(0)
-    nov = np.array([np.linalg.norm(traj[i] - traj[:i].mean(axis=0)) if i else 0.0
-                    for i in range(traj.shape[0])])
+    nov = np.array(
+        [
+            np.linalg.norm(traj[i] - traj[:i].mean(axis=0)) if i else 0.0
+            for i in range(traj.shape[0])
+        ]
+    )
     sur = np.zeros(traj.shape[0])
     for t in range(2, traj.shape[0]):
         forecast = traj[t - 1] + (traj[t - 1] - traj[t - 2])
         sur[t] = np.linalg.norm(traj[t] - forecast)
-    decay = float(np.polyfit(np.arange(nov.shape[0]), nov, 1)[0]) if nov.shape[0] >= 3 else 0.0
+    decay = (
+        float(np.polyfit(np.arange(nov.shape[0]), nov, 1)[0])
+        if nov.shape[0] >= 3
+        else 0.0
+    )
     return {
         "velocity_mean": float(vel.mean()),
         "curvature_mean": float(curv.mean()) if curv.size else 0.0,
@@ -95,17 +108,33 @@ def _landmarks(traj, sec_per_step: float) -> list[dict]:
         return notes
     vel = np.linalg.norm(np.diff(traj, axis=0), axis=1)
     peak = int(np.argmax(vel[: max(2, vel.size // 2)]))
-    tail = vel[peak + 1:]
+    tail = vel[peak + 1 :]
     if tail.size and tail.mean() < 0.5 * vel[peak]:
         t = round((peak + 1) * sec_per_step, 1)
-        notes.append({"tSec": t, "kind": "curiosity", "severity": 2,
-                      "message": f"Curiosity collapses around second {t:g} (representational change flattens)."})
-    nov = np.array([np.linalg.norm(traj[i] - traj[:i].mean(axis=0)) if i else 0.0
-                    for i in range(traj.shape[0])])
+        notes.append(
+            {
+                "tSec": t,
+                "kind": "curiosity",
+                "severity": 2,
+                "message": f"Curiosity collapses around second {t:g} (representational change flattens).",
+            }
+        )
+    nov = np.array(
+        [
+            np.linalg.norm(traj[i] - traj[:i].mean(axis=0)) if i else 0.0
+            for i in range(traj.shape[0])
+        ]
+    )
     if nov.shape[0] >= 3 and np.polyfit(np.arange(nov.shape[0]), nov, 1)[0] < 0:
         t = round(int(np.argmax(nov)) * sec_per_step, 1)
-        notes.append({"tSec": t, "kind": "novelty", "severity": 1,
-                      "message": f"Semantic novelty peaks near second {t:g}, then plateaus."})
+        notes.append(
+            {
+                "tSec": t,
+                "kind": "novelty",
+                "severity": 1,
+                "message": f"Semantic novelty peaks near second {t:g}, then plateaus.",
+            }
+        )
     return notes
 
 
@@ -115,11 +144,21 @@ def _engagement_from_dynamics(dyn: dict) -> dict:
     Sharing/comments track surprise + curvature; retention tracks non-decaying
     novelty. Replace by loading a fitted regressor over these dynamics features.
     """
-    sig = lambda x: 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, x))))
-    v, s, c, nd = (dyn["velocity_mean"], dyn["surprise_mean"],
-                   dyn["curvature_mean"], dyn["novelty_decay"])
+
+    def sig(x: float) -> float:
+        return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, x))))
+
+    v, s, c, nd = (
+        dyn["velocity_mean"],
+        dyn["surprise_mean"],
+        dyn["curvature_mean"],
+        dyn["novelty_decay"],
+    )
+
     # dynamics on ~20k-vertex fMRI are large-magnitude; squash to comparable scale
-    z = lambda x: x / 50.0
+    def z(x: float) -> float:
+        return x / 50.0
+
     return {
         "likes": sig(0.6 * z(v) + 0.4 * z(s)),
         "comments": sig(0.8 * z(s) + 0.3 * c),
@@ -134,9 +173,13 @@ def _engagement_from_dynamics(dyn: dict) -> dict:
 # --------------------------------------------------------------------------- #
 def _download(url: str) -> str:
     dst = tempfile.mktemp(suffix=".mp4")
-    if any(h in url for h in ("youtube.com", "youtu.be", "tiktok.com", "instagram.com")):
+    if any(
+        h in url for h in ("youtube.com", "youtu.be", "tiktok.com", "instagram.com")
+    ):
         ytdlp = importlib.import_module("yt_dlp")
-        with ytdlp.YoutubeDL({"outtmpl": dst, "format": "mp4/best", "quiet": True}) as ydl:
+        with ytdlp.YoutubeDL(
+            {"outtmpl": dst, "format": "mp4/best", "quiet": True}
+        ) as ydl:
             ydl.download([url])
     else:
         urllib.request.urlretrieve(url, dst)
@@ -151,8 +194,10 @@ def _load_model():
         model = TribeModel.from_pretrained(TRIBE_MODEL_ID, cache_folder=_WEIGHTS_DIR)
         _weights.commit()
         return model
-    except Exception as exc:  # weights/token/deps missing
-        print(f"[video_analyzer] TRIBE load failed ({type(exc).__name__}: {exc}); using fallback")
+    except Exception as exc:  # noqa: BLE001 - model/dependency failures use fallback.
+        print(
+            f"[video_analyzer] TRIBE load failed ({type(exc).__name__}: {exc}); using fallback"
+        )
         return None
 
 
@@ -178,14 +223,19 @@ def _trajectory(model, url: str | None, caption: str | None, fps: float):
         if traj.ndim == 1:
             traj = traj.reshape(-1, 1)
         return traj, TRIBE_MODEL_ID, True, _TR_SEC
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - media/model failures use fallback.
         print(f"[video_analyzer] fallback trajectory ({type(exc).__name__}: {exc})")
         seed = abs(hash((url or "", caption or ""))) % (2**32)
         rng = np.random.default_rng(seed)
         steps = max(6, int(fps * 20))
         walk = np.cumsum(rng.normal(scale=0.3, size=(steps, 64)), axis=0)
         walk[3:6] += rng.normal(scale=1.5, size=(3, 64))
-        return walk.astype("float32"), f"{TRIBE_MODEL_ID}#fallback", False, 1.0 / max(fps, 1e-6)
+        return (
+            walk.astype("float32"),
+            f"{TRIBE_MODEL_ID}#fallback",
+            False,
+            1.0 / max(fps, 1e-6),
+        )
 
 
 def analyze_payload(model, payload: dict[str, Any]) -> dict[str, Any]:
@@ -261,5 +311,7 @@ def web():
 @app.local_entrypoint()
 def smoke():
     """modal run social_cohesion_vectors.modal_app.functions.video_analyzer::smoke"""
-    out = analyze_video.remote({"video_id": "demo-001", "caption": "why boredom is a signal"})
+    out = analyze_video.remote(
+        {"video_id": "demo-001", "caption": "why boredom is a signal"}
+    )
     print(out)
