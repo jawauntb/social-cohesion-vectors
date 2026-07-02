@@ -121,17 +121,17 @@ trusting numbers.
 
 ## 4. Deploy the site (GitHub Pages)
 
-GitHub Pages serves the `main` branch root. The root `index.html` and
-`train.html` are tiny redirects into `site/`, and `.nojekyll` keeps GitHub from
-running a Jekyll build over the repository.
+GitHub Pages serves the `docs/` folder on `main`. The site files are mirrored
+there from `site/`, and `docs/.nojekyll` keeps GitHub from running a Jekyll build
+over the folder.
 
 1. GitHub → repo **Settings → Pages → Build and deployment → Source: Deploy from
    a branch**.
-2. Branch: `main`; folder: `/ (root)`.
+2. Branch: `main`; folder: `/docs`.
 3. Live at: `https://jawauntb.github.io/social-cohesion-vectors/train.html`
 
 (The repo is public, so no paid plan needed. `site/index.html` = overview,
-`site/train.html` = the tool; root `train.html` redirects there.)
+`site/train.html` = the tool; `docs/` is the published mirror.)
 
 ---
 
@@ -184,5 +184,5 @@ static Pages site can call it directly from the browser.
 | `src/social_cohesion_vectors/modal_app/app.py` | shared Modal app + `.env` secret |
 | `docs/runbooks/tribe-modal-startup-fix.md` | TRIBE import fix |
 | `site/train.html` | CSV trainer + brain-pipeline panel |
-| `index.html`, `train.html`, `.nojekyll` | GitHub Pages root redirects/config |
+| `docs/index.html`, `docs/train.html`, `docs/.nojekyll` | GitHub Pages published mirror/config |
 | `.env.example` | all env vars |
