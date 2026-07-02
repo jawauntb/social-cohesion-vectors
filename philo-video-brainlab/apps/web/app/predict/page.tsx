@@ -21,10 +21,17 @@ export default function PredictPage() {
       const res = await fetch("/api/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ video_id: videoId, url: url || null, caption: caption || null }),
+        body: JSON.stringify({
+          video_id: videoId.trim(),
+          url: url.trim() || null,
+          caption: caption.trim() || null,
+        }),
       });
-      if (!res.ok) throw new Error(`Backend returned ${res.status}`);
-      setPred(await res.json());
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ? `${data.error} (${res.status})` : `Backend returned ${res.status}`);
+      }
+      setPred(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Prediction failed");
     } finally {
@@ -36,9 +43,9 @@ export default function PredictPage() {
     <main>
       <h1>Pre-publication scoring</h1>
       <p className="lede">
-        Estimate engagement <em>before</em> posting. The backend extracts a TRIBE v2 brain
-        trajectory + multimodal features and applies the trained engagement models, then surfaces
-        editor notes from trajectory landmarks.
+        Estimate engagement <em>before</em> posting. When Modal can load TRIBE v2, the backend
+        scores a model-derived brain trajectory; otherwise it returns a clearly marked fallback so
+        the review flow stays testable.
       </p>
 
       <form onSubmit={onSubmit}>
@@ -74,7 +81,7 @@ export default function PredictPage() {
           <h2>
             Predicted engagement
             <span className="pill">{pred.model_version}</span>
-            {pred.used_brain && <span className="pill">brain ✓</span>}
+            <span className="pill">{pred.used_brain ? "TRIBE brain" : "fallback"}</span>
           </h2>
           <EngagementBars pred={pred} />
 

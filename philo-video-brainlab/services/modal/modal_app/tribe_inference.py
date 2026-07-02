@@ -38,7 +38,7 @@ image = (
 volume = modal.Volume.from_name("brainlab-models", create_if_missing=True)
 MODEL_DIR = "/models"
 
-TRIBE_MODEL_ID = os.environ.get("TRIBE_MODEL_ID", "facebook/tribe-v2")
+TRIBE_MODEL_ID = os.environ.get("TRIBE_MODEL_ID", "facebook/tribev2")
 TARGET_LAYER = int(os.environ.get("TRIBE_TARGET_LAYER", "-1"))
 
 

@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
 class VideoInput(BaseModel):
     video_id: str
-    url: str | None = None          # remote source, or...
-    local_path: str | None = None   # ...a path on a mounted volume
-    caption: str | None = None
+    url: Optional[str] = None          # remote source, or...
+    local_path: Optional[str] = None   # ...a path on a mounted volume
+    caption: Optional[str] = None
     fps: float = 1.0                # frame sampling rate for the trajectory
 
 
@@ -17,10 +19,10 @@ class MultimodalFeatures(BaseModel):
     transcript_embed: list[float] = Field(default_factory=list)
     visual_embed: list[float] = Field(default_factory=list)
     audio_prosody_embed: list[float] = Field(default_factory=list)
-    shot_count: int | None = None
-    mean_shot_len_sec: float | None = None
-    cut_rate_per_sec: float | None = None
-    loudness_var: float | None = None
+    shot_count: Optional[int] = None
+    mean_shot_len_sec: Optional[float] = None
+    cut_rate_per_sec: Optional[float] = None
+    loudness_var: Optional[float] = None
     extractor_version: str = "0.1.0"
 
 
@@ -31,10 +33,10 @@ class BrainTrajectory(BaseModel):
     dim: int
     steps: int
     trajectory: list[float]         # steps * dim, row-major
-    velocity_mean: float | None = None
-    curvature_mean: float | None = None
-    novelty_decay: float | None = None
-    surprise_mean: float | None = None
+    velocity_mean: Optional[float] = None
+    curvature_mean: Optional[float] = None
+    novelty_decay: Optional[float] = None
+    surprise_mean: Optional[float] = None
 
 
 class FeatureRecord(BaseModel):
@@ -47,10 +49,10 @@ class EngagementPrediction(BaseModel):
     video_id: str
     model_version: str
     used_brain: bool
-    likes: float | None = None
-    comments: float | None = None
-    shares: float | None = None
-    saves: float | None = None
-    retention: float | None = None
-    latent_score: float | None = None
+    likes: Optional[float] = None
+    comments: Optional[float] = None
+    shares: Optional[float] = None
+    saves: Optional[float] = None
+    retention: Optional[float] = None
+    latent_score: Optional[float] = None
     editor_notes: list[dict] = Field(default_factory=list)

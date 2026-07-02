@@ -1,31 +1,72 @@
 import { NextResponse } from "next/server";
 import type { EngagementPrediction } from "@/lib/types";
 
+export const runtime = "nodejs";
+
 // Proxies the pre-publication scoring request to the Modal serve endpoint.
 // If MODAL_PREDICT_ENDPOINT is unset (local dev before deploy), returns a
 // transparent local stub so the UI is fully explorable.
 export async function POST(req: Request) {
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+
+  const videoId = typeof body.video_id === "string" ? body.video_id.trim() : "";
+  if (!videoId) {
+    return NextResponse.json({ error: "video_id is required." }, { status: 400 });
+  }
+
   const endpoint = process.env.MODAL_PREDICT_ENDPOINT;
 
   if (endpoint) {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    const controller = new AbortController();
+    const timeoutMs = Number(process.env.MODAL_PREDICT_TIMEOUT_MS ?? 120000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(normalizeEndpoint(endpoint), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, video_id: videoId }),
+        signal: controller.signal,
+      });
+
+      const text = await res.text();
+      let data: unknown;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        return NextResponse.json(
+          { error: "Modal returned a non-JSON response.", status: res.status },
+          { status: 502 },
+        );
+      }
+
+      return NextResponse.json(data, { status: res.status });
+    } catch (err) {
+      const timedOut = err instanceof DOMException && err.name === "AbortError";
+      return NextResponse.json(
+        {
+          error: timedOut ? "Modal prediction timed out." : "Modal prediction failed.",
+        },
+        { status: timedOut ? 504 : 502 },
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   // ---- local stub (no Modal endpoint configured) ----
-  const seed = hash(String(body.video_id ?? "draft"));
+  const seed = hash(videoId);
   const rnd = mulberry32(seed);
   const s = () => Number(rnd().toFixed(2));
   const stub: EngagementPrediction = {
-    video_id: body.video_id ?? "draft",
+    video_id: videoId,
     model_version: "local-stub-0.1",
-    used_brain: true,
+    used_brain: false,
     likes: s(),
     comments: s(),
     shares: s(),
@@ -42,6 +83,10 @@ export async function POST(req: Request) {
     ],
   };
   return NextResponse.json(stub);
+}
+
+function normalizeEndpoint(endpoint: string): string {
+  return endpoint.endsWith("/") ? endpoint : `${endpoint}/`;
 }
 
 function hash(str: string): number {
