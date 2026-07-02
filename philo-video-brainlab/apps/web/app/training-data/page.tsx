@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type UploadSummary = {
@@ -190,6 +191,10 @@ export default function TrainingDataPage() {
 
         <div>
           <h2>Prompt for your agent</h2>
+          <p className="lede compact">
+            This box is for an AI/helper agent. Send the human collector to the{" "}
+            <Link href="/intern-guide">intern guide</Link>.
+          </p>
           <div className="prompt-box">
             <pre>{agentPrompt}</pre>
           </div>

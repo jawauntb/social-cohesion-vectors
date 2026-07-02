@@ -172,3 +172,6 @@ preview rows for each upload, and a normalized source summary so our catalog and
 competitor/control batch can be reviewed before training. The intern only needs video links,
 source/account names, visible engagement metrics, and evidence screenshots/links; duration
 and transcripts can be extracted later from the URLs.
+
+Send human collectors to `/intern-guide`; the copyable prompt on `/training-data` is for an
+AI/helper agent that assists with CSV scaffolding.
