@@ -8,7 +8,7 @@ machine that has Modal + the HF token. Two deliverables:
 2. **Static site** — `site/` (overview + `train.html`: CSV trainer + a panel that
    calls the endpoint). Deploys to GitHub Pages.
 
-Do them in this order: **env → deploy Modal → verify → enable Pages → point site
+Do them in this order: **env → deploy Modal → verify → configure Pages → point site
 at the endpoint → smoke test.**
 
 ---
@@ -121,16 +121,17 @@ trusting numbers.
 
 ## 4. Deploy the site (GitHub Pages)
 
-The workflow `.github/workflows/deploy-site.yml` publishes `site/` on every push
-to `main` that touches `site/**`. It currently **fails until Pages is enabled**:
+GitHub Pages serves the `main` branch root. The root `index.html` and
+`train.html` are tiny redirects into `site/`, and `.nojekyll` keeps GitHub from
+running a Jekyll build over the repository.
 
-1. GitHub → repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-2. **Actions → "Deploy site to GitHub Pages" → Re-run jobs** (or push any `site/`
-   change). `gh workflow run deploy-site.yml` also works.
+1. GitHub → repo **Settings → Pages → Build and deployment → Source: Deploy from
+   a branch**.
+2. Branch: `main`; folder: `/ (root)`.
 3. Live at: `https://jawauntb.github.io/social-cohesion-vectors/train.html`
 
 (The repo is public, so no paid plan needed. `site/index.html` = overview,
-`site/train.html` = the tool.)
+`site/train.html` = the tool; root `train.html` redirects there.)
 
 ---
 
@@ -183,5 +184,5 @@ static Pages site can call it directly from the browser.
 | `src/social_cohesion_vectors/modal_app/app.py` | shared Modal app + `.env` secret |
 | `docs/runbooks/tribe-modal-startup-fix.md` | TRIBE import fix |
 | `site/train.html` | CSV trainer + brain-pipeline panel |
-| `.github/workflows/deploy-site.yml` | Pages deploy |
+| `index.html`, `train.html`, `.nojekyll` | GitHub Pages root redirects/config |
 | `.env.example` | all env vars |

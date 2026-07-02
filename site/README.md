@@ -22,9 +22,10 @@ python -m http.server -d site 8000
 
 ## Deploy
 
-`.github/workflows/deploy-site.yml` publishes this folder to GitHub Pages on every
-push to `main` that touches `site/`. Enable it once under
-**Settings → Pages → Build and deployment → Source: GitHub Actions**.
+GitHub Pages serves the repository root on `main`. The root `index.html` and
+`train.html` files redirect into this folder, so
+`https://jawauntb.github.io/social-cohesion-vectors/train.html` opens
+`site/train.html`.
 
 The page is plain HTML/CSS/JS, so it also drops straight into Netlify, Vercel,
 Cloudflare Pages, or any static host with the publish directory set to `site`.
