@@ -35,30 +35,28 @@ type SourceSummary = {
 
 const agentPrompt = `You are helping prepare historical video performance data for philo-video-brainlab.
 
-Create one CSV file where each row is one previously posted video. Include our videos and, if available, matched control/competitor videos such as Lectures on Tap, the Met, Crash Course, Veritasium, or Kurzgesagt.
+Create one CSV file where each row is one previously posted video. Use one CSV per source/account when possible:
+- our_videos.csv
+- lectures_on_tap.csv
+- met_museum.csv
+- another_competitor.csv
 
-Required columns:
+Core columns:
 - video_id or external_id
 - platform
 - url or video_url
 - title
-- at least one engagement metric: views, likes, comments, shares, saves, reposts, avg_retention, completion_rate, or watch_time_sec
-
-Strongly recommended columns:
 - creator or competitor
-- posted_at
-- duration_sec
-- followers_at_post
-- caption
-- hook_transcript
-- full_transcript
-- topic
-- thumbnail_url
+- engagement metrics you can see: views, likes, comments, shares, saves, reposts, avg_retention, completion_rate, or watch_time_sec
 - evidence_url
 - screenshot_url
 - notes
 
-Keep likes, comments, shares, saves, reposts, retention, and watch time as separate columns. Do not collapse them into one score. Save the file as a UTF-8 .csv and tell me exactly where it is stored.`;
+Do not worry about duration, thumbnail, transcript, or topic unless they are easy. We can extract duration/transcripts later from the video URL.
+
+Keep likes, comments, shares, saves, reposts, retention, and watch time as separate columns. Do not combine them into one score. If a metric is unavailable, leave it blank rather than guessing.
+
+Save screenshots or evidence links for the engagement numbers. Save the file as a UTF-8 .csv and tell me exactly where it is stored.`;
 
 export default function TrainingDataPage() {
   const [sourceLabel, setSourceLabel] = useState("Our historical videos");
@@ -163,7 +161,8 @@ export default function TrainingDataPage() {
           <h2>Upload spreadsheet</h2>
           <p className="lede compact">
             One CSV per source is best while the intern workflow is new. Upload our videos and each
-            competitor/control as separate batches.
+            competitor/control as separate batches. Core need: video link, source, visible
+            engagement numbers, and evidence. Duration and transcripts can be extracted later.
           </p>
           <a className="button-link" href="/api/training-uploads/template">
             Download CSV template

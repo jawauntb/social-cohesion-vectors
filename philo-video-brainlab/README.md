@@ -167,6 +167,8 @@ and validation summary to Postgres, then the "Process pending uploads" action im
 rows into `Competitor`, `Video`, `Metric`, and `Caption` records. Feature extraction and
 model training run after that normalized dataset exists.
 
-For intern data collection, `/training-data` also provides a downloadable CSV template,
+For intern data collection, `/training-data` provides a minimal downloadable CSV template,
 preview rows for each upload, and a normalized source summary so our catalog and each
-competitor/control batch can be reviewed before training.
+competitor/control batch can be reviewed before training. The intern only needs video links,
+source/account names, visible engagement metrics, and evidence screenshots/links; duration
+and transcripts can be extracted later from the URLs.
