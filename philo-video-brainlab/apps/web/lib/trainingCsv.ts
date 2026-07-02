@@ -25,7 +25,9 @@ export type TrainingImportResult = {
 
 type CsvRecord = Record<string, string>;
 
-const ID_COLUMNS = ["video_id", "external_id", "externalid", "url", "video_url", "local_path"];
+const MEDIA_FILE_COLUMNS = ["video_file_url", "video_file_path", "media_url", "download_url", "drive_video_url", "local_path"];
+const POST_URL_COLUMNS = ["url", "video_url", "post_url"];
+const ID_COLUMNS = ["video_id", "external_id", "externalid", ...POST_URL_COLUMNS, ...MEDIA_FILE_COLUMNS];
 const EVIDENCE_COLUMNS = ["evidence_url", "screenshot_url", "screenshot_file", "source_screenshot", "notes"];
 const METRIC_COLUMNS = [
   "views",
@@ -47,6 +49,7 @@ const TEMPLATE_COLUMNS = [
   "video_id",
   "platform",
   "url",
+  "video_file_url",
   "title",
   "creator",
   "views",
@@ -63,7 +66,7 @@ const TEMPLATE_COLUMNS = [
 ];
 
 export const TRAINING_CSV_TEMPLATE = `${TEMPLATE_COLUMNS.join(",")}
-example-001,youtube,https://example.com/video,Example title,Our videos,10000,800,120,55,80,12,0.62,0.41,https://drive.google.com/evidence-folder,https://drive.google.com/screenshot,"Replace this row before upload"
+example-001,youtube,https://example.com/post,https://drive.google.com/file/d/example-video-file,Example title,Our videos,10000,800,120,55,80,12,0.62,0.41,https://drive.google.com/evidence-folder,https://drive.google.com/screenshot,"Replace this row before upload"
 `;
 
 export function inspectCsv(csvText: string): CsvInspection {
@@ -81,10 +84,13 @@ export function inspectCsv(csvText: string): CsvInspection {
   if (columns.length === 0) errors.push("CSV header row is empty.");
   if (rowCount === 0) errors.push("CSV has no video rows.");
   if (!hasAny(normalized, ID_COLUMNS)) {
-    errors.push("CSV needs one identifier column: video_id, external_id, url, video_url, or local_path.");
+    errors.push("CSV needs one identifier column: video_id, external_id, url, video_url, video_file_url, or video_file_path.");
+  }
+  if (!hasAny(normalized, MEDIA_FILE_COLUMNS)) {
+    issues.push("Add video_file_url or video_file_path when possible. Public post URLs are evidence; the model needs an actual media file or approved downloadable copy.");
   }
   if (!hasAny(normalized, ["title", "caption", "hook_transcript", "full_transcript"])) {
-    issues.push("Add title if it is visible. Captions/transcripts can be extracted later from the video URL.");
+    issues.push("Add title if it is visible. Captions/transcripts can be extracted later from the actual media file.");
   }
   if (!hasAny(normalized, ["platform"])) {
     issues.push("Add platform so YouTube/TikTok/Instagram rows can be grouped correctly.");
@@ -134,7 +140,7 @@ export function previewRowsFromCsv(csvText: string, maxRows = 5): CsvPreviewRow[
     metrics: metricSummary(record),
     platform: first(record, ["platform"]),
     title: first(record, ["title"]) || first(record, ["video_id", "external_id"]),
-    url: first(record, ["url", "video_url", "local_path"]),
+    url: first(record, [...MEDIA_FILE_COLUMNS, ...POST_URL_COLUMNS]),
   }));
 }
 
@@ -183,12 +189,14 @@ export async function processPendingTrainingUploads(prisma: PrismaClient): Promi
 
 async function importRecord(prisma: PrismaClient, record: CsvRecord, fallbackSource: string): Promise<boolean> {
   const platform = parsePlatform(first(record, ["platform"]));
-  const externalId = first(record, ["video_id", "external_id", "externalid"]) || first(record, ["url", "video_url", "local_path"]);
-  if (!externalId) throw new Error("missing video_id, external_id, url, video_url, or local_path");
+  const postUrl = first(record, POST_URL_COLUMNS);
+  const mediaUrl = first(record, MEDIA_FILE_COLUMNS);
+  const externalId = first(record, ["video_id", "external_id", "externalid"]) || postUrl || mediaUrl;
+  if (!externalId) throw new Error("missing video_id, external_id, url, video_url, video_file_url, or video_file_path");
 
   const competitorName = first(record, ["competitor", "creator", "account", "source"]) || fallbackSource || "Uploaded catalog";
   const title = first(record, ["title"]) || first(record, ["caption", "hook_transcript"]) || externalId;
-  const url = first(record, ["url", "video_url"]);
+  const url = mediaUrl || postUrl;
 
   const competitor = await prisma.competitor.upsert({
     where: { name: competitorName },

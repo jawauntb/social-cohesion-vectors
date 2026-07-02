@@ -45,7 +45,8 @@ Create one CSV file where each row is one previously posted video. Use one CSV p
 Core columns:
 - video_id or external_id
 - platform
-- url or video_url
+- url or video_url (public post link for evidence)
+- video_file_url or video_file_path (actual video file or approved downloadable copy)
 - title
 - creator or competitor
 - engagement metrics you can see: views, likes, comments, shares, saves, reposts, avg_retention, completion_rate, or watch_time_sec
@@ -53,7 +54,9 @@ Core columns:
 - screenshot_url
 - notes
 
-Do not worry about duration, thumbnail, transcript, or topic unless they are easy. We can extract duration/transcripts later from the video URL.
+Important: Instagram/TikTok/YouTube post URLs are not enough for model inference by themselves. The model needs an actual video file it can read. Use original exports, shared Google Drive files, creator-provided files, or approved downloads. If you cannot get the video file cleanly, leave video_file_url blank and explain it in notes.
+
+Do not worry about duration, thumbnail, transcript, or topic unless they are easy. We can extract duration/transcripts later from the actual media file.
 
 Keep likes, comments, shares, saves, reposts, retention, and watch time as separate columns. Do not combine them into one score. If a metric is unavailable, leave it blank rather than guessing.
 
@@ -162,8 +165,9 @@ export default function TrainingDataPage() {
           <h2>Upload spreadsheet</h2>
           <p className="lede compact">
             One CSV per source is best while the intern workflow is new. Upload our videos and each
-            competitor/control as separate batches. Core need: video link, source, visible
-            engagement numbers, and evidence. Duration and transcripts can be extracted later.
+            competitor/control as separate batches. Core need: public post link, actual video
+            file link when available, source, visible engagement numbers, and evidence. Duration
+            and transcripts can be extracted later from the media file.
           </p>
           <a className="button-link" href="/api/training-uploads/template">
             Download CSV template
