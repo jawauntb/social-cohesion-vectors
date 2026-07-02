@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@brainlab/db";
-import { inspectCsv } from "@/lib/trainingCsv";
+import { inspectCsv, previewRowsFromCsv } from "@/lib/trainingCsv";
 
 export const runtime = "nodejs";
 
@@ -22,9 +22,32 @@ export async function GET() {
         importedVideoCount: true,
         processedAt: true,
         createdAt: true,
+        csvText: true,
       },
     });
-    return NextResponse.json({ uploads });
+    const sourceSummary = await prisma.competitor.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        isSelf: true,
+        name: true,
+        platform: true,
+        _count: { select: { videos: true } },
+      },
+    });
+    return NextResponse.json({
+      sourceSummary: sourceSummary.map((source) => ({
+        id: source.id,
+        isSelf: source.isSelf,
+        name: source.name,
+        platform: source.platform,
+        videoCount: source._count.videos,
+      })),
+      uploads: uploads.map(({ csvText, ...upload }) => ({
+        ...upload,
+        previewRows: previewRowsFromCsv(csvText),
+      })),
+    });
   } catch {
     return NextResponse.json(
       { error: "Training uploads need DATABASE_URL and the Prisma schema deployed." },

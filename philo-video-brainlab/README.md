@@ -166,3 +166,7 @@ Historical training CSVs are uploaded at `/training-data`. The page persists the
 and validation summary to Postgres, then the "Process pending uploads" action imports
 rows into `Competitor`, `Video`, `Metric`, and `Caption` records. Feature extraction and
 model training run after that normalized dataset exists.
+
+For intern data collection, `/training-data` also provides a downloadable CSV template,
+preview rows for each upload, and a normalized source summary so our catalog and each
+competitor/control batch can be reviewed before training.
