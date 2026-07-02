@@ -61,12 +61,15 @@ export default function Home() {
 
       <h2>Try it</h2>
       <p className="lede">
+        Start with old videos and real metrics: <Link href="/training-data">upload training data →</Link>
+      </p>
+      <p className="lede" style={{ marginTop: ".75rem" }}>
         Score a draft before you post it: <Link href="/predict">pre-publication scoring →</Link>
       </p>
       <p className="muted" style={{ marginTop: "1.5rem" }}>
-        Note: TRIBE v2 and the feature extractors run on Modal GPU and are gated on Hugging Face.
-        Until weights are wired, the backend returns a deterministic, clearly-marked stub so the
-        full pipeline is runnable end-to-end.
+        Note: TRIBE v2 and the feature extractors run on Modal GPU with Hugging Face access. If
+        Modal cannot load the model, the backend returns a deterministic, clearly-marked fallback
+        so the review flow remains runnable without making neural claims.
       </p>
     </main>
   );

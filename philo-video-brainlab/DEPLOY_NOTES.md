@@ -88,6 +88,14 @@ railway variable set MODAL_PREDICT_TIMEOUT_MS=300000 --service <philo-service>
 railway variable set NEXT_PUBLIC_APP_NAME=philo-video-brainlab --service <philo-service>
 ```
 
+For `/training-data` persistence, attach Railway Postgres and point the web service at it:
+
+```bash
+railway add --database postgres --json
+railway variable set 'DATABASE_URL=${{Postgres.DATABASE_URL}}' --service <philo-service>
+npm run db:push
+```
+
 Redeploy the same philo service:
 
 ```bash
@@ -121,12 +129,12 @@ Current end-to-end smoke:
 
 ## Database
 
-The live scoring flow does not require Postgres. When catalog or ablation pages are added,
-attach Railway Postgres or Supabase, set `DATABASE_URL`, then run:
+The live scoring flow does not require Postgres, but `/training-data` uses it to persist
+uploaded historical CSVs before feature extraction and training. After schema changes, run:
 
 ```bash
 npm run db:generate
-npm run db:migrate
+npm run db:push
 ```
 
 ## Response Contract

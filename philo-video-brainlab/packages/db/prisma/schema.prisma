@@ -2,7 +2,8 @@
 // Keep the four+ engagement targets separate; don't collapse to one score too early.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -170,6 +171,20 @@ model EditorNote {
   severity  Int      @default(1)
 
   @@index([videoId])
+}
+
+/// Uploaded historical engagement spreadsheets awaiting feature extraction and
+/// training. The raw CSV is retained so the importer/training job can be rerun
+/// as the schema evolves.
+model TrainingUpload {
+  id               String   @id @default(cuid())
+  sourceLabel      String?
+  fileName         String
+  rowCount         Int
+  columns          Json
+  validationIssues Json
+  csvText          String
+  createdAt        DateTime @default(now())
 }
 
 enum Platform {
