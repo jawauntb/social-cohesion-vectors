@@ -13,6 +13,7 @@
     "lint": "npm run lint -w apps/web",
     "db:generate": "npm run generate -w @brainlab/db",
     "db:migrate": "npm run migrate -w @brainlab/db",
+    "db:push": "npm exec -w @brainlab/db prisma db push",
     "db:seed": "npm run seed -w @brainlab/db"
   },
   "engines": {

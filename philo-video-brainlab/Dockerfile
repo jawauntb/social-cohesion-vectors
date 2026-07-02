@@ -3,6 +3,8 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/db/package.json packages/db/package.json
@@ -24,6 +26,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
+
+RUN apk add --no-cache openssl
 
 COPY --from=build /app ./
 

@@ -104,7 +104,7 @@ cp .env.example .env    # fill Modal, HF token, DATABASE_URL, platform keys
 npm install
 
 # 3. database
-npm run db:generate && npm run db:migrate
+npm run db:generate && npm run db:push
 
 # 4. python envs (uv recommended)
 uv pip install -e packages/scoring -e services/modal
@@ -118,7 +118,8 @@ npm run dev -w apps/web
 
 ## Roadmap
 
-- [ ] Ingest our catalog + a matched *Lectures on Tap* control set (weak / okay / strong).
+- [ ] Upload our catalog + a matched *Lectures on Tap* control set (weak / okay / strong)
+      at `/training-data`.
 - [ ] Verify the pipeline predicts a held-out creator's engagement (proves it generalizes).
 - [ ] Report the with-brain vs. without-brain ablation as the go/no-go gate.
 - [ ] Cross-creator latent-space map.
@@ -150,10 +151,17 @@ Deploy Railway as its own project/service. Use `--new` for the first deploy so t
 ```bash
 railway up philo-video-brainlab --path-as-root --new --name philo-video-brainlab --detach
 railway variable set MODAL_PREDICT_ENDPOINT=https://<workspace>--philo-video-analyzer.modal.run/ --service <philo-service>
+railway variable set MODAL_PREDICT_TIMEOUT_MS=300000 --service <philo-service>
 railway variable set NEXT_PUBLIC_APP_NAME=philo-video-brainlab --service <philo-service>
+railway add --database postgres --json
+railway variable set 'DATABASE_URL=${{Postgres.DATABASE_URL}}' --service <philo-service>
 railway up philo-video-brainlab --path-as-root --project <philo-project-id> --service <philo-service> --detach
 ```
 
 `used_brain: true` means the response used real TRIBE predictions. `used_brain: false`
 means the endpoint used a deterministic fallback trajectory because TRIBE, media loading,
 or credentials were unavailable.
+
+Historical training CSVs are uploaded at `/training-data`. The page persists the raw CSV
+and validation summary to Postgres, then a later feature-extraction/training job can turn
+those rows into `Video`, `Metric`, and model-training records.
