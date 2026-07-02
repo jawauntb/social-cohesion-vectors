@@ -10,8 +10,8 @@ The whole package is organized around one honest question:
 `models`   — train predictors and run the with-brain vs. without-brain ablation.
 """
 
-from .metrics import EngagementTargets, TARGET_NAMES, normalize_targets
-from .latent import latent_weighted, latent_pca, pareto_front
+from .latent import latent_pca, latent_weighted, pareto_front
+from .metrics import TARGET_NAMES, EngagementTargets, normalize_targets
 from .models import AblationResult, run_ablation
 
 __all__ = [

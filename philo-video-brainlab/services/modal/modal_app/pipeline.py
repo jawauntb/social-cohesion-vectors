@@ -10,9 +10,12 @@ import os
 
 import modal
 
-from .schemas import VideoInput, FeatureRecord
-from .features import extract as extract_features, app as features_app, image as features_image
-from .tribe_inference import brain_trajectory, app as tribe_app
+from .features import app as features_app
+from .features import extract as extract_features
+from .features import image as features_image
+from .schemas import FeatureRecord, VideoInput
+from .tribe_inference import app as tribe_app
+from .tribe_inference import brain_trajectory
 
 APP_NAME = os.environ.get("BRAINLAB_MODAL_APP", "philo-video-brainlab")
 app = modal.App(f"{APP_NAME}-pipeline")
@@ -38,6 +41,8 @@ def smoke():
     demo = [VideoInput(video_id=f"demo-{i:03d}", fps=1.0) for i in range(3)]
     for rec in process_batch.remote(demo):
         b = rec.brain
-        print(f"{rec.video_id}: brain {b.steps}x{b.dim} "
-              f"(v={b.velocity_mean:.2f}) | mm dims "
-              f"{len(rec.multimodal.transcript_embed)}/{len(rec.multimodal.visual_embed)}")
+        print(
+            f"{rec.video_id}: brain {b.steps}x{b.dim} "
+            f"(v={b.velocity_mean:.2f}) | mm dims "
+            f"{len(rec.multimodal.transcript_embed)}/{len(rec.multimodal.visual_embed)}"
+        )

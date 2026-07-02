@@ -65,8 +65,15 @@ modal deploy social_cohesion_vectors.modal_app.functions.video_analyzer
 
 - Publishes an ASGI web app labeled `video-analyzer`:
   `https://<workspace>--video-analyzer.modal.run/`
-  (for workspace `jawaun` this is exactly `https://jawaun--video-analyzer.modal.run/`,
-  which is the site's default).
+  (for workspace `generalintelligencecompany` this is exactly
+  `https://generalintelligencecompany--video-analyzer.modal.run/`, which is the
+  site's default).
+- If Modal says the `video-analyzer` subdomain is already owned by
+  `audience-vectors-dev`, deploy into that app name instead:
+  ```bash
+  SCV_MODAL_APP_BASE_NAME=audience-vectors-dev \
+    modal deploy social_cohesion_vectors.modal_app.functions.video_analyzer
+  ```
 - The image installs TRIBE with `exca==0.5.25` pinned + a build-time import
   preflight (see `docs/runbooks/tribe-modal-startup-fix.md`). **If the image build
   fails at the preflight**, pin `TRIBE_GIT_REF` to a validated commit and confirm
@@ -130,9 +137,11 @@ to `main` that touches `site/**`. It currently **fails until Pages is enabled**:
 ## 5. Point the site at the endpoint
 
 `train.html` Step 5 has an **"Analyzer endpoint"** field, remembered in the
-browser (localStorage), defaulting to `https://jawaun--video-analyzer.modal.run`.
+browser (localStorage), defaulting to
+`https://generalintelligencecompany--video-analyzer.modal.run`.
 
-- If your workspace is `jawaun`, it already matches — nothing to do.
+- If your workspace is `generalintelligencecompany`, it already matches —
+  nothing to do.
 - Otherwise paste your `https://<workspace>--video-analyzer.modal.run/` into that
   field once, **or** change the default in `site/train.html` (search for
   `brainlab_video_endpoint`) and push.

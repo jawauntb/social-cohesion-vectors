@@ -13,7 +13,7 @@ import os
 
 import modal
 
-from .schemas import VideoInput, MultimodalFeatures
+from .schemas import MultimodalFeatures, VideoInput
 
 APP_NAME = os.environ.get("BRAINLAB_MODAL_APP", "philo-video-brainlab")
 app = modal.App(f"{APP_NAME}-features")
@@ -41,7 +41,9 @@ def _stub_vec(key: str, dim: int) -> list[float]:
     return np.random.default_rng(seed).normal(size=dim).astype("float32").tolist()
 
 
-@app.function(image=image, gpu=os.environ.get("MODAL_DEFAULT_GPU", "A10G"), timeout=1800)
+@app.function(
+    image=image, gpu=os.environ.get("MODAL_DEFAULT_GPU", "A10G"), timeout=1800
+)
 def extract(video: VideoInput) -> MultimodalFeatures:
     """Extract transcript/visual/audio embeddings + editing rhythm for one video."""
     # Real path (wire once weights available):
@@ -50,7 +52,9 @@ def extract(video: VideoInput) -> MultimodalFeatures:
     #   - audio:      librosa prosody (pitch, energy, tempo) -> vector
     #   - rhythm:     shot boundaries -> shot count / mean length / cut rate
     vid = video.video_id
-    print(f"[features] stub features for {vid} (wire Whisper/CLIP/librosa for real values)")
+    print(
+        f"[features] stub features for {vid} (wire Whisper/CLIP/librosa for real values)"
+    )
     return MultimodalFeatures(
         transcript_embed=_stub_vec(f"txt:{vid}", 384),
         visual_embed=_stub_vec(f"vis:{vid}", 512),
