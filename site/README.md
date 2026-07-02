@@ -22,10 +22,9 @@ python -m http.server -d site 8000
 
 ## Deploy
 
-GitHub Pages serves the repository root on `main`. The root `index.html` and
-`train.html` files redirect into this folder, so
-`https://jawauntb.github.io/social-cohesion-vectors/train.html` opens
-`site/train.html`.
+GitHub Pages serves `docs/` on `main`. The site files are mirrored there so
+`https://jawauntb.github.io/social-cohesion-vectors/train.html` opens the
+published copy of `site/train.html`.
 
 The page is plain HTML/CSS/JS, so it also drops straight into Netlify, Vercel,
 Cloudflare Pages, or any static host with the publish directory set to `site`.

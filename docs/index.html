@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Social Cohesion Vectors — mapping genuine vs. pseudo-cohesion in model activations</title>
+<meta name="description" content="An interpretability research scaffold testing whether genuine social cohesion — truthful, dignity-preserving, agency-respecting relation — has measurable structure in open-model activation space, distinct from manipulative pseudo-cohesion." />
+<meta property="og:title" content="Social Cohesion Vectors" />
+<meta property="og:description" content="Mapping genuine vs. pseudo-cohesion directions in language-model activations." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<canvas id="field" aria-hidden="true"></canvas>
+
+<header class="site-head">
+  <a class="brand" href="#top">SCV</a>
+  <nav>
+    <a href="#idea">The idea</a>
+    <a href="#findings">Findings</a>
+    <a href="#taxonomy">Fault taxonomy</a>
+    <a href="#lanes">Methods</a>
+    <a href="#honesty">Honesty</a>
+    <a class="repo-link" href="https://github.com/jawauntb/social-cohesion-vectors" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <p class="eyebrow">Interpretability · activation steering · open-model research scaffold</p>
+    <h1>Social Cohesion<br /><span class="accent">Vectors</span></h1>
+    <p class="lede">
+      Does cooperative, repair-oriented social behavior leave a measurable trace in a
+      language model's activation space — and can we tell <em>genuine</em> cohesion apart
+      from its persuasive counterfeit?
+    </p>
+    <div class="hero-actions">
+      <a class="btn primary" href="#findings">See the findings</a>
+      <a class="btn ghost" href="https://github.com/jawauntb/social-cohesion-vectors" target="_blank" rel="noopener">Read the code</a>
+    </div>
+    <p class="hero-foot">Simulate · score · probe · steer — before touching expensive human or neural experiments.</p>
+  </section>
+
+  <section class="question" id="idea">
+    <div class="q-grid">
+      <div class="q-card genuine">
+        <h3>Genuine cohesion</h3>
+        <p>Truthful, dignity-preserving, agency-respecting relation. Repair after rupture,
+        reciprocity, room to dissent, the right to verify, the right to exit.</p>
+        <span class="tag">Magnifica Humanitas</span>
+      </div>
+      <div class="q-divider"><span>vs</span></div>
+      <div class="q-card pseudo">
+        <h3>Pseudo-cohesion</h3>
+        <p>Warm, group-oriented language that quietly costs autonomy: consent bypass,
+        dissent suppression, coerced forgiveness, "we are one" boundary collapse.</p>
+        <span class="tag">the counterfeit</span>
+      </div>
+    </div>
+    <p class="idea-note">
+      The whole project rests on one refusal: <strong>cohesion is not optimized agreement,
+      dependence, or conformity.</strong> An example cannot count as high-cohesion just
+      because it sounds warm — not if it violates truth, consent, privacy, dissent, or exit
+      rights. That ethical constraint is wired directly into the scorer.
+    </p>
+  </section>
+
+  <section class="research-question">
+    <p class="rq-label">The research question for the next sprint</p>
+    <blockquote>
+      Do specific activation directions or sparse-feature bundles track <em>specific</em>
+      social-reasoning fault classes — consent bypass, dissent suppression, social-debt
+      coercion — rather than one vague "positive vibe" axis?
+    </blockquote>
+    <p class="rq-foot">If that survives genuinely generated examples, the project has something
+    stronger than a benchmark: a representational map from social failure modes to model features.</p>
+  </section>
+
+  <section class="findings" id="findings">
+    <h2>What the activations are saying</h2>
+    <p class="section-sub">Current evidence is from synthetic text and open-model activations —
+    strong smoke signals, not human or neural validation. The honest headline is a
+    <strong>dissociation</strong>.</p>
+
+    <div class="finding-grid">
+      <article class="finding">
+        <span class="fnum">01</span>
+        <h3>Separation survives cue-balancing</h3>
+        <p>Once obvious cue words and length artifacts are removed, lexical-only and
+        token-count baselines fall to <strong>chance (0.500)</strong> — yet Qwen and SmolLM2
+        activations still reach <strong>1.000</strong> leave-one-pair-out accuracy across
+        layers, models, and held-out fault folds.</p>
+      </article>
+
+      <article class="finding">
+        <span class="fnum">02</span>
+        <h3>One manifold, not many axes</h3>
+        <p>The 20 fault directions are <em>not</em> orthogonal (mean cosine ≈ 0.62, no
+        anti-aligned pairs). The responsible claim: <strong>one strong shared
+        genuine-vs-pseudo manifold</strong> plus fault-specific residual subspaces — not 20
+        independent axes.</p>
+      </article>
+
+      <article class="finding">
+        <span class="fnum">03</span>
+        <h3>It isn't just affect</h3>
+        <p>Project out a five-dimensional affect subspace (anger, sadness, fear, disgust,
+        happy, neutral) and the cohesion direction <strong>still separates 1.000</strong>
+        with positive margins. The weakest objection — "cohesion is just positive mood" —
+        does not hold.</p>
+      </article>
+
+      <article class="finding wide">
+        <span class="fnum">04</span>
+        <h3>The control bottleneck</h3>
+        <p>Hidden-state telemetry shows the steering hook moves the targeted layer almost
+        exactly by the requested amount (mean error ≈ 0.002–0.007), and re-embedded
+        generations separate by direction. But local <em>behavior</em> barely moves, and
+        stronger pushes make text worse. <strong>A probe direction can be
+        representation-real without being a clean generation-time control.</strong> Naming
+        that gap is the project's sharpest result.</p>
+      </article>
+
+      <article class="finding">
+        <span class="fnum">05</span>
+        <h3>Cross-model compatibility</h3>
+        <p>Qwen→SmolLM2 linear maps show CKA 0.79–0.85 and mutual-kNN overlap ~0.66, with
+        1.000 mapped-direction accuracy both ways — representational compatibility for the
+        synthetic contrast across architectures.</p>
+      </article>
+
+      <article class="finding">
+        <span class="fnum">06</span>
+        <h3>Signs carry the pole</h3>
+        <p>Signed projections hit 1.000 where squared subspace-energy reaches only ~0.75.
+        Squared localization erases <em>which way</em> a feature points, so every report
+        keeps sign — direction, not just magnitude.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="taxonomy" id="taxonomy">
+    <h2>A symbolic fault taxonomy</h2>
+    <p class="section-sub">Why a warm-sounding example actually fails. Each pseudo-cohesion
+    contrast is annotated with the rights it violates — turning "vibes" into measurable
+    guardrails the scorer can enforce.</p>
+    <ul class="fault-list">
+      <li><b>Consent bypass</b><span>silence treated as agreement</span></li>
+      <li><b>Exit rights</b><span>no safe way to leave</span></li>
+      <li><b>Dissent suppression</b><span>objection made costly</span></li>
+      <li><b>Truth suppression</b><span>verification blocked</span></li>
+      <li><b>Privacy bypass</b><span>background data collection</span></li>
+      <li><b>Social-debt coercion</b><span>obligation as leverage</span></li>
+      <li><b>False consensus</b><span>manufactured "we all agree"</span></li>
+      <li><b>Accountability laundering</b><span>no appeal, no review</span></li>
+      <li><b>Forced forgiveness</b><span>repair demanded, not offered</span></li>
+      <li><b>Boundary collapse</b><span>coercive "we are one"</span></li>
+    </ul>
+  </section>
+
+  <section class="lanes" id="lanes">
+    <h2>The method, in lanes</h2>
+    <p class="section-sub">Every result runs a gauntlet of gates before it's trusted:
+    lexical-leakage, direction-geometry, residual-subspace, and signed-vs-squared reports.</p>
+    <div class="lane-grid">
+      <div class="lane"><h4>Simulate &amp; score</h4><p>25 seed social-dilemma scenarios →
+        cooperative, self-protective, adversarial, and intervention trajectories, scored for
+        cooperation, repair, fairness, hostility, truth, and autonomy safety.</p></div>
+      <div class="lane"><h4>Pseudo-cohesion</h4><p>Hand-authored and generated hard
+        negatives that <em>sound</em> cohesive but aren't, expanded into neutral genre
+        wrappers and clean in-text rewrites.</p></div>
+      <div class="lane"><h4>Boundary-prior</h4><p>Rigid us/them reification vs. flexible
+        contextual relation vs. coercive boundary collapse — a "there is no self-evidence"
+        framing turned into a benchmark family.</p></div>
+      <div class="lane"><h4>Affect-control</h4><p>Cross every contrast with six emotion
+        frames, then residualize affect out to prove the signal isn't mood.</p></div>
+      <div class="lane"><h4>Causal steering</h4><p>Inject signed directions during
+        generation on Modal, trace hidden-state telemetry, and demand monotonic
+        projection-and-behavior movement before claiming control.</p></div>
+      <div class="lane"><h4>Cross-model &amp; SAE</h4><p>CKA, mutual-kNN, and linear transfer
+        across Qwen / SmolLM2 / GPT-2, with sparse-autoencoder feature inspection at the
+        token level.</p></div>
+    </div>
+  </section>
+
+  <section class="reproduce">
+    <h2>Run the first pipeline</h2>
+    <pre><code><span class="c"># learning candidate cohesion vectors before any human study</span>
+uv sync --group dev
+cp .env.example .env
+
+uv run python scripts/run_scenario_simulations.py
+uv run python scripts/build_probe_dataset.py
+uv run python scripts/export_activation_prompts.py
+uv run python scripts/run_lexical_leakage_report.py</code></pre>
+    <p class="reproduce-foot">Activation extraction runs on Modal against open models such as
+    <code>Qwen/Qwen2.5-0.5B-Instruct</code>. Full reproduction steps live in the repo's
+    <a href="https://github.com/jawauntb/social-cohesion-vectors/blob/main/README.md" target="_blank" rel="noopener">README</a>
+    and <a href="https://github.com/jawauntb/social-cohesion-vectors/blob/main/HANDOFF_FOR_FRIEND.md" target="_blank" rel="noopener">handoff</a>.</p>
+  </section>
+
+  <section class="honesty" id="honesty">
+    <h2>What this is — and isn't</h2>
+    <div class="honesty-cols">
+      <div class="is">
+        <h4>What we can claim</h4>
+        <ul>
+          <li>Open-model activations separate genuine from pseudo-cohesion after lexical and
+            affect confounds are removed.</li>
+          <li>The structure is a shared manifold with fault-specific residuals, compatible
+            across architectures.</li>
+          <li>Probe directions are representation-real but not yet clean behavioral controls.</li>
+        </ul>
+      </div>
+      <div class="isnt">
+        <h4>What waits for later</h4>
+        <ul>
+          <li>Real human cooperation effects need Prolific or in-person pilots.</li>
+          <li>Neural claims need IRB and real participants — fMRI, EEG, fNIRS, hyperscanning.</li>
+          <li>Brain-aligned bridges remain proxies until validated behaviorally.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Read the code, run the gates, push the negatives harder.</h2>
+    <a class="btn primary big" href="https://github.com/jawauntb/social-cohesion-vectors" target="_blank" rel="noopener">jawauntb/social-cohesion-vectors ↗</a>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <p>Social Cohesion Vectors — an early research scaffold. Synthetic-text and open-model
+  activation evidence only; not human, behavioral, or neural validation.</p>
+  <p class="muted">Cohesion means truthful, dignity-preserving, agency-respecting relation —
+  not optimized agreement.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
