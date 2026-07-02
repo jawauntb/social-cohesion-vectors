@@ -26,16 +26,22 @@ from modal_app.schemas import EngagementPrediction, VideoInput
 
 TRIBE_MODEL_ID = os.environ.get("TRIBE_MODEL_ID", "facebook/tribev2")
 TRIBE_GPU = os.environ.get("TRIBE_GPU", "A100")
+TRIBE_MIN_CONTAINERS = int(os.environ.get("TRIBE_MIN_CONTAINERS", "1"))
 TRIBE_TR_SEC = float(os.environ.get("TRIBE_TR_SEC", "1.49"))
 MODEL_VERSION = os.environ.get("BRAINLAB_MODEL_VERSION", "heuristic-0.1")
 
 _weights = modal.Volume.from_name("philo-brainlab-tribe-weights", create_if_missing=True)
 _WEIGHTS_DIR = "/weights"
+_HF_CACHE_DIR = f"{_WEIGHTS_DIR}/huggingface"
 
 
 def _ensure_hf_token() -> None:
     if not os.environ.get("HF_TOKEN") and os.environ.get("HUGGINGFACE_TOKEN"):
         os.environ["HF_TOKEN"] = os.environ["HUGGINGFACE_TOKEN"]
+    os.makedirs(_HF_CACHE_DIR, exist_ok=True)
+    os.environ.setdefault("HF_HOME", _HF_CACHE_DIR)
+    os.environ.setdefault("TRANSFORMERS_CACHE", _HF_CACHE_DIR)
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 
 def _download(url: str) -> str:
@@ -174,7 +180,7 @@ def analyze_video(payload: dict[str, Any]) -> dict[str, Any]:
     secrets=modal_secrets,
     volumes={_WEIGHTS_DIR: _weights},
     timeout=1800,
-    min_containers=0,
+    min_containers=TRIBE_MIN_CONTAINERS,
 )
 @modal.asgi_app(label="philo-video-analyzer")
 def web():
