@@ -22,6 +22,20 @@ python -m http.server -d site 8000
 
 ## Deploy
 
+### Railway
+
+The repo root has a small nginx `Dockerfile` that serves this folder and listens
+on Railway's injected `PORT`.
+
+```bash
+railway login
+railway link
+railway up
+railway domain
+```
+
+### GitHub Pages
+
 GitHub Pages serves `docs/` on `main`. The site files are mirrored there so
 `https://jawauntb.github.io/social-cohesion-vectors/train.html` opens the
 published copy of `site/train.html`.
