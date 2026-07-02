@@ -49,9 +49,6 @@ const TEMPLATE_COLUMNS = [
   "url",
   "title",
   "creator",
-  "posted_at",
-  "duration_sec",
-  "followers_at_post",
   "views",
   "likes",
   "comments",
@@ -60,19 +57,13 @@ const TEMPLATE_COLUMNS = [
   "reposts",
   "avg_retention",
   "completion_rate",
-  "watch_time_sec",
-  "caption",
-  "hook_transcript",
-  "full_transcript",
-  "topic",
-  "thumbnail_url",
   "evidence_url",
   "screenshot_url",
   "notes",
 ];
 
 export const TRAINING_CSV_TEMPLATE = `${TEMPLATE_COLUMNS.join(",")}
-example-001,youtube,https://example.com/video,Example title,Our videos,2026-01-15,52,12000,10000,800,120,55,80,12,0.62,0.41,3100,"Full caption text","First 3 seconds","Full transcript if available",philosophy,https://example.com/thumb.jpg,https://drive.google.com/evidence-folder,https://drive.google.com/screenshot,"Replace this row before upload"
+example-001,youtube,https://example.com/video,Example title,Our videos,10000,800,120,55,80,12,0.62,0.41,https://drive.google.com/evidence-folder,https://drive.google.com/screenshot,"Replace this row before upload"
 `;
 
 export function inspectCsv(csvText: string): CsvInspection {
@@ -93,7 +84,7 @@ export function inspectCsv(csvText: string): CsvInspection {
     errors.push("CSV needs one identifier column: video_id, external_id, url, video_url, or local_path.");
   }
   if (!hasAny(normalized, ["title", "caption", "hook_transcript", "full_transcript"])) {
-    issues.push("Add title, caption, hook_transcript, or full_transcript so the model has text context.");
+    issues.push("Add title if it is visible. Captions/transcripts can be extracted later from the video URL.");
   }
   if (!hasAny(normalized, ["platform"])) {
     issues.push("Add platform so YouTube/TikTok/Instagram rows can be grouped correctly.");
@@ -105,7 +96,7 @@ export function inspectCsv(csvText: string): CsvInspection {
     issues.push("Add competitor, creator, account, or source to separate your videos from controls.");
   }
   if (!hasAny(normalized, EVIDENCE_COLUMNS)) {
-    issues.push("Add evidence_url or screenshot_url so engagement numbers can be checked later.");
+    issues.push("Add evidence_url, screenshot_url, or notes so engagement numbers can be checked later.");
   }
   if (rowCount < 10) {
     issues.push("This is enough to test the pipeline, but useful training batches should usually have 10+ rows per source.");
