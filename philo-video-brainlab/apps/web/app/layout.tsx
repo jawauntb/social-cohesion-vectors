@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="logo">🧠 brainlab</span>
           <Link href="/">Dashboard</Link>
           <Link href="/training-data">Training data</Link>
+          <Link href="/intern-guide">Intern guide</Link>
           <Link href="/predict">Pre-post scoring</Link>
           <a href="https://github.com/facebookresearch" target="_blank" rel="noreferrer">
             TRIBE v2
