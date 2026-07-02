@@ -1,24 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@brainlab/db";
+import { inspectCsv } from "@/lib/trainingCsv";
 
 export const runtime = "nodejs";
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
-const ID_COLUMNS = ["video_id", "external_id", "externalid", "url", "video_url", "local_path"];
-const METRIC_COLUMNS = [
-  "views",
-  "likes",
-  "comments",
-  "shares",
-  "saves",
-  "reposts",
-  "watch_time",
-  "watchtimesec",
-  "avg_retention",
-  "avgretention",
-  "completion_rate",
-  "completionrate",
-];
 
 export async function GET() {
   try {
@@ -32,6 +18,9 @@ export async function GET() {
         rowCount: true,
         columns: true,
         validationIssues: true,
+        importIssues: true,
+        importedVideoCount: true,
+        processedAt: true,
         createdAt: true,
       },
     });
@@ -88,6 +77,9 @@ export async function POST(req: Request) {
         rowCount: true,
         columns: true,
         validationIssues: true,
+        importIssues: true,
+        importedVideoCount: true,
+        processedAt: true,
         createdAt: true,
       },
     });
@@ -99,95 +91,6 @@ export async function POST(req: Request) {
       { status: 503 },
     );
   }
-}
-
-function inspectCsv(csvText: string): {
-  columns: string[];
-  errors: string[];
-  issues: string[];
-  rowCount: number;
-} {
-  const rows = parseCsv(csvText);
-  if (rows.length < 2) {
-    return { columns: [], errors: ["CSV needs a header row and at least one video row."], issues: [], rowCount: 0 };
-  }
-
-  const columns = rows[0].map((cell) => cell.trim()).filter(Boolean);
-  const normalized = columns.map(normalizeColumn);
-  const rowCount = rows.slice(1).filter((row) => row.some((cell) => cell.trim())).length;
-  const errors: string[] = [];
-  const issues: string[] = [];
-
-  if (columns.length === 0) errors.push("CSV header row is empty.");
-  if (rowCount === 0) errors.push("CSV has no video rows.");
-  if (!hasAny(normalized, ID_COLUMNS)) {
-    errors.push("CSV needs one identifier column: video_id, external_id, url, video_url, or local_path.");
-  }
-  if (!hasAny(normalized, ["title", "caption", "hook_transcript", "full_transcript"])) {
-    issues.push("Add title, caption, hook_transcript, or full_transcript so the model has text context.");
-  }
-  if (!hasAny(normalized, ["platform"])) {
-    issues.push("Add platform so YouTube/TikTok/Instagram rows can be grouped correctly.");
-  }
-  if (!hasAny(normalized, METRIC_COLUMNS)) {
-    errors.push("CSV needs at least one engagement metric: views, likes, comments, shares, saves, reposts, retention, or watch time.");
-  }
-  if (!hasAny(normalized, ["competitor", "creator", "account", "source"])) {
-    issues.push("Add competitor, creator, account, or source to separate your videos from controls.");
-  }
-
-  return { columns, errors, issues, rowCount };
-}
-
-function parseCsv(input: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < input.length; i++) {
-    const char = input[i];
-    const next = input[i + 1];
-
-    if (char === "\"") {
-      if (inQuotes && next === "\"") {
-        cell += "\"";
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-
-    if (char === "," && !inQuotes) {
-      row.push(cell);
-      cell = "";
-      continue;
-    }
-
-    if ((char === "\n" || char === "\r") && !inQuotes) {
-      if (char === "\r" && next === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-      continue;
-    }
-
-    cell += char;
-  }
-
-  row.push(cell);
-  rows.push(row);
-  return rows.filter((csvRow) => csvRow.some((value) => value.trim()));
-}
-
-function normalizeColumn(column: string): string {
-  return column.trim().toLowerCase().replace(/[\s-]+/g, "_").replace(/[^a-z0-9_]/g, "");
-}
-
-function hasAny(columns: string[], candidates: string[]): boolean {
-  return candidates.some((candidate) => columns.includes(candidate));
 }
 
 function stringField(value: FormDataEntryValue | null): string | null {

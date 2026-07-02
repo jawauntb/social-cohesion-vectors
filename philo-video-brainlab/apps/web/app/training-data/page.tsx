@@ -9,6 +9,9 @@ type UploadSummary = {
   rowCount: number;
   columns: unknown;
   validationIssues: unknown;
+  importIssues: unknown;
+  importedVideoCount: number;
+  processedAt: string | null;
   createdAt: string;
 };
 
@@ -43,9 +46,11 @@ export default function TrainingDataPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const latestUpload = uploads[0];
+  const pendingUploads = uploads.filter((upload) => !upload.processedAt).length;
   const latestColumns = useMemo(() => formatList(latestUpload?.columns), [latestUpload]);
   const latestIssues = useMemo(() => formatList(latestUpload?.validationIssues), [latestUpload]);
 
@@ -61,6 +66,30 @@ export default function TrainingDataPage() {
       setUploads(data.uploads);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load prior uploads");
+    }
+  }
+
+  async function processUploads() {
+    setProcessing(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/training-uploads/process", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not process uploads");
+      const result = data.result;
+      setMessage(
+        `Processed ${result.processedUploads} upload(s) and imported ${result.importedVideos} video row(s).`,
+      );
+      if (result.issues.length > 0) {
+        setError(result.issues.slice(0, 3).join(" "));
+      }
+      await loadUploads();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not process uploads");
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -142,6 +171,14 @@ export default function TrainingDataPage() {
       </section>
 
       <h2>Stored uploads</h2>
+      <div className="toolbar">
+        <p className="muted">
+          {pendingUploads === 0 ? "No pending uploads." : `${pendingUploads} upload(s) ready to process.`}
+        </p>
+        <button className="secondary" type="button" onClick={processUploads} disabled={processing || pendingUploads === 0}>
+          {processing ? "Processing..." : "Process pending uploads"}
+        </button>
+      </div>
       {uploads.length === 0 ? (
         <p className="muted">No training CSVs saved yet.</p>
       ) : (
@@ -150,7 +187,16 @@ export default function TrainingDataPage() {
             <article className="card" key={upload.id}>
               <h3>{upload.sourceLabel || upload.fileName}</h3>
               <p>{upload.rowCount} video rows saved from {upload.fileName}</p>
+              <p>
+                {upload.processedAt
+                  ? `${upload.importedVideoCount} video row(s) imported`
+                  : "Waiting to be processed"}
+              </p>
               <p className="muted">{new Date(upload.createdAt).toLocaleString()}</p>
+              {upload.processedAt && (
+                <p className="muted">Processed {new Date(upload.processedAt).toLocaleString()}</p>
+              )}
+              {formatList(upload.importIssues) && <p className="muted danger">{formatList(upload.importIssues)}</p>}
             </article>
           ))}
         </div>

@@ -130,7 +130,8 @@ Current end-to-end smoke:
 ## Database
 
 The live scoring flow does not require Postgres, but `/training-data` uses it to persist
-uploaded historical CSVs before feature extraction and training. After schema changes, run:
+uploaded historical CSVs and import them into normalized catalog records before feature
+extraction and training. After schema changes, run:
 
 ```bash
 npm run db:generate

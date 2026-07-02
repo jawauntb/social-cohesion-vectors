@@ -183,6 +183,9 @@ model TrainingUpload {
   rowCount         Int
   columns          Json
   validationIssues Json
+  importIssues     Json     @default("[]")
+  importedVideoCount Int    @default(0)
+  processedAt      DateTime?
   csvText          String
   createdAt        DateTime @default(now())
 }
