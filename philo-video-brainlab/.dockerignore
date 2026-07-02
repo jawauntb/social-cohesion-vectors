@@ -1,0 +1,15 @@
+.git
+.next
+apps/web/.next
+node_modules
+apps/web/node_modules
+packages/db/node_modules
+npm-debug.log*
+.env
+.env.*
+!.env.example
+data
+services/modal/.venv
+packages/scoring/.venv
+**/__pycache__
+**/.pytest_cache

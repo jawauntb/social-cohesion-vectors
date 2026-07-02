@@ -66,6 +66,9 @@ model activations alone.
 
 ## Deploy
 
-- **Modal** hosts TRIBE inference + the `serve.predict` endpoint (`modal deploy`).
-- **Next.js** on Railway or Vercel; **Postgres** on Railway/Supabase.
-- Set `MODAL_PREDICT_ENDPOINT` in the web env to the deployed Modal URL.
+- **Modal** hosts TRIBE inference at the ASGI label `philo-video-analyzer`.
+- **Railway** hosts the Next.js app from `philo-video-brainlab/`; use a separate Railway
+  project/service from the repository root static app.
+- **Postgres** can be attached through Railway or Supabase for catalog and ablation views,
+  but the first live `/predict` path does not require a database.
+- Set `MODAL_PREDICT_ENDPOINT` in Railway to the deployed Modal URL.
