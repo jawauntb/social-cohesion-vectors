@@ -11,8 +11,26 @@ type UploadSummary = {
   validationIssues: unknown;
   importIssues: unknown;
   importedVideoCount: number;
+  previewRows: PreviewRow[];
   processedAt: string | null;
   createdAt: string;
+};
+
+type PreviewRow = {
+  caption: string;
+  creator: string;
+  metrics: string;
+  platform: string;
+  title: string;
+  url: string;
+};
+
+type SourceSummary = {
+  id: string;
+  isSelf: boolean;
+  name: string;
+  platform: string;
+  videoCount: number;
 };
 
 const agentPrompt = `You are helping prepare historical video performance data for philo-video-brainlab.
@@ -36,12 +54,16 @@ Strongly recommended columns:
 - full_transcript
 - topic
 - thumbnail_url
+- evidence_url
+- screenshot_url
+- notes
 
 Keep likes, comments, shares, saves, reposts, retention, and watch time as separate columns. Do not collapse them into one score. Save the file as a UTF-8 .csv and tell me exactly where it is stored.`;
 
 export default function TrainingDataPage() {
   const [sourceLabel, setSourceLabel] = useState("Our historical videos");
   const [file, setFile] = useState<File | null>(null);
+  const [sourceSummary, setSourceSummary] = useState<SourceSummary[]>([]);
   const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +85,7 @@ export default function TrainingDataPage() {
       const res = await fetch("/api/training-uploads", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not load prior uploads");
+      setSourceSummary(data.sourceSummary || []);
       setUploads(data.uploads);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load prior uploads");
@@ -138,6 +161,13 @@ export default function TrainingDataPage() {
       <section className="split">
         <div>
           <h2>Upload spreadsheet</h2>
+          <p className="lede compact">
+            One CSV per source is best while the intern workflow is new. Upload our videos and each
+            competitor/control as separate batches.
+          </p>
+          <a className="button-link" href="/api/training-uploads/template">
+            Download CSV template
+          </a>
           <form onSubmit={onSubmit}>
             <label>
               Dataset label
@@ -170,6 +200,21 @@ export default function TrainingDataPage() {
         </div>
       </section>
 
+      <h2>Normalized sources</h2>
+      {sourceSummary.length === 0 ? (
+        <p className="muted">No processed sources yet.</p>
+      ) : (
+        <div className="upload-list">
+          {sourceSummary.map((source) => (
+            <article className="card" key={source.id}>
+              <h3>{source.name}</h3>
+              <p>{source.videoCount} imported video row(s)</p>
+              <p className="muted">{source.platform}{source.isSelf ? " · our catalog" : " · comparison source"}</p>
+            </article>
+          ))}
+        </div>
+      )}
+
       <h2>Stored uploads</h2>
       <div className="toolbar">
         <p className="muted">
@@ -197,6 +242,31 @@ export default function TrainingDataPage() {
                 <p className="muted">Processed {new Date(upload.processedAt).toLocaleString()}</p>
               )}
               {formatList(upload.importIssues) && <p className="muted danger">{formatList(upload.importIssues)}</p>}
+              {upload.previewRows.length > 0 && (
+                <details>
+                  <summary>Preview rows</summary>
+                  <div className="preview-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Creator</th>
+                          <th>Title</th>
+                          <th>Metrics</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {upload.previewRows.map((row, index) => (
+                          <tr key={`${upload.id}-${index}`}>
+                            <td>{row.creator || "Unknown"}</td>
+                            <td>{row.title || row.url || "Untitled"}</td>
+                            <td>{row.metrics || "No metrics shown"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
             </article>
           ))}
         </div>

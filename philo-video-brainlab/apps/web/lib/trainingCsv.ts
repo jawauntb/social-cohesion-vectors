@@ -7,6 +7,15 @@ export type CsvInspection = {
   rowCount: number;
 };
 
+export type CsvPreviewRow = {
+  caption: string;
+  creator: string;
+  metrics: string;
+  platform: string;
+  title: string;
+  url: string;
+};
+
 export type TrainingImportResult = {
   importedVideos: number;
   processedUploads: number;
@@ -17,6 +26,7 @@ export type TrainingImportResult = {
 type CsvRecord = Record<string, string>;
 
 const ID_COLUMNS = ["video_id", "external_id", "externalid", "url", "video_url", "local_path"];
+const EVIDENCE_COLUMNS = ["evidence_url", "screenshot_url", "screenshot_file", "source_screenshot", "notes"];
 const METRIC_COLUMNS = [
   "views",
   "likes",
@@ -33,6 +43,37 @@ const METRIC_COLUMNS = [
   "completion_rate",
   "completionrate",
 ];
+const TEMPLATE_COLUMNS = [
+  "video_id",
+  "platform",
+  "url",
+  "title",
+  "creator",
+  "posted_at",
+  "duration_sec",
+  "followers_at_post",
+  "views",
+  "likes",
+  "comments",
+  "shares",
+  "saves",
+  "reposts",
+  "avg_retention",
+  "completion_rate",
+  "watch_time_sec",
+  "caption",
+  "hook_transcript",
+  "full_transcript",
+  "topic",
+  "thumbnail_url",
+  "evidence_url",
+  "screenshot_url",
+  "notes",
+];
+
+export const TRAINING_CSV_TEMPLATE = `${TEMPLATE_COLUMNS.join(",")}
+example-001,youtube,https://example.com/video,Example title,Our videos,2026-01-15,52,12000,10000,800,120,55,80,12,0.62,0.41,3100,"Full caption text","First 3 seconds","Full transcript if available",philosophy,https://example.com/thumb.jpg,https://drive.google.com/evidence-folder,https://drive.google.com/screenshot,"Replace this row before upload"
+`;
 
 export function inspectCsv(csvText: string): CsvInspection {
   const rows = parseCsv(csvText);
@@ -63,6 +104,17 @@ export function inspectCsv(csvText: string): CsvInspection {
   if (!hasAny(normalized, ["competitor", "creator", "account", "source"])) {
     issues.push("Add competitor, creator, account, or source to separate your videos from controls.");
   }
+  if (!hasAny(normalized, EVIDENCE_COLUMNS)) {
+    issues.push("Add evidence_url or screenshot_url so engagement numbers can be checked later.");
+  }
+  if (rowCount < 10) {
+    issues.push("This is enough to test the pipeline, but useful training batches should usually have 10+ rows per source.");
+  }
+  const records = recordsFromCsv(csvText);
+  const rowsWithoutMetric = records.filter((record) => !hasAnyMetric(record)).length;
+  if (rowsWithoutMetric > 0) {
+    issues.push(`${rowsWithoutMetric} row(s) have no filled engagement metric and may be skipped by review.`);
+  }
 
   return { columns, errors, issues, rowCount };
 }
@@ -82,6 +134,17 @@ export function recordsFromCsv(csvText: string): CsvRecord[] {
     records.push(record);
   });
   return records;
+}
+
+export function previewRowsFromCsv(csvText: string, maxRows = 5): CsvPreviewRow[] {
+  return recordsFromCsv(csvText).slice(0, maxRows).map((record) => ({
+    caption: first(record, ["caption", "hook_transcript", "full_transcript"]),
+    creator: first(record, ["creator", "competitor", "account", "source"]),
+    metrics: metricSummary(record),
+    platform: first(record, ["platform"]),
+    title: first(record, ["title"]) || first(record, ["video_id", "external_id"]),
+    url: first(record, ["url", "video_url", "local_path"]),
+  }));
 }
 
 export async function processPendingTrainingUploads(prisma: PrismaClient): Promise<TrainingImportResult> {
@@ -270,6 +333,21 @@ function first(record: CsvRecord, keys: string[]): string {
     if (value) return value;
   }
   return "";
+}
+
+function hasAnyMetric(record: CsvRecord): boolean {
+  return METRIC_COLUMNS.some((column) => Boolean(record[column]));
+}
+
+function metricSummary(record: CsvRecord): string {
+  const pairs = [
+    ["views", first(record, ["views"])],
+    ["likes", first(record, ["likes"])],
+    ["comments", first(record, ["comments"])],
+    ["shares", first(record, ["shares"])],
+    ["saves", first(record, ["saves"])],
+  ].filter(([, value]) => value);
+  return pairs.map(([label, value]) => `${label}: ${value}`).join(", ");
 }
 
 function parsePlatform(value: string): Platform {
