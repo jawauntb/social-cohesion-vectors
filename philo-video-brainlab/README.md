@@ -169,9 +169,10 @@ model training run after that normalized dataset exists.
 
 For intern data collection, `/training-data` provides a minimal downloadable CSV template,
 preview rows for each upload, and a normalized source summary so our catalog and each
-competitor/control batch can be reviewed before training. The intern only needs video links,
-source/account names, visible engagement metrics, and evidence screenshots/links; duration
-and transcripts can be extracted later from the URLs.
+competitor/control batch can be reviewed before training. The intern needs public post links,
+actual video file links where they can get them cleanly, source/account names, visible
+engagement metrics, and evidence screenshots/links; duration and transcripts can be extracted
+later from the media files.
 
 Send human collectors to `/intern-guide`; the copyable prompt on `/training-data` is for an
 AI/helper agent that assists with CSV scaffolding.
