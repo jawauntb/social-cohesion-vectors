@@ -42,7 +42,7 @@ def tribe_video_image() -> modal.Image:
 
     return (
         modal.Image.debian_slim(python_version="3.12")
-        .apt_install("ffmpeg")
+        .apt_install("ffmpeg", "git")
         .pip_install(
             "numpy>=1.26,<3.0",
             "pydantic[email]==2.12.5",
