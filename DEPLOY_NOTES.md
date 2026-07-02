@@ -121,6 +121,27 @@ trusting numbers.
 
 ## 4. Deploy the site (GitHub Pages)
 
+### Railway
+
+The repo includes a tiny nginx `Dockerfile` for Railway. It serves `site/`
+directly and listens on Railway's injected `PORT`.
+
+```bash
+railway login
+railway link   # choose/create the project once
+railway up
+railway domain
+```
+
+Verify:
+
+```bash
+curl -s https://<railway-domain>/health
+curl -I https://<railway-domain>/train.html
+```
+
+### GitHub Pages fallback
+
 GitHub Pages serves the `docs/` folder on `main`. The site files are mirrored
 there from `site/`, and `docs/.nojekyll` keeps GitHub from running a Jekyll build
 over the folder.
@@ -185,4 +206,5 @@ static Pages site can call it directly from the browser.
 | `docs/runbooks/tribe-modal-startup-fix.md` | TRIBE import fix |
 | `site/train.html` | CSV trainer + brain-pipeline panel |
 | `docs/index.html`, `docs/train.html`, `docs/.nojekyll` | GitHub Pages published mirror/config |
+| `Dockerfile`, `deploy/railway-nginx.conf.template` | Railway static-site deploy |
 | `.env.example` | all env vars |
