@@ -47,6 +47,20 @@ curl -X POST https://<workspace>--philo-video-analyzer.modal.run/ \
 `/health.loaded` reports whether TRIBE loaded. A scoring response with `used_brain: false`
 is a deterministic fallback, not a neural claim.
 
+The Modal web endpoint defaults to `TRIBE_MIN_CONTAINERS=1` so Railway requests do not
+hit TRIBE cold-start timeouts. Set it to `0` only when saving A100 idle cost matters
+more than first-request latency.
+
+After each Modal deploy, prewarm the web container before sending user traffic:
+
+```bash
+curl -L https://<workspace>--philo-video-analyzer.modal.run/health
+```
+
+TRIBE/Hugging Face caches are directed to the `philo-brainlab-tribe-weights` Modal
+volume. If first-request latency is still too high, inspect Modal logs for repeated
+`Loading model from ...` lines before considering image-baked weights.
+
 Current production smoke:
 
 ```json
@@ -70,6 +84,7 @@ Set runtime env on the new service:
 
 ```bash
 railway variable set MODAL_PREDICT_ENDPOINT=https://<workspace>--philo-video-analyzer.modal.run/ --service <philo-service>
+railway variable set MODAL_PREDICT_TIMEOUT_MS=300000 --service <philo-service>
 railway variable set NEXT_PUBLIC_APP_NAME=philo-video-brainlab --service <philo-service>
 ```
 
