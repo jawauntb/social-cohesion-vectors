@@ -6,6 +6,7 @@ import importlib
 import json
 import os
 from collections.abc import Mapping, Sequence
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -64,10 +65,173 @@ def extract_activations(
         if records is None and prompt_path is not None
         else _coerce_prompt_records(records or [])
     )
-    if not prompt_records:
-        raise ValueError("At least one prompt record is required.")
-    if batch_size < 1:
-        raise ValueError("batch_size must be at least 1.")
+    activations = _extract_activation_array(
+        prompt_records,
+        model_id=model_id,
+        layer=layer,
+        batch_size=batch_size,
+        max_length=max_length,
+    )
+    resolved_output_path = (
+        write_activation_npz(
+            output_path,
+            records=prompt_records,
+            activations=activations,
+            model_id=model_id,
+            layer=layer,
+        )
+        if output_path is not None
+        else None
+    )
+    return _activation_summary(
+        records=prompt_records,
+        activations=activations,
+        model_id=model_id,
+        layer=layer,
+        output_path=resolved_output_path,
+    )
+
+
+def build_activation_npz_bytes(
+    *,
+    records: Sequence[Mapping[str, Any]],
+    activations: np.ndarray,
+    model_id: str,
+    layer: int,
+) -> bytes:
+    """Serialize pooled activations and prompt metadata as compressed NPZ bytes."""
+
+    buffer = BytesIO()
+    _write_activation_npz(
+        buffer,
+        records=records,
+        activations=activations,
+        model_id=model_id,
+        layer=layer,
+    )
+    return buffer.getvalue()
+
+
+def load_activation_npz_bytes(payload: bytes) -> dict[str, np.ndarray]:
+    """Load compressed NPZ bytes into eager numpy arrays."""
+
+    with np.load(BytesIO(payload), allow_pickle=False) as data:
+        return {key: np.asarray(data[key]) for key in data.files}
+
+
+def write_activation_npz_bytes(output_path: str | Path, payload: bytes) -> Path:
+    """Write already-compressed activation NPZ bytes to disk."""
+
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+    return path
+
+
+def write_activation_npz(
+    output_path: str | Path,
+    *,
+    records: Sequence[Mapping[str, Any]],
+    activations: np.ndarray,
+    model_id: str,
+    layer: int,
+) -> Path:
+    """Write pooled activations and prompt metadata in contrastive-compatible form."""
+
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_activation_npz(
+        path,
+        records=records,
+        activations=activations,
+        model_id=model_id,
+        layer=layer,
+    )
+    return path
+
+
+@app.function(
+    image=open_llm_image(),
+    secrets=modal_secrets,
+    gpu=get_config().modal.default_gpu,
+    timeout=900,
+)
+def smoke_extract(
+    prompt_path: str | None = None,
+    output_path: str | None = None,
+    model_id: str = DEFAULT_MODEL_ID,
+    layer: int = DEFAULT_LAYER,
+    max_records: int = 2,
+    batch_size: int = 2,
+    max_length: int = 256,
+) -> dict[str, Any]:
+    """Remote smoke-test entrypoint for Modal activation extraction."""
+
+    if prompt_path is None:
+        records = _smoke_records()
+    else:
+        records = read_prompt_records(prompt_path)[:max_records]
+    return extract_activations(
+        prompt_path=None,
+        records=records,
+        output_path=output_path,
+        model_id=model_id,
+        layer=layer,
+        batch_size=batch_size,
+        max_length=max_length,
+    )
+
+
+@app.function(
+    image=open_llm_image(),
+    secrets=modal_secrets,
+    gpu=get_config().modal.default_gpu,
+    timeout=1800,
+)
+def extract_activation_payload(
+    records: list[dict[str, Any]],
+    model_id: str = DEFAULT_MODEL_ID,
+    layer: int = DEFAULT_LAYER,
+    batch_size: int = 4,
+    max_length: int = 1024,
+) -> dict[str, Any]:
+    """Remote entrypoint that accepts prompt records and returns NPZ bytes."""
+
+    prompt_records = _coerce_prompt_records(records)
+    activations = _extract_activation_array(
+        prompt_records,
+        model_id=model_id,
+        layer=layer,
+        batch_size=batch_size,
+        max_length=max_length,
+    )
+    return {
+        "npz_bytes": build_activation_npz_bytes(
+            records=prompt_records,
+            activations=activations,
+            model_id=model_id,
+            layer=layer,
+        ),
+        "summary": _activation_summary(
+            records=prompt_records,
+            activations=activations,
+            model_id=model_id,
+            layer=layer,
+            output_path=None,
+        ),
+    }
+
+
+def _extract_activation_array(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    model_id: str,
+    layer: int,
+    batch_size: int,
+    max_length: int,
+) -> np.ndarray:
+    prompt_records = _coerce_prompt_records(records)
+    _validate_extraction_inputs(prompt_records, batch_size=batch_size)
 
     torch = importlib.import_module("torch")
     transformers = importlib.import_module("transformers")
@@ -106,87 +270,7 @@ def extract_activations(
         pooled = _mean_pool(hidden_states[layer], encoded["attention_mask"])
         activation_batches.append(pooled.float().cpu().numpy())
 
-    activations = np.concatenate(activation_batches, axis=0).astype(np.float32)
-    resolved_output_path = (
-        write_activation_npz(
-            output_path,
-            records=prompt_records,
-            activations=activations,
-            model_id=model_id,
-            layer=layer,
-        )
-        if output_path is not None
-        else None
-    )
-    return _activation_summary(
-        records=prompt_records,
-        activations=activations,
-        model_id=model_id,
-        layer=layer,
-        output_path=resolved_output_path,
-    )
-
-
-def write_activation_npz(
-    output_path: str | Path,
-    *,
-    records: Sequence[Mapping[str, Any]],
-    activations: np.ndarray,
-    model_id: str,
-    layer: int,
-) -> Path:
-    """Write pooled activations and prompt metadata in contrastive-compatible form."""
-
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        path,
-        activations=activations,
-        sample_ids=np.array([record["sample_id"] for record in records], dtype=str),
-        pair_ids=np.array([record.get("pair_id", "") for record in records], dtype=str),
-        labels=np.array([record.get("label", "") for record in records], dtype=str),
-        target_scores=np.array(
-            [record.get("target_score", np.nan) for record in records],
-            dtype=np.float32,
-        ),
-        texts=np.array([record["text"] for record in records], dtype=str),
-        model_id=np.array(model_id),
-        layer=np.array(layer, dtype=np.int64),
-        pooling=np.array("attention_mean"),
-    )
-    return path
-
-
-@app.function(
-    image=open_llm_image(),
-    secrets=modal_secrets,
-    gpu=get_config().modal.default_gpu,
-    timeout=900,
-)
-def smoke_extract(
-    prompt_path: str | None = None,
-    output_path: str | None = None,
-    model_id: str = DEFAULT_MODEL_ID,
-    layer: int = DEFAULT_LAYER,
-    max_records: int = 2,
-    batch_size: int = 2,
-    max_length: int = 256,
-) -> dict[str, Any]:
-    """Remote smoke-test entrypoint for Modal activation extraction."""
-
-    if prompt_path is None:
-        records = _smoke_records()
-    else:
-        records = read_prompt_records(prompt_path)[:max_records]
-    return extract_activations(
-        prompt_path=None,
-        records=records,
-        output_path=output_path,
-        model_id=model_id,
-        layer=layer,
-        batch_size=batch_size,
-        max_length=max_length,
-    )
+    return np.concatenate(activation_batches, axis=0).astype(np.float32)
 
 
 def _load_tokenizer_and_model(
@@ -215,6 +299,55 @@ def _load_tokenizer_and_model(
 def _mean_pool(hidden_states: Any, attention_mask: Any) -> Any:
     mask = attention_mask.to(hidden_states.device).unsqueeze(-1).type_as(hidden_states)
     return (hidden_states * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)
+
+
+def _write_activation_npz(
+    output: str | Path | BytesIO,
+    *,
+    records: Sequence[Mapping[str, Any]],
+    activations: np.ndarray,
+    model_id: str,
+    layer: int,
+) -> None:
+    prompt_records = _coerce_prompt_records(records)
+    if activations.shape[0] != len(prompt_records):
+        raise ValueError(
+            f"Activation row count {activations.shape[0]} does not match "
+            f"record count {len(prompt_records)}."
+        )
+    np.savez_compressed(
+        output,
+        activations=np.asarray(activations, dtype=np.float32),
+        sample_ids=np.array(
+            [record["sample_id"] for record in prompt_records], dtype=str
+        ),
+        pair_ids=np.array(
+            [record.get("pair_id", "") for record in prompt_records],
+            dtype=str,
+        ),
+        labels=np.array(
+            [record.get("label", "") for record in prompt_records], dtype=str
+        ),
+        target_scores=np.array(
+            [record.get("target_score", np.nan) for record in prompt_records],
+            dtype=np.float32,
+        ),
+        texts=np.array([record["text"] for record in prompt_records], dtype=str),
+        model_id=np.array(model_id),
+        layer=np.array(layer, dtype=np.int64),
+        pooling=np.array("attention_mean"),
+    )
+
+
+def _validate_extraction_inputs(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    batch_size: int,
+) -> None:
+    if not records:
+        raise ValueError("At least one prompt record is required.")
+    if batch_size < 1:
+        raise ValueError("batch_size must be at least 1.")
 
 
 def _activation_summary(
@@ -298,8 +431,12 @@ def _smoke_records() -> list[dict[str, Any]]:
 
 __all__ = [
     "DEFAULT_PROMPT_PATH",
+    "build_activation_npz_bytes",
+    "extract_activation_payload",
     "extract_activations",
+    "load_activation_npz_bytes",
     "read_prompt_records",
     "smoke_extract",
     "write_activation_npz",
+    "write_activation_npz_bytes",
 ]
