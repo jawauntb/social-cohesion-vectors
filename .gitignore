@@ -59,3 +59,7 @@ outputs/
 # Modal
 .modal/
 .worktrees/
+
+# testonce cache and scratch
+.testonce/
+.testonce-tmp/

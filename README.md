@@ -559,3 +559,13 @@ modal run social_cohesion_vectors.modal_app.functions.activation_extractor::smok
 The first practical target is to run `data/training/activation_prompts.jsonl`
 through an open LLM, save one activation vector per prompt, then train a
 contrastive direction with `social_cohesion_vectors.activations.contrastive`.
+
+## Continuous Integration
+
+`.github/workflows/ci.yml` runs `ruff check .`, `pyright`, then every
+`tests/test_*.py` file through [testonce](https://github.com/jawauntb/testonce)
+(`testonce each tests/test_*.py -- python -m pytest -q {}`). testonce traces each
+test file and skips it only while every file it read, its command and its
+environment are byte-identical to a recorded pass; a failing test still fails
+the job. Settings live in `testonce.json`. To run everything regardless, set
+`TESTONCE_FULL=1`. Locally, `uv run pytest -q` is unchanged.

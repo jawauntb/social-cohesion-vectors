@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Put the project environment on PATH
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Pyright
+        run: pyright
+
+      # Installs strace, restores/saves .testonce/ with actions/cache, puts
+      # `testonce` on PATH. A test file is skipped only while every file it
+      # touched, its command and its env are byte-identical to a recorded pass.
+      - uses: jawauntb/testonce@main
+
+      # TMPDIR points at a repo-local directory (ignored in testonce.json) because
+      # pytest and tempfile write into the temp root on every run, which would
+      # otherwise make every test file uncacheable.
+      # PYTHONDONTWRITEBYTECODE keeps .pyc files from existing: with a valid .pyc,
+      # Python only stats a module's .py and never reads it, so testonce would not
+      # see an edit to that source.
+      - name: Pytest (one cached run per file)
+        run: |
+          mkdir -p .testonce-tmp
+          TMPDIR="$PWD/.testonce-tmp" PYTHONDONTWRITEBYTECODE=1 testonce each tests/test_*.py -- python -m pytest -q {}
