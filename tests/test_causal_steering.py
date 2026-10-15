@@ -8,6 +8,7 @@ from social_cohesion_vectors.experiments.causal_steering import (
     default_steering_prompt_records,
     render_steering_markdown,
     shape_steering_report,
+    steering_promotion_gate,
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -60,7 +61,57 @@ def test_shape_steering_report_scores_positive_polarity() -> None:
 
     assert report["summary"]["positive_vs_negative_success_rate"] == 1.0
     assert report["summary"]["positive_minus_negative_mean_score_delta"] > 0.0
+    assert report["summary"]["slack_positive_vs_negative_success_rate"] == 1.0
+    assert report["promotion_gate"]["status"] == "needs_projection_telemetry"
     assert "Causal Activation Steering Smoke" in markdown
+    assert "Promotion status: needs_projection_telemetry" in markdown
+
+
+def test_steering_promotion_gate_marks_projection_to_output_bottleneck() -> None:
+    gate = steering_promotion_gate(
+        {
+            "positive_minus_negative_post_projection_delta": 0.4,
+            "mean_absolute_delta_error": 0.02,
+            "positive_minus_negative_mean_score_delta": 0.0,
+            "positive_minus_negative_mean_slack_delta": 0.0,
+            "positive_minus_negative_mean_autonomy_delta": 0.0,
+        }
+    )
+
+    assert gate["status"] == "projection_to_output_bottleneck"
+    assert gate["promoted"] is False
+    assert "behavior_delta_too_small" in gate["reasons"]
+
+
+def test_steering_promotion_gate_blocks_behavior_gain_with_control_regression() -> None:
+    gate = steering_promotion_gate(
+        {
+            "positive_minus_negative_post_projection_delta": 0.4,
+            "mean_absolute_delta_error": 0.02,
+            "positive_minus_negative_mean_score_delta": 0.03,
+            "positive_minus_negative_mean_slack_delta": -0.02,
+            "positive_minus_negative_mean_autonomy_delta": 0.01,
+        }
+    )
+
+    assert gate["status"] == "failed_controls"
+    assert "anti_compliance_control_failed" in gate["reasons"]
+
+
+def test_steering_promotion_gate_promotes_only_when_all_signals_agree() -> None:
+    gate = steering_promotion_gate(
+        {
+            "positive_minus_negative_post_projection_delta": 0.4,
+            "mean_absolute_delta_error": 0.02,
+            "positive_minus_negative_mean_score_delta": 0.03,
+            "positive_minus_negative_mean_slack_delta": 0.03,
+            "positive_minus_negative_mean_autonomy_delta": 0.01,
+        }
+    )
+
+    assert gate["status"] == "success"
+    assert gate["promoted"] is True
+    assert gate["reasons"] == ["projection_behavior_slack_controls_agree"]
 
 
 def test_summarize_causal_steering_reports_writes_table(tmp_path) -> None:
@@ -74,6 +125,11 @@ def test_summarize_causal_steering_reports_writes_table(tmp_path) -> None:
                     "autonomy_positive_vs_negative_success_rate": 0.5,
                     "positive_minus_baseline_mean_score_delta": 0.01,
                     "positive_minus_negative_mean_score_delta": 0.02,
+                },
+                "promotion_gate": {
+                    "status": "projection_to_output_bottleneck",
+                    "promoted": False,
+                    "reasons": ["behavior_delta_too_small"],
                 },
                 "records": [
                     {
@@ -107,4 +163,7 @@ def test_summarize_causal_steering_reports_writes_table(tmp_path) -> None:
     assert (
         json.loads(json_output.read_text(encoding="utf-8"))["rows"][0]["hook_site"]
         == "post"
+    )
+    assert "projection_to_output_bottleneck" in markdown_output.read_text(
+        encoding="utf-8"
     )

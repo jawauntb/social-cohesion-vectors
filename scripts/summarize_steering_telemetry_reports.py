@@ -28,6 +28,7 @@ def summarize_telemetry_reports(paths: Sequence[Path]) -> dict[str, Any]:
     rows = [_row_from_report(path) for path in sorted(paths)]
     rows.sort(
         key=lambda row: (
+            -int(bool(row["promoted"])),
             -float(row["positive_minus_negative_score_delta"]),
             -float(row["positive_minus_negative_post_projection_delta"]),
             float(row["mean_absolute_delta_error"]),
@@ -69,14 +70,16 @@ def render_markdown(summary: Mapping[str, Any]) -> str:
         "",
         str(summary.get("description", "")),
         "",
-        "| Report | Model | Layer | Hook | Timing | Position | Strengths | Delta error | Post pos-neg | Post pos-base | Score pos-neg | Score pos-base |",
-        "| --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Report | Promotion | Reasons | Model | Layer | Hook | Timing | Position | Strengths | Delta error | Post pos-neg | Post pos-base | Score pos-neg | Score pos-base |",
+        "| --- | --- | --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         row_map = _mapping(row)
         lines.append(
             "| "
             f"`{row_map.get('report', '')}` | "
+            f"{row_map.get('promotion_status', 'unknown')} | "
+            f"{_join_or_none(row_map.get('promotion_reasons'))} | "
             f"`{row_map.get('model_id', '')}` | "
             f"{int(row_map.get('layer', 0))} | "
             f"{row_map.get('hook_site', '')} | "
@@ -114,6 +117,12 @@ def _row_from_report(path: Path) -> dict[str, Any]:
         "hook_site": first.get("hook_site", ""),
         "steering_position": first.get("steering_position", ""),
         "steering_timing": first.get("steering_timing", ""),
+        "promotion_status": _mapping(report.get("promotion_gate")).get(
+            "status",
+            "unknown",
+        ),
+        "promoted": bool(_mapping(report.get("promotion_gate")).get("promoted", False)),
+        "promotion_reasons": _mapping(report.get("promotion_gate")).get("reasons", []),
         "strengths": summary.get("strengths", []),
         "mean_absolute_delta_error": float(
             summary.get("mean_absolute_delta_error", 0.0)
@@ -160,6 +169,11 @@ def _mapping(value: object) -> Mapping[str, Any]:
 
 def _sequence(value: object) -> Sequence[object]:
     return value if isinstance(value, Sequence) and not isinstance(value, str) else ()
+
+
+def _join_or_none(value: object) -> str:
+    items = [str(item) for item in _sequence(value) if str(item)]
+    return ", ".join(items) if items else "none"
 
 
 if __name__ == "__main__":
